@@ -15,7 +15,7 @@ import grph.properties.Property;
 
 public class Rdf2GrphConverter implements Converter<Grph, Model> {
 	
-	private static byte LITERAL = 2, BLANK = 1, URI = 0;
+	public static final byte LITERAL = 2, BLANK = 1, URI = 0;
 	
 	private static int type2color(Node node) {
 		if(node.isURI()) return URI;
