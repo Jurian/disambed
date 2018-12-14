@@ -1,0 +1,53 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.uu.nl</groupId>
+	<artifactId>graph-embeddings</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>Analysis of RDF graphs using embeddings</name>
+	
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.jena</groupId>
+			<artifactId>jena-arq</artifactId>
+			<version>3.6.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-math3</artifactId>
+			<version>3.6.1</version>
+		</dependency>
+		<dependency>
+			<groupId>grph</groupId>
+			<artifactId>grph</artifactId>
+			<version>2.1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>com.breinify</groupId>
+			<artifactId>brein-time-utilities</artifactId>
+			<version>1.7.0</version>
+		</dependency>
+	</dependencies>
+
+	<repositories>
+		<repository>
+			<id>lhogie.i3s.maven.repo</id>
+			<name>Luc Hogie Maven repository</name>
+			<url>http://www.i3s.unice.fr/~hogie/maven_repository/</url>
+		</repository>
+	</repositories>
+
+	<build>
+		<sourceDirectory>src</sourceDirectory>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.7.0</version>
+				<configuration>
+					<release>10</release>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+</project>
