@@ -1,11 +1,7 @@
 package org.uu.nl.analyze.progress;
 
-import java.util.concurrent.SubmissionPublisher;
+public interface Publisher  {
 
-public class Publisher extends SubmissionPublisher<Progress> {
-
-	public void updateProgress(Progress progress) {
-		this.submit(progress);
-	}
+	public void updateProgress(Progress progress);
 
 }

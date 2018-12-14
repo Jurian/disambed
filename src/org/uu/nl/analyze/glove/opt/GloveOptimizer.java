@@ -62,7 +62,7 @@ public abstract class GloveOptimizer implements Optimizer {
 		CompletionService<Double> completionService = new ExecutorCompletionService<>(es);
 		
 		Progress progress = new Progress(ProgressType.GLOVE);
-		
+
 		try {
 			double iterCost = 0;
 			for(int iteration = 0; iteration < maxIterations; ) {

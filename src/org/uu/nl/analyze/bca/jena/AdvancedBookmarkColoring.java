@@ -1,4 +1,4 @@
-package org.uu.nl.analyze.bca;
+package org.uu.nl.analyze.bca.jena;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -15,10 +15,10 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.uu.nl.analyze.CooccurenceMatrix;
 import org.uu.nl.analyze.bca.util.BCV;
-import org.uu.nl.analyze.bca.util.GraphStatistics;
-import org.uu.nl.analyze.bca.util.NodeType;
 import org.uu.nl.analyze.bca.util.Options;
 import org.uu.nl.analyze.bca.util.OrderedIntegerPair;
+import org.uu.nl.analyze.bca.util.jena.GraphStatistics;
+import org.uu.nl.analyze.bca.util.jena.NodeType;
 import org.uu.nl.analyze.progress.Progress;
 import org.uu.nl.analyze.progress.ProgressType;
 import org.uu.nl.analyze.progress.Publisher;

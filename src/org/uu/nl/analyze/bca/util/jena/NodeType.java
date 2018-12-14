@@ -1,4 +1,4 @@
-package org.uu.nl.analyze.bca.util;
+package org.uu.nl.analyze.bca.util.jena;
 
 import org.apache.jena.graph.Node;
 

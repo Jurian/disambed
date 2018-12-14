@@ -1,6 +1,6 @@
 package org.uu.nl.analyze;
 
-import org.uu.nl.analyze.bca.util.NodeType;
+import org.uu.nl.analyze.bca.util.jena.NodeType;
 
 public interface CooccurenceMatrix {
 	public int vocabSize();

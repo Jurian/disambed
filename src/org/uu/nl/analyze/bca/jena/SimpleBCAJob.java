@@ -1,4 +1,4 @@
-package org.uu.nl.analyze.bca;
+package org.uu.nl.analyze.bca.jena;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -8,9 +8,9 @@ import org.apache.jena.graph.Graph;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
-import org.uu.nl.analyze.bca.util.BCAJob;
 import org.uu.nl.analyze.bca.util.BCV;
 import org.uu.nl.analyze.bca.util.PaintRegistry;
+import org.uu.nl.analyze.bca.util.jena.BCAJob;
 
 public class SimpleBCAJob extends BCAJob {
 
@@ -23,7 +23,7 @@ public class SimpleBCAJob extends BCAJob {
 	protected BCV doWork(Graph graph, boolean reverse) {
 		final int bookmarkIndex = keys.get(bookmark);
 		final LinkedList<Node> nodeQueue = new LinkedList<>();
-		final PaintRegistry wetPaintRegister = new PaintRegistry();
+		final PaintRegistry<Node> wetPaintRegister = new PaintRegistry<>();
 		final BCV bcv = new BCV(bookmarkIndex);
 		
 		nodeQueue.add(bookmark);

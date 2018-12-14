@@ -1,4 +1,4 @@
-package org.uu.nl.analyze.bca.util;
+package org.uu.nl.analyze.bca.util.jena;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +11,7 @@ import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.shared.Lock;
 import org.apache.jena.util.iterator.ExtendedIterator;
+import org.uu.nl.analyze.bca.util.BCV;
 
 /**
  * One BCAJob represents performing the bookmark coloring algorithm for a single node
