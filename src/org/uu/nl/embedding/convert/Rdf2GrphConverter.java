@@ -7,6 +7,7 @@ import java.util.Map;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.util.iterator.ExtendedIterator;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 
 import grph.Grph;
@@ -45,6 +46,23 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 		final List<Triple> triples = model.getGraph().find().toList();
 		final Map<Node, Integer> processed = new HashMap<>();
 
+
+		final ExtendedIterator<Triple> it = model.getGraph().find();
+		try {
+			
+			while(it.hasNext()) {
+				final Triple t = it.next();
+				if(t.getSubject().toString().equals("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil")) 
+					it.remove();
+				else if(t.getObject().toString().equals("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil")) 
+					it.remove();
+			}
+			
+		} finally {
+			it.close();
+		}
+		
+		
 		int s_i, o_i, p_i;
 		Node s, p, o;
 		
