@@ -37,7 +37,7 @@ public class AdvancedBCAJob extends BCAJob {
 		return graph.getEdgeLabelProperty().getValueAsString(e);
 	}
 	
-	private int getEdgeUniqueId(int e) {
+	private int getEdgeType(int e) {
 		return graph.getEdgeColorProperty().getValueAsInt(e);
 	}
 
@@ -87,11 +87,11 @@ public class AdvancedBCAJob extends BCAJob {
 				if(isLiteral(focusNode)) {
 					neighbors = in[focusNode];
 					edges = new int[neighbors.length];
-					predicate = getEdgeUniqueId(filterPredicate.get(focusNode));
+					predicate = getEdgeType(filterPredicate.get(focusNode));
 					
 					for(int i = 0; i < neighbors.length; i++) {
 						edges[i] = graph.getSomeEdgeConnecting(neighbors[i], focusNode);
-						if(getEdgeUniqueId(edges[i]) != predicate) {
+						if(getEdgeType(edges[i]) != predicate) {
 							edges[i] = NO_VALUE;
 							ignoredEdge++;
 						}	
@@ -124,7 +124,7 @@ public class AdvancedBCAJob extends BCAJob {
 					weight = 1 / (double) neighborCount;
 					partialWetPaint = (1 - alpha) * wetPaint * weight;
 					
-					bcv.add(getEdgeUniqueId(predicate), partialWetPaint);
+					bcv.add(getEdgeType(predicate), partialWetPaint);
 					
 					if (nodeQueue.contains(neighbor)) {
 						wetPaintRegister.add(neighbor, partialWetPaint);
