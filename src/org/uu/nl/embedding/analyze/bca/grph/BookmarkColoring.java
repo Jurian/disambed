@@ -50,14 +50,14 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		final ExecutorService es = Executors.newFixedThreadPool(options.getnThreads());
 		final Map<Integer, BCV> computedBCV = new ConcurrentHashMap<>();
 		
-		final int[][] in = graph.getInNeighborhoods();
+		//final int[][] in = graph.getInNeighborhoods();
 		final int[][] out = graph.getOutNeighborhoods();
 		
 		try {
 			CompletionService<BCV> completionService = new ExecutorCompletionService<>(es);
 			System.out.println("Submitting " + stats.jobs.length + " jobs");
 			for(int bookmark : stats.jobs) {
-				completionService.submit(new AdvancedBCAJob(computedBCV, bookmark, includeReverse, normalize, alpha, epsilon, graph, in, out));
+				completionService.submit(new SimpleBCAJob(computedBCV, bookmark, includeReverse, normalize, alpha, epsilon, graph, out));
 			}
 			
 			//now retrieve the futures after computation (auto wait for it)

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+
 public class Optimum {
 	
 	private final List<Double> costOverTime = new ArrayList<>();

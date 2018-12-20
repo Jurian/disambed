@@ -15,10 +15,10 @@ public class SimpleBCAJob extends BCAJob {
 	private final Map<Integer, BCV> computedBCV;
 	private final int[][] out;
 	
-	public SimpleBCAJob(Map<Integer, BCV> computedBCV, int bookmark, boolean reverse, boolean normalize, double alpha, double epsilon, Grph graph) {
+	public SimpleBCAJob(Map<Integer, BCV> computedBCV, int bookmark, boolean reverse, boolean normalize, double alpha, double epsilon, Grph graph, int[][] out) {
 		super(bookmark, reverse, normalize, alpha, epsilon, graph);
 		this.computedBCV = computedBCV;
-		this.out = graph.getOutNeighborhoods();
+		this.out = out;
 	}
 
 	public String nodeLabel(int n) {
