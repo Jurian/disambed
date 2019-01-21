@@ -60,18 +60,22 @@ public abstract class GloveOptimizer implements Optimizer {
 		System.out.println("Starting " + getName() + " optimizer");
 		Optimum opt = new Optimum(this.dimension);
 		CompletionService<Double> completionService = new ExecutorCompletionService<>(es);
-		
-		Progress progress = new Progress(ProgressType.GLOVE);
+
+		Progress progress = null;
+		if(publisher != null) {
+			progress = new Progress(ProgressType.GLOVE);
+		}
 
 		try {
 			double iterCost = 0;
-			for(int iteration = 0; iteration < maxIterations; ) {
+			for(int iteration = 0; iteration < maxIterations; iteration++ ) {
 				
 				for(int id = 0; id < numThreads; id++) 
 					completionService.submit(createJob(id, iteration));
 				
 				int received = 0;
 				double totalCost = 0;
+
 				while(received < numThreads) {
 					try {
 						totalCost += completionService.take().get();
@@ -80,39 +84,46 @@ public abstract class GloveOptimizer implements Optimizer {
 						e.printStackTrace();
 					}
 				}
+
 				totalCost = (totalCost / crecCount);
 				if(FastMath.abs(iterCost - totalCost) <= tolerance) break;
 				iterCost = totalCost;
 				opt.addCost(iterCost);
-				
-				iteration++;
 
-				progress.setValue(iterCost);
-				publisher.updateProgress(progress);
-
+				if(publisher != null) {
+					progress.setValue(iterCost);
+					publisher.updateProgress(progress);
+				}
 			}
 			
 		} finally {
 			es.shutdown();
 		}
-		
-		progress.setValue(opt.finalResult());
-		progress.setFinished(true);
-		publisher.updateProgress(progress);
-		
+
+		if(publisher != null) {
+			progress.setValue(opt.finalResult());
+			progress.setFinished(true);
+			publisher.updateProgress(progress);
+		}
+
 		opt.setResult(extractResult());
 		System.out.println("Converged with final cost " + opt.finalResult());
 		return opt;
 	}
-	
+
+	/**
+	 * Create a new double array containing the averaged values between the focus and context vectors
+	 * @return
+	 */
 	private double[] extractResult() {
 		double[] U = new double[vocabSize * dimension];
 		int l1, l2, l3;
 		for (int a = 0; a < vocabSize; a++) {
-			l1 = a * (dimension + 1);
-			l2 = (a + vocabSize) * (dimension + 1);
-			l3 = (a * dimension);
+			l1 = a * (dimension + 1); // Index for focus node
+			l2 = (a + vocabSize) * (dimension + 1); // Index for context node
+			l3 = (a * dimension); // Index for output node
 			for(int d = 0; d < dimension; d++)  {
+				// For each node, take the average between the focus and context value
 				U[d + l3] = (W[d + l1] + W[d + l2]) / 2;
 			}
 		}

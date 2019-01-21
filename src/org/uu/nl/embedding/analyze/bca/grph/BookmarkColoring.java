@@ -9,6 +9,7 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import me.tongfei.progressbar.ProgressBar;
 import org.uu.nl.embedding.analyze.CooccurenceMatrix;
 import org.uu.nl.embedding.analyze.bca.grph.util.GraphStatistics;
 import org.uu.nl.embedding.analyze.bca.util.BCV;
@@ -80,41 +81,50 @@ public class BookmarkColoring implements CooccurenceMatrix {
 			
 			//now retrieve the futures after computation (auto wait for it)
 			int received = 0;
+			Progress progress = null;
+			if(publisher != null) {
+				progress = new Progress(ProgressType.BCA);
+			}
 
-			Progress progress = new Progress(ProgressType.BCA);
-			
-			while(received < stats.jobs.length) {
-		
-				try {
-					BCV bcv = completionService.take().get();
-					// We have to collect all the BCV's first before we can store them
-					// in a more efficient lookup friendly way below
-					if(normalize) bcv.normalize();
-					//if(!bcv.isEmpty())
-						//System.out.println("Adding BCV for "+stats.dict[bcv.rootNode]+" of size " + bcv.size());
-					
-					bcv.addTo(cooccurrence_map);
-					// It is possible to use this maximum value in GloVe, although in the
-					// literature they set this value to 100 and leave it at that
-					setMax(bcv.max());
-					
-					received ++;
-					
-					double p = (received / (double)stats.jobs.length * 100);
-					//System.out.println(p);
-					if(p - progress.getValue() > 0.5) {
-						progress.setValue(p);
-						publisher.updateProgress(progress);	
+			try (ProgressBar pb = new ProgressBar("BCA", stats.jobs.length )){
+				while(received < stats.jobs.length) {
+
+					try {
+						BCV bcv = completionService.take().get();
+						// We have to collect all the BCV's first before we can store them
+						// in a more efficient lookup friendly way below
+						if(normalize) bcv.normalize();
+
+						bcv.addTo(cooccurrence_map);
+						// It is possible to use this maximum value in GloVe, although in the
+						// literature they set this value to 100 and leave it at that
+						setMax(bcv.max());
+
+					} catch (InterruptedException | ExecutionException e) {
+						e.printStackTrace();
+
+					} finally {
+						pb.step();
+
+						if(progress != null) {
+							received ++;
+							double p = (received / (double)stats.jobs.length * 100);
+
+							if(p - progress.getValue() > 0.5) {
+								progress.setValue(p);
+								publisher.updateProgress(progress);
+							}
+						}
 					}
-
-				} catch (InterruptedException | ExecutionException e) {
-					e.printStackTrace();
 				}
 			}
-			progress.setValue(100);
-			progress.setFinished(true);
-			publisher.updateProgress(progress);
-			
+
+			if(progress != null) {
+				progress.setValue(100);
+				progress.setFinished(true);
+				publisher.updateProgress(progress);
+			}
+
 		} finally {
 			es.shutdown();
 		}

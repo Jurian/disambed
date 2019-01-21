@@ -35,6 +35,11 @@
 			<artifactId>brein-time-utilities</artifactId>
 			<version>1.7.0</version>
 		</dependency>
+		<dependency>
+			<groupId>me.tongfei</groupId>
+			<artifactId>progressbar</artifactId>
+			<version>0.7.2</version>
+		</dependency>
 	</dependencies>
 
 	<repositories>
