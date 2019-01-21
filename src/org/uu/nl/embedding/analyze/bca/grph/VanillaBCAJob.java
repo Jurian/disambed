@@ -10,12 +10,14 @@ import org.uu.nl.embedding.analyze.bca.util.PaintRegistry;
 
 import grph.Grph;
 
-public class SimpleBCAJob extends BCAJob {
+public class VanillaBCAJob extends BCAJob {
 
 	private final Map<Integer, BCV> computedBCV;
 	private final int[][] out;
 	
-	public SimpleBCAJob(Map<Integer, BCV> computedBCV, int bookmark, boolean reverse, boolean normalize, double alpha, double epsilon, Grph graph, int[][] out) {
+	public VanillaBCAJob(Grph graph, Map<Integer, BCV> computedBCV, 
+			int bookmark, boolean reverse, boolean normalize, double alpha, double epsilon, 
+			int[][] out) {
 		super(bookmark, reverse, normalize, alpha, epsilon, graph);
 		this.computedBCV = computedBCV;
 		this.out = out;
@@ -24,7 +26,11 @@ public class SimpleBCAJob extends BCAJob {
 	public String nodeLabel(int n) {
 		return graph.getVertexLabelProperty().getValueAsString(n);
 	}
-
+	
+	public int getEdgeType(int e) {
+		return graph.getEdgeColorProperty().getValueAsInt(e);
+	}
+	
 	@Override
 	protected BCV doWork(Grph graph, boolean reverse) {
 		
@@ -35,7 +41,7 @@ public class SimpleBCAJob extends BCAJob {
 		nodeQueue.add(bookmark);
 		wetPaintRegister.put(bookmark, 1d);
 		
-		int[] neighbors, edges;
+		int[] neighbors, edgeCache;
 		int focusNode, neighbor, neighborCount, predicate;
 		double weight, partialWetPaint;
 		BCV precomputed;
@@ -45,8 +51,6 @@ public class SimpleBCAJob extends BCAJob {
 			focusNode = nodeQueue.poll();
 			final double wetPaint = wetPaintRegister.get(focusNode);
 
-			// System.out.println("Focus: " + nodeLabel(focusNode));
-			
 			precomputed = computedBCV.get(focusNode);
 			if(precomputed != null) {
 				precomputed.forEach((index, precomputedPaint) -> {
@@ -62,21 +66,21 @@ public class SimpleBCAJob extends BCAJob {
 					continue;
 
 				neighbors = out[focusNode];
-				edges = graph.getOutEdges(focusNode).toIntArray();
 				neighborCount = neighbors.length;
 				
-				// System.out.println("Neighbors:");
+				if(reverse) edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
+				else edgeCache = graph.getOutOnlyEdges(focusNode).toIntArray();
+				
 				for (int i = 0; i < neighbors.length; i++) {
 					
 					neighbor = neighbors[i];
-					
-					// System.out.println(nodeLabel(neighbor));
-
 					weight = 1 / (double) neighborCount;
 					partialWetPaint = (1 - alpha) * wetPaint * weight;
 					
-					predicate = edges[i];
-					bcv.add(predicate, partialWetPaint);
+					if(reverse) predicate = getEdge(neighbor, focusNode, graph.getOutOnlyEdges(neighbor).toIntArray(), edgeCache);
+					else predicate = getEdge(focusNode, neighbor, edgeCache, graph.getInOnlyEdges(neighbor).toIntArray());
+					
+					bcv.add(getEdgeType(predicate), partialWetPaint);
 					
 					if (nodeQueue.contains(neighbor)) {
 						wetPaintRegister.add(neighbor, partialWetPaint);
@@ -85,9 +89,23 @@ public class SimpleBCAJob extends BCAJob {
 						wetPaintRegister.put(neighbor, partialWetPaint);
 					}
 				}
-				// System.out.println();
 			}
 		}
 		return bcv;
+	}
+	
+	private int getEdge(int src, int dest, int[] out, int[] in) {
+		if (out.length == 0 || in.length == 0) {
+			return -1;
+		} else {
+			if (out.length < in.length) {
+				for(int e : out) 
+					if (graph.getDirectedSimpleEdgeHead(e) == dest) return e;
+			} else {
+				for(int e : in) 
+					if (graph.getDirectedSimpleEdgeTail(e) == src) return e;
+			}
+			return -1;
+		}
 	}
 }

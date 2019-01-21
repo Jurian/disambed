@@ -50,14 +50,32 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		final ExecutorService es = Executors.newFixedThreadPool(options.getnThreads());
 		final Map<Integer, BCV> computedBCV = new ConcurrentHashMap<>();
 		
-		//final int[][] in = graph.getInNeighborhoods();
+		final int[][] in = graph.getInNeighborhoods();
 		final int[][] out = graph.getOutNeighborhoods();
-		
+
 		try {
+
 			CompletionService<BCV> completionService = new ExecutorCompletionService<>(es);
 			System.out.println("Submitting " + stats.jobs.length + " jobs");
 			for(int bookmark : stats.jobs) {
-				completionService.submit(new SimpleBCAJob(computedBCV, bookmark, includeReverse, normalize, alpha, epsilon, graph, out));
+				switch(options.getType()) {
+				default:
+				case VANILLA:
+					completionService.submit(new VanillaBCAJob(
+							graph, computedBCV, bookmark,
+							includeReverse, normalize, alpha, epsilon, 
+							out));
+					break;
+				case SEMANTIC_FAST:
+					break;
+				case SEMANTIC_SLOW:
+					completionService.submit(new SemanticBCAJob(
+							graph, computedBCV, bookmark,
+							includeReverse, normalize, alpha, epsilon, 
+							in, out));
+					break;
+				}
+
 			}
 			
 			//now retrieve the futures after computation (auto wait for it)
@@ -71,14 +89,19 @@ public class BookmarkColoring implements CooccurenceMatrix {
 					BCV bcv = completionService.take().get();
 					// We have to collect all the BCV's first before we can store them
 					// in a more efficient lookup friendly way below
-					System.out.println("Adding BCV for "+stats.dict[bcv.rootNode]+" of size " + bcv.size());
+					if(normalize) bcv.normalize();
+					//if(!bcv.isEmpty())
+						//System.out.println("Adding BCV for "+stats.dict[bcv.rootNode]+" of size " + bcv.size());
+					
 					bcv.addTo(cooccurrence_map);
 					// It is possible to use this maximum value in GloVe, although in the
 					// literature they set this value to 100 and leave it at that
 					setMax(bcv.max());
 					
 					received ++;
+					
 					double p = (received / (double)stats.jobs.length * 100);
+					//System.out.println(p);
 					if(p - progress.getValue() > 0.5) {
 						progress.setValue(p);
 						publisher.updateProgress(progress);	

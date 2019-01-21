@@ -1,11 +1,15 @@
 package org.uu.nl.embedding.convert;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QueryExecutionFactory;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.uu.nl.embedding.convert.util.NodeInfo;
@@ -43,64 +47,56 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 		final Property vertexLabel = g.getVertexLabelProperty();
 		final Property edgeLabel = g.getEdgeLabelProperty();
 		
-		final List<Triple> triples = model.getGraph().find().toList();
-		final Map<Node, Integer> processed = new HashMap<>();
-
-
-		final ExtendedIterator<Triple> it = model.getGraph().find();
-		try {
-			
-			while(it.hasNext()) {
-				final Triple t = it.next();
-				if(t.getSubject().toString().equals("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil")) 
-					it.remove();
-				else if(t.getObject().toString().equals("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil")) 
-					it.remove();
-			}
-			
-		} finally {
-			it.close();
-		}
+		final Map<Node, Integer> verticeMap = new HashMap<>();
+		final Map<Node, Integer> edgeMap = new HashMap<>();
 		
-		
-		int s_i, o_i, p_i;
+		int s_i, o_i, p_i = getVertexCount(model);
 		Node s, p, o;
+		Triple t;
 		
-		for(Triple t : triples) {
-			
+		ExtendedIterator<Triple> triples = model.getGraph().find();
+		
+		while(triples.hasNext()) {
+			t = triples.next();
 			s = t.getSubject();
+			p = t.getPredicate();
 			o = t.getObject();
 			
 			// Skip if we don't want literals
 			if(!literals && o.isLiteral()) continue;
 
 			// Only create a new ID if the subject is not yet present
-			if(processed.containsKey(s)) {
-				s_i = processed.get(s);
+			if(verticeMap.containsKey(s)) {
+				s_i = verticeMap.get(s);
 			} else {
-				s_i = processed.size();
+				s_i = verticeMap.size();
 				g.addVertex(s_i);
 				vertexType.setValue(s_i, type2color(s));
 				vertexLabel.setValue(s_i, s.toString());
-				processed.put(s, s_i);
+				verticeMap.put(s, s_i);
 			}
 			
 			// Only create a new ID if the object is not yet present
-			if(processed.containsKey(o)) {
-				o_i = processed.get(o);
+			if(verticeMap.containsKey(o)) {
+				o_i = verticeMap.get(o);
 			} else {
-				o_i = processed.size();
+				o_i = verticeMap.size();
 				g.addVertex(o_i);
 				vertexType.setValue(o_i, type2color(o));
 				vertexLabel.setValue(o_i, o.toString());
-				processed.put(o, o_i);
+				verticeMap.put(o, o_i);
 			}
 			
+			g.addDirectedSimpleEdge(s_i, p_i, o_i);
+			edgeLabel.setValue(p_i, p.toString());
+			edgeMap.putIfAbsent(p, edgeMap.size());
+			edgeType.setValue(p_i, edgeMap.get(p));
+			p_i++;
 		}
-		
-		int offset = processed.size();
-		for(Triple t : triples) {
-			
+		/*
+		triples = model.getGraph().find();
+		while(triples.hasNext()) {
+			t = triples.next();
 			s = t.getSubject();
 			p = t.getPredicate();
 			o = t.getObject();
@@ -108,18 +104,43 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 			// Skip if we don't want literals
 			if(!literals && o.isLiteral()) continue;
 			
-			s_i = processed.get(s);
-			o_i = processed.get(o);
+			s_i = verticeMap.get(s);
+			o_i = verticeMap.get(o);
 			
 			// A new edge is created with every triple
-			p_i = offset++;
+			p_i = verticeMap.size();
 			g.addDirectedSimpleEdge(s_i, p_i, o_i);
 			edgeLabel.setValue(p_i, p.toString());
-			processed.putIfAbsent(p, processed.size());
-			
-			edgeType.setValue(p_i, processed.get(p));
+			edgeMap.putIfAbsent(p, edgeMap.size());
+			edgeType.setValue(p_i, edgeMap.get(p));
 		}
-
+		*/
 		return g;
+	}
+
+	private int getVertexCount(Model model) {
+		String sparql = "SELECT (COUNT(DISTINCT ?vertex) AS ?vertexCount) " + 
+				"WHERE" + 
+				"{" + 
+					"{" + 
+						"?vertex ?p [] " + 
+					"}" + 
+					"UNION" + 
+					"{ " + 
+						"[] ?p ?vertex " + 
+						"FILTER(!IsLiteral(?vertex))" + 
+					"}" + 
+				"}";
+
+		Query qry = QueryFactory.create(sparql);
+		try(QueryExecution qe = QueryExecutionFactory.create(qry, model)) {
+			ResultSet rs = qe.execSelect();
+
+			while (rs.hasNext()) {
+				return rs.nextSolution().getLiteral("vertexCount").getInt();
+			}
+		}
+		return -1;
+
 	}
 }

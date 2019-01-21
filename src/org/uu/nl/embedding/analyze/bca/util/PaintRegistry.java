@@ -5,7 +5,7 @@ import java.util.HashMap;
 /**
  * Convenience class for keeping track of the wet paint for
  * the bookmark coloring algorithm
- * @author jbaas
+ * @author Jurian Baas
  *
  */
 public class PaintRegistry<T> extends HashMap<T, Double> {

@@ -39,6 +39,7 @@ public class GraphStatistics {
 	private int uriNodeCount;
 	private int blankNodeCount;
 	private int literalNodeCount;
+	private int totalNodeCount;
 	
 	public GraphStatistics(Grph graph) {
 		
@@ -66,9 +67,12 @@ public class GraphStatistics {
 		}
 		
 		this.jobs = Arrays.copyOf(jobs, job_i);
-
+		this.totalNodeCount = uriNodeCount + blankNodeCount + literalNodeCount;
 	}
 
+	public int getTotalNodeCount() {
+		return totalNodeCount;
+	}
 	
 	public int getPredicateNodeCount() {
 		return predicateNodeCount;
