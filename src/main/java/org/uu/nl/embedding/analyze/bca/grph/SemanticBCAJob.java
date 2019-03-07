@@ -148,7 +148,7 @@ public class SemanticBCAJob extends BCAJob {
 
 				//if(ignoredNeighbor != NO_VALUE && (isLiteral(ignoredNeighbor) || isLiteral(focusNode))) neighborCount--;
 
-				if(neighborCount > 1000) continue;
+				if(neighborCount > 250) continue;
 
 				if(debug)
 				System.out.println(
