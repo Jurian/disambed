@@ -22,6 +22,12 @@ public class GloveTextWriter implements GloveWriter {
 	private final String DICT_FILE;
 
 	public GloveTextWriter(String fileName) {
+
+		if(fileName.contains(".")) {
+			int idx = fileName.lastIndexOf(".");
+			fileName = fileName.substring(0, idx);
+		}
+
 		this.VECTORS_FILE = fileName + "." + "vectors.txt";
 		this.DICT_FILE = fileName + "." + "dict.txt";
 	}
@@ -50,7 +56,10 @@ public class GloveTextWriter implements GloveWriter {
 						out[d] = String.format("%11.6E", result[d + i*dimension]);
 					
 					vect.write(String.join(",", out) + "\n");
-					dict.write(model.getCoMatrix().getKey(i) + "|" + model.getCoMatrix().getType(i) + "\n");
+					dict.write(model.getCoMatrix().getKey(i)
+							.replace("\n", "")
+							.replace("\r", "")
+							.replace('|', '_') + "|" + model.getCoMatrix().getType(i) + "\n");
 
 					if(publisher!= null) {
 						progress.setN(i);
