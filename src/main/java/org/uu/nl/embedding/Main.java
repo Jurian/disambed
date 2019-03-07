@@ -44,6 +44,12 @@ public class Main {
             .longOpt("bca_threads")
             .hasArg()
             .build();
+    private static Option option_bca_algorithm = Option.builder("bca_alg")
+            .required(true)
+            .desc("BCA algorithm, choose VANILLA or SEMANTIC")
+            .longOpt("bca_algorithm")
+            .hasArg()
+            .build();
 
     // GloVe BCAOptions
     private static Option option_glove_alg = Option.builder( "glv_a")
@@ -91,6 +97,7 @@ public class Main {
         options.addOption(option_bca_alpha);
         options.addOption(option_bca_epsilon);
         options.addOption(option_bca_threads);
+        options.addOption(option_bca_algorithm);
         options.addOption(option_glove_alg);
         options.addOption(option_glove_dim);
         options.addOption(option_glove_tol);
@@ -108,6 +115,7 @@ public class Main {
             double bca_alpha = Double.parseDouble(cmd.getOptionValue("bca_a"));
             double bca_epsilon = Double.parseDouble(cmd.getOptionValue("bca_e"));
             int bca_threads = Integer.parseInt(cmd.getOptionValue("bca_t"));
+            BCAOptions.BCAType bca_alg = BCAOptions.BCAType.valueOf(cmd.getOptionValue("bca_alg").toUpperCase());
 
             String glove_alg = cmd.getOptionValue("glv_a").toLowerCase();
             int glove_dim = Integer.parseInt(cmd.getOptionValue("glv_d"));
@@ -127,7 +135,7 @@ public class Main {
             Rdf2GrphConverter converter = new Rdf2GrphConverter();
             Grph graph = converter.convert(loader.load(bca_file));
 
-            BCAOptions bcaOptions = new BCAOptions(BCAOptions.BCAType.VANILLA, false, true, true, bca_alpha, bca_epsilon, bca_threads);
+            BCAOptions bcaOptions = new BCAOptions(bca_alg, false, true, true, bca_alpha, bca_epsilon, bca_threads);
 
             BookmarkColoring bca;
             try(CommandLineProgress bcaProgress = new CommandLineProgress("BCA")) {
