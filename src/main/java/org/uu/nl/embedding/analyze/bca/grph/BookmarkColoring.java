@@ -60,9 +60,7 @@ public class BookmarkColoring implements CooccurenceMatrix {
 							includeReverse, normalize, alpha, epsilon, 
 							out));
 					break;
-				case SEMANTIC_FAST:
-					break;
-				case SEMANTIC_SLOW:
+				case SEMANTIC:
 					completionService.submit(new SemanticBCAJob(
 							graph, computedBCV, bookmark,
 							includeReverse, normalize, alpha, epsilon, 

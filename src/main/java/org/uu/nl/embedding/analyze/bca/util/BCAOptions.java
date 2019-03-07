@@ -3,7 +3,7 @@ package org.uu.nl.embedding.analyze.bca.util;
 public class BCAOptions {
 	
 	public enum BCAType {
-		VANILLA, SEMANTIC_FAST, SEMANTIC_SLOW;
+		VANILLA, SEMANTIC;
 	}
 	
 	protected final BCAType type;
