@@ -12,6 +12,7 @@ import java.util.Queue;
 
 public class SemanticBCAJob extends BCAJob {
 
+	private boolean debug = false;
 	private static final int NO_VALUE = -1;
 	private final Map<Integer, BCV> computedBCV;
 	private final int[][] in, out;
@@ -90,7 +91,7 @@ public class SemanticBCAJob extends BCAJob {
 
 		nodeQueue.add(new SemanticNode(bookmark));
 		wetPaintRegister.put(bookmark, 1d);
-		
+
 		while (!nodeQueue.isEmpty()) {
 
 			node = nodeQueue.poll();
@@ -109,7 +110,7 @@ public class SemanticBCAJob extends BCAJob {
 
 				// If there is not enough paint we stop and don't distribute among the neighbors
 				if (wetPaint < epsilon) continue;
-				
+
 				ignoredNeighbor = node.prevNodeID;
 				ignoredEdgeCount = 0;
 
@@ -142,36 +143,46 @@ public class SemanticBCAJob extends BCAJob {
 								edgeCache, graph.getInEdges(neighbors[i]).toIntArray());
 					}
 				}
-				
-				neighborCount = ignoredNeighbor == NO_VALUE ? neighbors.length : neighbors.length - 1;
-				neighborCount -= ignoredEdgeCount;
-				
+
+				neighborCount = neighbors.length - ignoredEdgeCount;
+
+				//if(ignoredNeighbor != NO_VALUE && (isLiteral(ignoredNeighbor) || isLiteral(focusNode))) neighborCount--;
+
+				if(neighborCount > 1000) continue;
+
+				if(debug)
+				System.out.println(
+						nodeLabel(bookmark) +
+						" Focus node: " + nodeLabel(focusNode) +
+						" Queue size:" + nodeQueue.size() +
+						" neighbor count:" + neighborCount +
+						" wet paint:" + wetPaint);
+
 				for (int i = 0; i < neighbors.length; i++) {
 					
 					neighbor = neighbors[i];
 					predicate = edges[i];
 					
 					if(neighbor == ignoredNeighbor || predicate == NO_VALUE) continue;
-					
+
+					assert neighborCount > 0;
+
 					weight = 1 / (double) neighborCount;
 					partialWetPaint = (1 - alpha) * wetPaint * weight;
-					
-					if(isLiteral(focusNode)) {
-						partialWetPaint *= semanticWeight;
-					}
-					
+
+					//if(Double.isInfinite(partialWetPaint)) continue;
+
 					bcv.add(getEdgeType(predicate), partialWetPaint);
 					
 					SemanticNode neighborNode = new SemanticNode(neighbor);
-					
+					// When we consider this literal neighbor later we have to remember with predicate we used
+					// This way we don't visit nodes that have a different relationship with the literal
+					neighborNode.prevNodeID = focusNode;
+					neighborNode.predicatID = predicate;
+
 					if (nodeQueue.contains(neighborNode)) {
 						wetPaintRegister.add(neighbor, partialWetPaint);
 					} else {
-						// When we consider this literal neighbor later we have to remember with predicate we used
-						// This way we don't visit nodes that have a different relationship with the literal
-						if(isLiteral(neighbor) || isLiteral(focusNode)) neighborNode.prevNodeID = focusNode;
-						if(isLiteral(neighbor)) neighborNode.predicatID = predicate;
-						
 						nodeQueue.add(neighborNode);
 						wetPaintRegister.put(neighbor, partialWetPaint);
 					}
