@@ -22,12 +22,6 @@ public class GloveTextWriter implements GloveWriter {
 	private final String DICT_FILE;
 
 	public GloveTextWriter(String fileName) {
-
-		if(fileName.contains(".")) {
-			int idx = fileName.lastIndexOf(".");
-			fileName = fileName.substring(0, idx);
-		}
-
 		this.VECTORS_FILE = fileName + "." + "vectors.txt";
 		this.DICT_FILE = fileName + "." + "dict.txt";
 	}

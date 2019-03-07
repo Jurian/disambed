@@ -166,7 +166,14 @@ public class Main {
             }
 
             try(CommandLineProgress writeProgress = new CommandLineProgress("Writing to file")) {
-                GloveWriter writer = new GloveTextWriter(bca_file+"."+glove_alg+"."+glove_dim);
+
+                String bca_fileName = bca_file.getName().toLowerCase();
+                if(bca_fileName.contains(".")) {
+                    int idx = bca_fileName.lastIndexOf(".");
+                    bca_fileName = bca_fileName.substring(0, idx);
+                }
+
+                GloveWriter writer = new GloveTextWriter(bca_fileName+"."+bca_alg.name().toLowerCase()+"."+glove_alg.toLowerCase()+"."+glove_dim);
                 writer.write(model, currentRelativePath, writeProgress);
             }
 
