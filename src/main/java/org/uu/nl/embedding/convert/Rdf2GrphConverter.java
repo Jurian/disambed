@@ -42,7 +42,7 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 		final Property vertexLabel = g.getVertexLabelProperty();
 		final Property edgeLabel = g.getEdgeLabelProperty();
 		
-		final Map<Node, Integer> verticeMap = new HashMap<>();
+		final Map<Node, Integer> vertexMap = new HashMap<>();
 		final Map<Node, Integer> edgeMap = new HashMap<>();
 		
 		int s_i, o_i, p_i = getVertexCount(model);
@@ -61,56 +61,36 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 			if(!literals && o.isLiteral()) continue;
 
 			// Only create a new ID if the subject is not yet present
-			if(verticeMap.containsKey(s)) {
-				s_i = verticeMap.get(s);
-			} else {
-				s_i = verticeMap.size();
-				g.addVertex(s_i);
-				vertexType.setValue(s_i, type2color(s));
-				vertexLabel.setValue(s_i, s.toString());
-				verticeMap.put(s, s_i);
-			}
-			
+			if(vertexMap.containsKey(s)) s_i = vertexMap.get(s);
+			else s_i = addVertex(g, s, vertexMap, vertexType, vertexLabel);
+
 			// Only create a new ID if the object is not yet present
-			if(verticeMap.containsKey(o)) {
-				o_i = verticeMap.get(o);
-			} else {
-				o_i = verticeMap.size();
-				g.addVertex(o_i);
-				vertexType.setValue(o_i, type2color(o));
-				vertexLabel.setValue(o_i, o.toString());
-				verticeMap.put(o, o_i);
-			}
-			
+			if(vertexMap.containsKey(o)) o_i = vertexMap.get(o);
+			else o_i = addVertex(g, o, vertexMap, vertexType, vertexLabel);
+
+			// Every edge is unique, we always add one to the graph
+			// However there are only a few types of edges (relationships)
+			// So we also store a reference to a unique edge-type id
 			g.addDirectedSimpleEdge(s_i, p_i, o_i);
 			edgeLabel.setValue(p_i, p.toString());
+
+			// If we have not encountered this edge-type before, give it a unique id
 			edgeMap.putIfAbsent(p, edgeMap.size());
+			// Store the edge-type value for this new edge
 			edgeType.setValue(p_i, edgeMap.get(p));
 			p_i++;
 		}
-		/*
-		triples = model.getGraph().find();
-		while(triples.hasNext()) {
-			t = triples.next();
-			s = t.getSubject();
-			p = t.getPredicate();
-			o = t.getObject();
-			
-			// Skip if we don't want literals
-			if(!literals && o.isLiteral()) continue;
-			
-			s_i = verticeMap.get(s);
-			o_i = verticeMap.get(o);
-			
-			// A new edge is created with every triple
-			p_i = verticeMap.size();
-			g.addDirectedSimpleEdge(s_i, p_i, o_i);
-			edgeLabel.setValue(p_i, p.toString());
-			edgeMap.putIfAbsent(p, edgeMap.size());
-			edgeType.setValue(p_i, edgeMap.get(p));
-		}
-		*/
 		return g;
+	}
+
+	private int addVertex(Grph g, Node n, Map<Node, Integer> vertexMap, NumericalProperty vertexType, Property vertexLabel) {
+		int i = vertexMap.size();
+		g.addVertex(i);
+		vertexType.setValue(i, type2color(n);
+		vertexLabel.setValue(i, n.toString());
+		vertexMap.put(n, i);
+
+		return i;
 	}
 
 	private int getVertexCount(Model model) {
