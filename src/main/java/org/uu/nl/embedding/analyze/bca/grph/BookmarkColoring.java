@@ -58,7 +58,7 @@ public class BookmarkColoring implements CooccurenceMatrix {
 					completionService.submit(new VanillaBCAJob(
 							graph, computedBCV, bookmark,
 							includeReverse, normalize, alpha, epsilon, 
-							out));
+							in, out));
 					break;
 				case SEMANTIC:
 					completionService.submit(new SemanticBCAJob(
