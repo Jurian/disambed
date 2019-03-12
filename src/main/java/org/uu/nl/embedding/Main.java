@@ -44,6 +44,10 @@ public class Main {
             .longOpt("bca_threads")
             .hasArg()
             .build();
+    private static Option option_bca_reverse = Option.builder("bca_r")
+            .desc("Also run BCA in reverse mode")
+            .longOpt("bca_r")
+            .build();
     private static Option option_bca_algorithm = Option.builder("bca_alg")
             .required(true)
             .desc("BCA algorithm, choose VANILLA or SEMANTIC")
@@ -97,6 +101,7 @@ public class Main {
         options.addOption(option_bca_alpha);
         options.addOption(option_bca_epsilon);
         options.addOption(option_bca_threads);
+        options.addOption(option_bca_reverse);
         options.addOption(option_bca_algorithm);
         options.addOption(option_glove_alg);
         options.addOption(option_glove_dim);
@@ -116,6 +121,7 @@ public class Main {
             double bca_epsilon = Double.parseDouble(cmd.getOptionValue("bca_e"));
             int bca_threads = Integer.parseInt(cmd.getOptionValue("bca_t"));
             BCAOptions.BCAType bca_alg = BCAOptions.BCAType.valueOf(cmd.getOptionValue("bca_alg").toUpperCase());
+            boolean bca_reverse = cmd.hasOption("bca_r");
 
             String glove_alg = cmd.getOptionValue("glv_a").toLowerCase();
             int glove_dim = Integer.parseInt(cmd.getOptionValue("glv_d"));
@@ -135,7 +141,7 @@ public class Main {
             Rdf2GrphConverter converter = new Rdf2GrphConverter();
             Grph graph = converter.convert(loader.load(bca_file));
 
-            BCAOptions bcaOptions = new BCAOptions(bca_alg, false, true, true, bca_alpha, bca_epsilon, bca_threads);
+            BCAOptions bcaOptions = new BCAOptions(bca_alg, bca_reverse, true, true, bca_alpha, bca_epsilon, bca_threads);
 
             BookmarkColoring bca;
             try(CommandLineProgress bcaProgress = new CommandLineProgress("BCA")) {
@@ -172,7 +178,9 @@ public class Main {
                     int idx = bca_fileName.lastIndexOf(".");
                     bca_fileName = bca_fileName.substring(0, idx);
                 }
-
+                if(bca_reverse){
+                    bca_fileName += ".reverse";
+                }
                 GloveWriter writer = new GloveTextWriter(bca_fileName+"."+bca_alg.name().toLowerCase()+"."+glove_alg.toLowerCase()+"."+glove_dim);
                 writer.write(model, currentRelativePath, writeProgress);
             }
