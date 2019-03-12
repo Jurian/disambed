@@ -12,14 +12,15 @@ import java.util.Queue;
 public class VanillaBCAJob extends BCAJob {
 
 	private final Map<Integer, BCV> computedBCV;
-	private final int[][] out;
+	private final int[][] out, in;
 	
 	public VanillaBCAJob(Grph graph, Map<Integer, BCV> computedBCV, 
-			int bookmark, boolean reverse, boolean normalize, double alpha, double epsilon, 
-			int[][] out) {
+			int bookmark, boolean reverse, boolean normalize, double alpha, double epsilon,
+			int[][] in, int[][] out) {
 		super(bookmark, reverse, normalize, alpha, epsilon, graph);
 		this.computedBCV = computedBCV;
 		this.out = out;
+		this.in = in;
 	}
 
 	public String nodeLabel(int n) {
@@ -64,7 +65,9 @@ public class VanillaBCAJob extends BCAJob {
 				if (wetPaint < epsilon)
 					continue;
 
-				neighbors = out[focusNode];
+				if(reverse) neighbors = in[focusNode];
+				else neighbors = out[focusNode];
+
 				neighborCount = neighbors.length;
 				
 				if(reverse) edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
@@ -78,7 +81,7 @@ public class VanillaBCAJob extends BCAJob {
 					
 					if(reverse) predicate = getEdge(neighbor, focusNode, graph.getOutOnlyEdges(neighbor).toIntArray(), edgeCache);
 					else predicate = getEdge(focusNode, neighbor, edgeCache, graph.getInOnlyEdges(neighbor).toIntArray());
-					
+
 					bcv.add(getEdgeType(predicate), partialWetPaint);
 					
 					if (nodeQueue.contains(neighbor)) {
