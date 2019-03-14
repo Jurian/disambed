@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>org.uu.nl</groupId>
+  <artifactId>graph-embeddings</artifactId>
+  <versioning>
+    <versions>
+      <version>0.0.1-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20190314135625</lastUpdated>
+  </versioning>
+</metadata>
