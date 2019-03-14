@@ -9,12 +9,13 @@ import org.apache.jena.graph.Triple;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.util.iterator.ExtendedIterator;
+import org.uu.nl.embedding.convert.util.GrphModel;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class Rdf2GrphConverter implements Converter<Grph, Model> {
+public class Rdf2GrphConverter implements Converter<GrphModel, Model> {
 	
 	private static int type2color(Node node) {
 		if(node.isURI()) return NodeInfo.URI;
@@ -34,7 +35,7 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 	}
 	
 	@Override
-	public Grph convert(Model model) {
+	public GrphModel convert(Model model) {
 		
 		final Grph g = new InMemoryGrph();
 		final NumericalProperty vertexType = g.getVertexColorProperty();
@@ -44,19 +45,25 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 		
 		final Map<Node, Integer> vertexMap = new HashMap<>();
 		final Map<Node, Integer> edgeMap = new HashMap<>();
-		
-		int s_i, o_i, p_i = getVertexCount(model);
+
+		// The spaces of identifiers do not have to be contiguous, though the data
+		// structure exhibit de best memory performance when these spaces are dense.
+
+		// For this reason we give consecutive id's to the edges, starting after all
+		// identifiers that will be necessary for the vertices
+		final int vertexCount = getVertexCount(model);
+		int s_i, o_i, p_i = vertexCount;
 		Node s, p, o;
 		Triple t;
-		
-		ExtendedIterator<Triple> triples = model.getGraph().find();
-		
+
+		final ExtendedIterator<Triple> triples = model.getGraph().find();
+
 		while(triples.hasNext()) {
 			t = triples.next();
 			s = t.getSubject();
 			p = t.getPredicate();
 			o = t.getObject();
-			
+
 			// Skip if we don't want literals
 			if(!literals && o.isLiteral()) continue;
 
@@ -80,13 +87,80 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 			edgeType.setValue(p_i, edgeMap.get(p));
 			p_i++;
 		}
-		return g;
+
+		// Pre-compute the edge neighborhoods, using the same order as the node neighborhoods
+		System.out.println("Pre-computing edge in-neighborhoods");
+		int[][] inEdgeNeighborhood = getInEdgeNeighborhood(g);
+		System.out.println("Pre-computing edge out-neighborhoods");
+		int[][] outEdgeNeighborhood = getOutEdgeNeighborhood(g);
+
+		return new GrphModel(g, inEdgeNeighborhood, outEdgeNeighborhood);
+	}
+
+	private int[][] getInEdgeNeighborhood(Grph g) {
+		int[][] inNeighborhood = g.getInNeighborhoods();
+		int[][] edgeNeighborhood = new int[inNeighborhood.length][];
+
+
+		for(int focusNode = 0; focusNode < inNeighborhood.length; focusNode++) {
+
+			int[] inEdges = g.getInOnlyEdges(focusNode).toIntArray();
+
+			edgeNeighborhood[focusNode] = new int[inNeighborhood[focusNode].length];
+			for(int j = 0; j < inNeighborhood[focusNode].length; j++) {
+
+				int neighbor = inNeighborhood[focusNode][j];
+				int[] outEdges = g.getOutOnlyEdges(neighbor).toIntArray();
+
+				edgeNeighborhood[focusNode][j] = getEdge(g, neighbor, focusNode, outEdges, inEdges);
+				assert  edgeNeighborhood[focusNode][j] != -1;
+			}
+		}
+
+		return  edgeNeighborhood;
+	}
+
+	private int[][] getOutEdgeNeighborhood(Grph g) {
+
+		int[][] outNeighborhood = g.getOutNeighborhoods();
+		int[][] edgeNeighborhood = new int[outNeighborhood.length][];
+
+		for(int focusNode = 0; focusNode < outNeighborhood.length; focusNode++) {
+
+			int[] outEdges = g.getOutOnlyEdges(focusNode).toIntArray();
+
+			edgeNeighborhood[focusNode] = new int[outNeighborhood[focusNode].length];
+			for(int j = 0; j < outNeighborhood[focusNode].length; j++) {
+
+				int neighbor = outNeighborhood[focusNode][j];
+				int[] inEdges = g.getInOnlyEdges(neighbor).toIntArray();
+
+				edgeNeighborhood[focusNode][j] = getEdge(g, focusNode, neighbor, outEdges, inEdges);
+				assert  edgeNeighborhood[focusNode][j] != -1;
+			}
+		}
+
+		return  edgeNeighborhood;
+	}
+	private int getEdge(Grph graph, int src, int dest, int[] out, int[] in) {
+		if (out.length == 0 || in.length == 0) {
+			return -1;
+		} else {
+			if (out.length < in.length) {
+				for(int e : out)
+					if (graph.getDirectedSimpleEdgeHead(e) == dest) return e;
+			} else {
+				for(int e : in)
+					if (graph.getDirectedSimpleEdgeTail(e) == src) return e;
+			}
+			return -1;
+		}
 	}
 
 	private int addVertex(Grph g, Node n, Map<Node, Integer> vertexMap, NumericalProperty vertexType, Property vertexLabel) {
-		int i = vertexMap.size();
+		final int i = vertexMap.size();
 		g.addVertex(i);
-		vertexType.setValue(i, type2color(n);
+		vertexType.setValue(i, type2color(n));
 		vertexLabel.setValue(i, n.toString());
 		vertexMap.put(n, i);
 
@@ -94,24 +168,27 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 	}
 
 	private int getVertexCount(Model model) {
-		String sparql = "SELECT (COUNT(DISTINCT ?vertex) AS ?vertexCount) " + 
-				"WHERE" + 
-				"{" + 
-					"{" + 
-						"?vertex ?p [] " + 
-					"}" + 
-					"UNION" + 
-					"{ " + 
-						"[] ?p ?vertex " + 
-						"FILTER(!IsLiteral(?vertex))" + 
-					"}" + 
-				"}";
-
-		Query qry = QueryFactory.create(sparql);
+		// Taken from https://stackoverflow.com/a/24189589/10610389
+		final Query qry = QueryFactory.create(
+				"SELECT (COUNT(DISTINCT ?vertex) AS ?vertexCount) " +
+				"WHERE" +
+				"{" +
+					"{" +
+						"?vertex ?p [] " +
+					"}" +
+					"UNION" +
+					"{ " +
+						// The [] is an anonymous variable because you don't care about the some of the positions on either side of the UNION
+						"[] ?p ?vertex " +
+						// Filter out literals as they have to be on the right hand side
+						"FILTER(!IsLiteral(?vertex))" +
+					"}" +
+				"}"
+		);
 		try(QueryExecution qe = QueryExecutionFactory.create(qry, model)) {
-			ResultSet rs = qe.execSelect();
+			final ResultSet rs = qe.execSelect();
 
-			while (rs.hasNext()) {
+			if (rs.hasNext()) {
 				return rs.nextSolution().getLiteral("vertexCount").getInt();
 			}
 		}

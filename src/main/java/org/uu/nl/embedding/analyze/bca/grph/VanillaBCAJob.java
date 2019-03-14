@@ -12,15 +12,17 @@ import java.util.Queue;
 public class VanillaBCAJob extends BCAJob {
 
 	private final Map<Integer, BCV> computedBCV;
-	private final int[][] out, in;
+	private final int[][] out, in, edgeOut, edgeIn;
 	
 	public VanillaBCAJob(Grph graph, Map<Integer, BCV> computedBCV, 
 			int bookmark, boolean reverse, boolean normalize, double alpha, double epsilon,
-			int[][] in, int[][] out) {
+			int[][] in, int[][] out, int[][] edgeIn, int[][] edgeOut) {
 		super(bookmark, reverse, normalize, alpha, epsilon, graph);
 		this.computedBCV = computedBCV;
 		this.out = out;
 		this.in = in;
+		this.edgeIn = edgeIn;
+		this.edgeOut = edgeOut;
 	}
 
 	public String nodeLabel(int n) {
@@ -70,17 +72,23 @@ public class VanillaBCAJob extends BCAJob {
 
 				neighborCount = neighbors.length;
 				
-				if(reverse) edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
-				else edgeCache = graph.getOutOnlyEdges(focusNode).toIntArray();
-				
+				//if(reverse) edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
+				//else edgeCache = graph.getOutOnlyEdges(focusNode).toIntArray();
+
+				partialWetPaint = (1 - alpha) * wetPaint * (1 / (double) neighborCount);
+
+				if(partialWetPaint < epsilon) continue;
+
 				for (int i = 0; i < neighbors.length; i++) {
 					
 					neighbor = neighbors[i];
-					weight = 1 / (double) neighborCount;
-					partialWetPaint = (1 - alpha) * wetPaint * weight;
-					
-					if(reverse) predicate = getEdge(neighbor, focusNode, graph.getOutOnlyEdges(neighbor).toIntArray(), edgeCache);
-					else predicate = getEdge(focusNode, neighbor, edgeCache, graph.getInOnlyEdges(neighbor).toIntArray());
+					//weight = 1 / (double) neighborCount;
+					//partialWetPaint = (1 - alpha) * wetPaint * weight;
+
+					if(reverse) predicate = edgeIn[focusNode][i];
+					else predicate = edgeOut[focusNode][i];
+					//if(reverse) predicate = getEdge(neighbor, focusNode, graph.getOutOnlyEdges(neighbor).toIntArray(), edgeCache);
+					//else predicate = getEdge(focusNode, neighbor, edgeCache, graph.getInOnlyEdges(neighbor).toIntArray());
 
 					bcv.add(getEdgeType(predicate), partialWetPaint);
 					
@@ -95,16 +103,16 @@ public class VanillaBCAJob extends BCAJob {
 		}
 		return bcv;
 	}
-	
+
 	private int getEdge(int src, int dest, int[] out, int[] in) {
 		if (out.length == 0 || in.length == 0) {
 			return -1;
 		} else {
 			if (out.length < in.length) {
-				for(int e : out) 
+				for(int e : out)
 					if (graph.getDirectedSimpleEdgeHead(e) == dest) return e;
 			} else {
-				for(int e : in) 
+				for(int e : in)
 					if (graph.getDirectedSimpleEdgeTail(e) == src) return e;
 			}
 			return -1;

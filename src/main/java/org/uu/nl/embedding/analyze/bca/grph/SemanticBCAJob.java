@@ -15,15 +15,17 @@ public class SemanticBCAJob extends BCAJob {
 	private boolean debug = false;
 	private static final int NO_VALUE = -1;
 	private final Map<Integer, BCV> computedBCV;
-	private final int[][] in, out;
+	private final int[][] in, out, edgeOut, edgeIn;
 	public SemanticBCAJob(
 			Grph graph, Map<Integer, BCV> computedBCV, int bookmark, 
 			boolean reverse, boolean normalize, double alpha, double epsilon,
-			int[][] in, int[][] out) {
+			int[][] in, int[][] out, int[][] edgeIn, int[][] edgeOut) {
 		super(bookmark, reverse, normalize, alpha, epsilon, graph);
 		this.computedBCV = computedBCV;
 		this.in = in;
 		this.out = out;
+		this.edgeIn = edgeIn;
+		this.edgeOut = edgeOut;
 	}
 	
 	public boolean isLiteral(int n) {
@@ -117,16 +119,17 @@ public class SemanticBCAJob extends BCAJob {
 				// We do something different in case of a literal node
 				if(isLiteral(focusNode)) {
 					neighbors = in[focusNode];
-					edges = new int[neighbors.length];
+					edges = edgeIn[focusNode];
+					//edges = new int[neighbors.length];
 					predicate = getEdgeType(node.predicatID);
 					// Cache edges and reuse in loop
-					edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
+					//edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
 					
 					// Check which edges we need to follow and which to ignore
 					for(int i = 0; i < neighbors.length; i++) {
-						edges[i] = getSomeEdgeConnecting(
-								neighbors[i], focusNode, 
-								graph.getOutEdges(neighbors[i]).toIntArray(), edgeCache);
+						//edges[i] = getSomeEdgeConnecting(
+						//		neighbors[i], focusNode,
+						//		graph.getOutEdges(neighbors[i]).toIntArray(), edgeCache);
 						if(getEdgeType(edges[i]) != predicate) {
 							edges[i] = NO_VALUE;
 							ignoredEdgeCount++;
@@ -135,20 +138,22 @@ public class SemanticBCAJob extends BCAJob {
 				} else {
 					neighbors = out[focusNode];
 					// Cache edges and reuse in loop
-					edgeCache = graph.getOutOnlyEdges(focusNode).toIntArray();
-					edges = new int[neighbors.length];
-					for(int i = 0; i < neighbors.length; i++) {
-						edges[i] = getSomeEdgeConnecting(
-								focusNode, neighbors[i], 
-								edgeCache, graph.getInEdges(neighbors[i]).toIntArray());
-					}
+					//edgeCache = graph.getOutOnlyEdges(focusNode).toIntArray();
+					edges = edgeOut[focusNode];
+
+					//edges = new int[neighbors.length];
+					//for(int i = 0; i < neighbors.length; i++) {
+					//	edges[i] = getSomeEdgeConnecting(
+					//			focusNode, neighbors[i],
+					//			edgeCache, graph.getInEdges(neighbors[i]).toIntArray());
+					//}
 				}
 
 				neighborCount = neighbors.length - ignoredEdgeCount;
 
 				//if(ignoredNeighbor != NO_VALUE && (isLiteral(ignoredNeighbor) || isLiteral(focusNode))) neighborCount--;
 
-				if(neighborCount > 250) continue;
+				//if(neighborCount > 250) continue;
 
 				if(debug)
 				System.out.println(
@@ -157,6 +162,9 @@ public class SemanticBCAJob extends BCAJob {
 						" Queue size:" + nodeQueue.size() +
 						" neighbor count:" + neighborCount +
 						" wet paint:" + wetPaint);
+
+				partialWetPaint = (1 - alpha) * wetPaint * (1 / (double) neighborCount);
+				if(partialWetPaint < epsilon) continue;
 
 				for (int i = 0; i < neighbors.length; i++) {
 					
@@ -167,8 +175,8 @@ public class SemanticBCAJob extends BCAJob {
 
 					assert neighborCount > 0;
 
-					weight = 1 / (double) neighborCount;
-					partialWetPaint = (1 - alpha) * wetPaint * weight;
+					//weight = 1 / (double) neighborCount;
+					//partialWetPaint = (1 - alpha) * wetPaint * weight;
 
 					//if(Double.isInfinite(partialWetPaint)) continue;
 

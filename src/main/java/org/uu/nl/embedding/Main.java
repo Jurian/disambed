@@ -7,6 +7,7 @@ import org.uu.nl.embedding.analyze.bca.util.BCAOptions;
 import org.uu.nl.embedding.analyze.glove.GloveModel;
 import org.uu.nl.embedding.analyze.glove.opt.*;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
+import org.uu.nl.embedding.convert.util.GrphModel;
 import org.uu.nl.embedding.progress.CommandLineProgress;
 import org.uu.nl.embedding.util.load.JenaLoader;
 import org.uu.nl.embedding.util.save.GloveTextWriter;
@@ -139,7 +140,7 @@ public class Main {
 
             JenaLoader loader = new JenaLoader();
             Rdf2GrphConverter converter = new Rdf2GrphConverter();
-            Grph graph = converter.convert(loader.load(bca_file));
+            GrphModel graph = converter.convert(loader.load(bca_file));
 
             BCAOptions bcaOptions = new BCAOptions(bca_alg, bca_reverse, true, true, bca_alpha, bca_epsilon, bca_threads);
 

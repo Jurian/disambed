@@ -6,6 +6,7 @@ import org.uu.nl.embedding.analyze.bca.grph.util.GraphStatistics;
 import org.uu.nl.embedding.analyze.bca.util.BCAOptions;
 import org.uu.nl.embedding.analyze.bca.util.BCV;
 import org.uu.nl.embedding.analyze.bca.util.OrderedIntegerPair;
+import org.uu.nl.embedding.convert.util.GrphModel;
 import org.uu.nl.embedding.progress.Progress;
 import org.uu.nl.embedding.progress.ProgressType;
 import org.uu.nl.embedding.progress.Publisher;
@@ -28,7 +29,9 @@ public class BookmarkColoring implements CooccurenceMatrix {
 	private final int cooccurenceCount;
 	private final boolean normalize, includeReverse;
 
-	public BookmarkColoring(Grph graph, BCAOptions options, Publisher publisher) {
+	public BookmarkColoring(GrphModel graphModel, BCAOptions options, Publisher publisher) {
+
+		final Grph graph = graphModel.getG();
 
 		this.normalize = options.isNormalize();
 		this.includeReverse = options.isReverse();
@@ -46,6 +49,8 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		
 		final int[][] in = graph.getInNeighborhoods();
 		final int[][] out = graph.getOutNeighborhoods();
+		final int[][] edgeIn = graphModel.getInEdgeNeighborhood();
+		final int[][] edgeOut = graphModel.getOutEdgeNeighborhood();
 
 		try {
 
@@ -58,13 +63,13 @@ public class BookmarkColoring implements CooccurenceMatrix {
 					completionService.submit(new VanillaBCAJob(
 							graph, computedBCV, bookmark,
 							includeReverse, normalize, alpha, epsilon, 
-							in, out));
+							in, out, edgeIn, edgeOut));
 					break;
 				case SEMANTIC:
 					completionService.submit(new SemanticBCAJob(
 							graph, computedBCV, bookmark,
 							includeReverse, normalize, alpha, epsilon, 
-							in, out));
+							in, out, edgeIn, edgeOut));
 					break;
 				}
 
