@@ -86,7 +86,7 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 	private int addVertex(Grph g, Node n, Map<Node, Integer> vertexMap, NumericalProperty vertexType, Property vertexLabel) {
 		int i = vertexMap.size();
 		g.addVertex(i);
-		vertexType.setValue(i, type2color(n);
+		vertexType.setValue(i, type2color(n));
 		vertexLabel.setValue(i, n.toString());
 		vertexMap.put(n, i);
 
