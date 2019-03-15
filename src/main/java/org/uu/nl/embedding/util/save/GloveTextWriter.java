@@ -1,7 +1,8 @@
 package org.uu.nl.embedding.util.save;
 
 import org.uu.nl.embedding.analyze.glove.GloveModel;
-import org.uu.nl.embedding.progress.Progress;
+import org.uu.nl.embedding.progress.DoNothingPublisher;
+import org.uu.nl.embedding.progress.ProgressState;
 import org.uu.nl.embedding.progress.Publisher;
 
 import java.io.BufferedWriter;
@@ -17,13 +18,14 @@ import java.nio.file.Path;
  * @author Jurian Baas
  */
 public class GloveTextWriter implements GloveWriter {
-	
+
 	private final String VECTORS_FILE;
 	private final String DICT_FILE;
+	private final String FILETYPE = ".tsv";
 
 	public GloveTextWriter(String fileName) {
-		this.VECTORS_FILE = fileName + "." + "vectors.txt";
-		this.DICT_FILE = fileName + "." + "dict.txt";
+		this.VECTORS_FILE = fileName + "." + "vectors" + FILETYPE;
+		this.DICT_FILE = fileName + "." + "dict" + FILETYPE;
 	}
 	
 	@Override
@@ -36,35 +38,43 @@ public class GloveTextWriter implements GloveWriter {
 		final String[] out = new String[dimension];
 		final double[] result = model.getOptimum().getResult();
 
-		if(publisher!= null) {
-			publisher.setNewMax(vocabSize);
-		}
+		// Create a tab-separated file
+		final String delimiter = "\t";
+		final String newLine = "\n";
 
-		Progress progress = new Progress();
+		if(publisher == null) {
+			publisher = new DoNothingPublisher();
+		}
+		publisher.setNewMax(vocabSize);
+
+		ProgressState progress = new ProgressState();
 
 		try(Writer dict = new BufferedWriter(new FileWriter(outputFolder.resolve(DICT_FILE).toFile()))) {
 			try(Writer vect = new BufferedWriter(new FileWriter(outputFolder.resolve(VECTORS_FILE).toFile()))) {
 
 				for(int i = 0; i < vocabSize; i++) {
+
 					for(int d = 0; d < out.length; d++) 
 						out[d] = String.format("%11.6E", result[d + i*dimension]);
 					
-					vect.write(String.join(",", out) + "\n");
+					vect.write(String.join(delimiter, out) + newLine);
 					dict.write(model.getCoMatrix().getKey(i)
+							// Remove newlines and tabs
 							.replace("\n", "")
 							.replace("\r", "")
-							.replace('|', '_') + "|" + model.getCoMatrix().getType(i) + "\n");
+							.replace(delimiter, "")
+							+ delimiter
+							+ model.getCoMatrix().getType(i)
+							+ newLine
+					);
 
-					if(publisher!= null) {
-						progress.setN(i);
-						publisher.updateProgress(progress);
-					}
-				}
-
-				if(publisher != null) {
-					progress.setFinished(true);
+					progress.setN(i);
 					publisher.updateProgress(progress);
 				}
+
+				progress.setFinished(true);
+				progress.setN(vocabSize);
+				publisher.updateProgress(progress);
 			}
 		}
 	}
