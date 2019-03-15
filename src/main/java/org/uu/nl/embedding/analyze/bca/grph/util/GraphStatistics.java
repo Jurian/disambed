@@ -17,7 +17,7 @@ public class GraphStatistics {
 	
 	/**
 	 * A mapping between nodes and a unique index, used in the bookmark 
-	 * coloring algorithm to do lookups in constant time.
+	 * coloring algorithm to do look-ups in constant time.
 	 */
 	public final int[] keys;
 	/**
@@ -38,7 +38,7 @@ public class GraphStatistics {
 	private int uriNodeCount;
 	private int blankNodeCount;
 	private int literalNodeCount;
-	private int totalNodeCount;
+	private final int totalNodeCount;
 	
 	public GraphStatistics(Grph graph) {
 		
