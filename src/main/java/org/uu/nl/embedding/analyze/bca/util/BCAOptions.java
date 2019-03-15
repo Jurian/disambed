@@ -3,18 +3,17 @@ package org.uu.nl.embedding.analyze.bca.util;
 public class BCAOptions {
 	
 	public enum BCAType {
-		VANILLA, SEMANTIC;
+		VANILLA, SEMANTIC
 	}
 	
-	protected final BCAType type;
-	protected final boolean reverse, normalize, literals;
-	protected final double alpha, epsilon;
-	protected final int nThreads;
+	private final BCAType type;
+	private final boolean reverse;
+	private final double alpha;
+	private final double epsilon;
+	private final int nThreads;
 	
-	public BCAOptions(BCAType type, boolean reverse, boolean normalize, boolean literals, double alpha, double epsilon, int nThreads) {
+	public BCAOptions(BCAType type, boolean reverse, double alpha, double epsilon, int nThreads) {
 		this.reverse = reverse;
-		this.normalize = normalize;
-		this.literals = literals;
 		this.alpha = alpha;
 		this.epsilon = epsilon;
 		this.nThreads = nThreads;
@@ -27,14 +26,6 @@ public class BCAOptions {
 
 	public boolean isReverse() {
 		return reverse;
-	}
-
-	public boolean isNormalize() {
-		return normalize;
-	}
-
-	public boolean isLiterals() {
-		return literals;
 	}
 
 	public double getAlpha() {
