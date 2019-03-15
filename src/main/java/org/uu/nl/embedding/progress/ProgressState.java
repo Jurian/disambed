@@ -1,6 +1,6 @@
 package org.uu.nl.embedding.progress;
 
-public class Progress {
+public class ProgressState {
 
 	private int index;
 	private String type;
@@ -9,13 +9,13 @@ public class Progress {
 
 	private boolean finished;
 
-	public Progress() {}
+	public ProgressState() {}
 
-	public Progress(ProgressType type) {
+	public ProgressState(ProgressType type) {
 		this(type, false);
 	}
 	
-	public Progress(ProgressType type, boolean finished) {
+	public ProgressState(ProgressType type, boolean finished) {
 		this.index = type.toIndex();
 		this.type = type.name();
 		this.finished = finished;
