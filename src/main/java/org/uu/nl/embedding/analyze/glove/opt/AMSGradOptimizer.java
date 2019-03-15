@@ -39,6 +39,7 @@ import org.uu.nl.embedding.progress.Publisher;
  *      page</a>
  * @author Jurian Baas
  */
+@SuppressWarnings("Duplicates")
 public class AMSGradOptimizer extends GloveOptimizer {
 
 	/**
@@ -107,14 +108,10 @@ public class AMSGradOptimizer extends GloveOptimizer {
 					innerCost = 0;
 					for (d = 0; d < dimension; d++)
 						innerCost += W[d + l1] * W[d + l2]; // dot product of word and context word vector
-					innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(crVal); // add separate bias for
-																								// each word
-					weightedCost = (crVal > xMax) ? innerCost : FastMath.pow(crVal / xMax, alpha) * innerCost; // multiply
-																												// weighting
-																												// function
-																												// (f)
-																												// with
-																												// diff
+					// Add separate bias for
+					innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(crVal);
+					// multiply weighting function (f) with diff
+					weightedCost = (crVal > xMax) ? innerCost : FastMath.pow(crVal / xMax, alpha) * innerCost;
 
 					// Check for NaN and inf() in the diffs.
 					if (Double.isNaN(innerCost) || Double.isNaN(weightedCost) || Double.isInfinite(innerCost)
