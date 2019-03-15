@@ -10,7 +10,7 @@ public class Optimum {
 	
 	private final List<Double> costOverTime = new ArrayList<>();
 	private double[] result;
-	public final int dimension;
+	private final int dimension;
 	
 	public Optimum(int dimension) {
 		this.dimension = dimension;
