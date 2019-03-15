@@ -22,13 +22,8 @@ public class CommandLineProgress implements Publisher, AutoCloseable {
     }
 
     @Override
-    public void updateProgress(Progress progress) {
-        if(progress.isFinished()) {
-            pb.stepTo(pb.getMax());
-        }
-        else
-            pb.stepTo(progress.getN());
-
+    public void updateProgress(ProgressState progressState) {
+        pb.stepTo(progressState.getN());
     }
 
     @Override
