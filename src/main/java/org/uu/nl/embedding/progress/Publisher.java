@@ -4,6 +4,6 @@ public interface Publisher  {
 
 	void setExtraMessage(String msg);
 	void setNewMax(long max);
-	void updateProgress(Progress progress);
+	void updateProgress(ProgressState progressState);
 
 }
