@@ -2,23 +2,23 @@
 <metadata modelVersion="1.1.0">
   <groupId>org.uu.nl</groupId>
   <artifactId>graph-embeddings</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.2-SNAPSHOT</version>
   <versioning>
     <snapshot>
-      <timestamp>20190315.192436</timestamp>
+      <timestamp>20190318.145235</timestamp>
       <buildNumber>1</buildNumber>
     </snapshot>
-    <lastUpdated>20190315192436</lastUpdated>
+    <lastUpdated>20190318145235</lastUpdated>
     <snapshotVersions>
       <snapshotVersion>
         <extension>jar</extension>
-        <value>0.0.1-20190315.192436-1</value>
-        <updated>20190315192436</updated>
+        <value>0.0.2-20190318.145235-1</value>
+        <updated>20190318145235</updated>
       </snapshotVersion>
       <snapshotVersion>
         <extension>pom</extension>
-        <value>0.0.1-20190315.192436-1</value>
-        <updated>20190315192436</updated>
+        <value>0.0.2-20190318.145235-1</value>
+        <updated>20190318145235</updated>
       </snapshotVersion>
     </snapshotVersions>
   </versioning>
