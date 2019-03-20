@@ -24,6 +24,7 @@ import org.uu.nl.embedding.progress.Publisher;
  * @see <a href="https://github.com/stanfordnlp/GloVe/blob/master/src/glove.c">Original C version by Jeffrey Pennington</a>
  * @author Jurian Baas
  */
+@SuppressWarnings("Duplicates")
 public class AdagradOptimizer extends GloveOptimizer {
 
 	/**
@@ -90,9 +91,9 @@ public class AdagradOptimizer extends GloveOptimizer {
 					/* Adaptive gradient updates */
 					//weightedCost *= learningRate; // for ease in calculating gradient
 					
-					/****************************
+					/*---------------------------
 					 * Compute for word vectors *
-					 ***************************/
+					 ---------------------------*/
 					
 					for (d = 0; d < dimension; d++) {
 						// Compute gradients
@@ -106,9 +107,9 @@ public class AdagradOptimizer extends GloveOptimizer {
 						gradsq[d + l2] += grad2 * grad2;
 					}
 					
-					/**********************
+					/*---------------------
 					 * Compute for biases *
-					 **********************/
+					 ---------------------*/
 					
 					// Compute updates (gradient of bias is the weighted cost)
 					W[dimension + l1] -= weightedCost / FastMath.sqrt(gradsq[dimension + l1]);

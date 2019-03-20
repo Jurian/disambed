@@ -13,8 +13,12 @@ public class BCV extends HashMap<Integer, Double> {
 
 	private static final long serialVersionUID = 1L;
 	
-	public final int rootNode;
-	
+	private final int rootNode;
+
+	public int getRootNode() {
+		return this.rootNode;
+	}
+
 	public BCV(int rootNode) {
 		this.rootNode = rootNode;
 	}
@@ -51,7 +55,7 @@ public class BCV extends HashMap<Integer, Double> {
 	/**
 	 * @return The total sum of all values in this BCV
 	 */
-	public double sum() {
+    private double sum() {
 		return values().stream().mapToDouble(d->d).sum();
 	}
 	

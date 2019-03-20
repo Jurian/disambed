@@ -2,6 +2,7 @@ package org.uu.nl.embedding;
 
 import grph.Grph;
 import org.apache.commons.cli.*;
+import org.apache.log4j.Logger;
 import org.uu.nl.embedding.analyze.bca.grph.BookmarkColoring;
 import org.uu.nl.embedding.analyze.bca.util.BCAOptions;
 import org.uu.nl.embedding.analyze.glove.GloveModel;
@@ -14,101 +15,30 @@ import org.uu.nl.embedding.util.save.GloveTextWriter;
 import org.uu.nl.embedding.util.save.GloveWriter;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Properties;
 
 public class Main {
 
-    // BCA BCAOptions
-    private static Option option_bca_file = Option.builder("bca_f")
-            .required(true)
-            .desc("The rdf file")
-            .longOpt("bca_file")
-            .hasArg()
-            .build();
-    private static Option option_bca_alpha = Option.builder("bca_a")
-            .required(true)
-            .desc("BCA alpha")
-            .longOpt("bca_alpha")
-            .hasArg()
-            .build();
-    private static Option option_bca_epsilon = Option.builder("bca_e")
-            .required(true)
-            .desc("BCA epsilon")
-            .longOpt("bca_epsilon")
-            .hasArg()
-            .build();
-    private static Option option_bca_threads = Option.builder("bca_t")
-            .required(true)
-            .desc("Number of threads to use with BCA")
-            .longOpt("bca_threads")
-            .hasArg()
-            .build();
-    private static Option option_bca_reverse = Option.builder("bca_r")
-            .desc("Also run BCA in reverse mode")
-            .longOpt("bca_r")
-            .build();
-    private static Option option_bca_algorithm = Option.builder("bca_alg")
-            .required(true)
-            .desc("BCA algorithm, choose VANILLA or SEMANTIC")
-            .longOpt("bca_algorithm")
-            .hasArg()
-            .build();
+    final static Logger logger = Logger.getLogger(Main.class);
 
-    // GloVe BCAOptions
-    private static Option option_glove_alg = Option.builder( "glv_a")
+    private static Option option_config = Option.builder( "c")
             .required(true)
-            .desc("Gradient descent algorithm")
-            .longOpt("glv_algorithm")
+            .desc("Location of configuration file")
+            .longOpt("config")
             .hasArg()
             .build();
-
-    private static Option option_glove_dim = Option.builder( "glv_d")
-            .required(true)
-            .desc("The number of dimensions of the final embedding.")
-            .longOpt("glv_dimensions")
-            .hasArg()
-            .build();
-
-    private static Option option_glove_tol = Option.builder( "glv_tol")
-            .required(true)
-            .desc("Minimum change between iterations in GloVe. When reached convergence is assumed.")
-            .longOpt("glv_tolerance")
-            .hasArg()
-            .build();
-
-    private static Option option_glove_maxiter = Option.builder( "glv_m")
-            .required(true)
-            .desc("Maximum number of iterations to use in GloVe.")
-            .longOpt("glv_max_iter")
-            .hasArg()
-            .build();
-
-    private static Option option_glove_threads = Option.builder( "glv_t")
-            .required(true)
-            .desc("Number of threads to use with GloVe")
-            .longOpt("glv_threads")
-            .hasArg()
-            .build();
-
 
     private static Options options = new Options();
     private static CommandLineParser parser = new DefaultParser();
     private static HelpFormatter formatter = new HelpFormatter();
 
     static {
-        options.addOption(option_bca_file);
-        options.addOption(option_bca_alpha);
-        options.addOption(option_bca_epsilon);
-        options.addOption(option_bca_threads);
-        options.addOption(option_bca_reverse);
-        options.addOption(option_bca_algorithm);
-        options.addOption(option_glove_alg);
-        options.addOption(option_glove_dim);
-        options.addOption(option_glove_tol);
-        options.addOption(option_glove_maxiter);
-        options.addOption(option_glove_threads);
+        options.addOption(option_config);
     }
 
     public static void main(String[] args) {
@@ -117,19 +47,16 @@ public class Main {
 
             CommandLine cmd = parser.parse(options, args);
 
-            String bca_file_str = cmd.getOptionValue("bca_f");
-            double bca_alpha = Double.parseDouble(cmd.getOptionValue("bca_a"));
-            double bca_epsilon = Double.parseDouble(cmd.getOptionValue("bca_e"));
-            int bca_threads = Integer.parseInt(cmd.getOptionValue("bca_t"));
-            BCAOptions.BCAType bca_alg = BCAOptions.BCAType.valueOf(cmd.getOptionValue("bca_alg").toUpperCase());
-            boolean bca_reverse = cmd.hasOption("bca_r");
+            String config = cmd.getOptionValue("c");
+            Properties prop = new Properties();
 
-            String glove_alg = cmd.getOptionValue("glv_a").toLowerCase();
-            int glove_dim = Integer.parseInt(cmd.getOptionValue("glv_d"));
-            double glove_tol = Double.parseDouble(cmd.getOptionValue("glv_tol"));
-            int glove_max_iter = Integer.parseInt(cmd.getOptionValue("glv_m"));
-            int glove_threads = Integer.parseInt(cmd.getOptionValue("glv_t"));
+            try(InputStream is = new FileInputStream(config)) {
+                prop.load(is);
+            } catch (IOException e) {
+                throw new FileNotFoundException("Cannot find config file " + config);
+            }
 
+            String bca_file_str = prop.getProperty("bca_filename");
             Path currentRelativePath = Paths.get("").toAbsolutePath();
             Path bca_file_path = currentRelativePath.resolve(bca_file_str);
             File bca_file = bca_file_path.toFile();
@@ -138,11 +65,44 @@ public class Main {
                 throw new FileNotFoundException("Cannot find file " + bca_file_str);
             }
 
+            double bca_alpha = Double.parseDouble(prop.getProperty("bca_alpha", "1e-2"));
+            double bca_epsilon = Double.parseDouble(prop.getProperty("bca_epsilon", "1e-4"));
+            int bca_threads = Integer.parseInt(prop.getProperty("bca_threads", "1"));
+
+            BCAOptions.BCAType bca_alg;
+            String bca_alg_str = prop.getProperty("bca_algorithm", "vanilla").toLowerCase();
+            try{
+                bca_alg = BCAOptions.BCAType.valueOf(bca_alg_str.toUpperCase());
+            } catch(IllegalArgumentException e) {
+                throw new UnsupportedAlgorithmException("Unsupported optimization algorithm. Use one of: vanilla, semantic");
+            }
+
+            boolean bca_reverse = Boolean.parseBoolean(prop.getProperty("bca_reverse", "true"));
+
+            String glove_alg = prop.getProperty("glove_algorithm", "adam").toLowerCase();
+            int glove_dim = Integer.parseInt(prop.getProperty("glove_dimensions", "50"));
+            double glove_tol = Double.parseDouble(prop.getProperty("glove_tolerance", "1e-5"));
+            int glove_max_iter = Integer.parseInt(prop.getProperty("glove_max-iter", "1000"));
+            int glove_threads = Integer.parseInt(prop.getProperty("glove_threads", "1"));
+
+            logger.info("Starting the embedding creation process with following settings:");
+            logger.info("BCA File: " + bca_file_str);
+            logger.info("BCA Alpha: " + bca_alpha);
+            logger.info("BCA Epsilon: " + bca_epsilon);
+            logger.info("BCA Threads: " + bca_threads);
+            logger.info("BCA Algorithm: " + bca_alg_str);
+            logger.info("BCA Reverse: " + bca_reverse);
+            logger.info("GloVe Algorithm: " + glove_alg);
+            logger.info("GloVe Dimensions: " + glove_dim);
+            logger.info("GloVe Tolerance: " + glove_tol);
+            logger.info("GloVe Maximum Iterations: " + glove_max_iter);
+            logger.info("GloVe Threads: " + glove_threads);
+
             JenaLoader loader = new JenaLoader();
             Rdf2GrphConverter converter = new Rdf2GrphConverter();
-            GrphModel graph = converter.convert(loader.load(bca_file));
+            Grph graph = converter.convert(loader.load(bca_file));
 
-            BCAOptions bcaOptions = new BCAOptions(bca_alg, bca_reverse, true, true, bca_alpha, bca_epsilon, bca_threads);
+            BCAOptions bcaOptions = new BCAOptions(bca_alg, bca_reverse, bca_alpha, bca_epsilon, bca_threads);
 
             BookmarkColoring bca;
             try(CommandLineProgress bcaProgress = new CommandLineProgress("BCA")) {
@@ -171,6 +131,7 @@ public class Main {
                 }
                 model.setOptimum(optimizer.optimize());
             }
+            logger.info("GloVe converged with final average cost " + model.getOptimum().getFinalCost());
 
             try(CommandLineProgress writeProgress = new CommandLineProgress("Writing to file")) {
 
@@ -183,17 +144,12 @@ public class Main {
                     bca_fileName += ".reverse";
                 }
                 GloveWriter writer = new GloveTextWriter(bca_fileName+"."+bca_alg.name().toLowerCase()+"."+glove_alg.toLowerCase()+"."+glove_dim);
-                writer.write(model, currentRelativePath, writeProgress);
+                writer.write(model, currentRelativePath.resolve("out"), writeProgress);
             }
 
-        } catch (ParseException | NumberFormatException | UnsupportedAlgorithmException exception) {
-            System.err.print("Parse error: ");
-            System.err.println(exception.getMessage());
+        } catch (ParseException | NumberFormatException | UnsupportedAlgorithmException | IOException | FileNotFoundException  exception) {
+            logger.error(exception.getMessage());
             formatter.printHelp("Graph Embeddings", options);
-            System.exit(1);
-        } catch (IOException | FileNotFoundException exception) {
-            System.err.print("IO error: ");
-            System.err.println(exception.getMessage());
             System.exit(1);
         }
     }

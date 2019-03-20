@@ -6,8 +6,8 @@ package org.uu.nl.embedding.analyze.bca.util;
  */
 public class OrderedIntegerPair {
     
-    private int index1;
-    private int index2;
+    private final int index1;
+    private final int index2;
     private boolean diagonal;
 
     public OrderedIntegerPair(int index1, int index2) {
@@ -51,7 +51,7 @@ public class OrderedIntegerPair {
 	}
 
 
-	public void setDiagonal(boolean diagonal) {
+	private void setDiagonal(boolean diagonal) {
 		this.diagonal = diagonal;
 	}
  

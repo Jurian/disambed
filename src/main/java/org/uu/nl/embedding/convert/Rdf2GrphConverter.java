@@ -9,13 +9,12 @@ import org.apache.jena.graph.Triple;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.util.iterator.ExtendedIterator;
-import org.uu.nl.embedding.convert.util.GrphModel;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class Rdf2GrphConverter implements Converter<GrphModel, Model> {
+public class Rdf2GrphConverter implements Converter<Grph, Model> {
 	
 	private static int type2color(Node node) {
 		if(node.isURI()) return NodeInfo.URI;
@@ -35,7 +34,7 @@ public class Rdf2GrphConverter implements Converter<GrphModel, Model> {
 	}
 	
 	@Override
-	public GrphModel convert(Model model) {
+	public Grph convert(Model model) {
 		
 		final Grph g = new InMemoryGrph();
 		final NumericalProperty vertexType = g.getVertexColorProperty();
@@ -89,14 +88,14 @@ public class Rdf2GrphConverter implements Converter<GrphModel, Model> {
 		}
 
 		// Pre-compute the edge neighborhoods, using the same order as the node neighborhoods
-		System.out.println("Pre-computing edge in-neighborhoods");
-		int[][] inEdgeNeighborhood = getInEdgeNeighborhood(g);
-		System.out.println("Pre-computing edge out-neighborhoods");
-		int[][] outEdgeNeighborhood = getOutEdgeNeighborhood(g);
+		//System.out.println("Pre-computing edge in-neighborhoods");
+		//int[][] inEdgeNeighborhood = getInEdgeNeighborhood(g);
+		//System.out.println("Pre-computing edge out-neighborhoods");
+		//int[][] outEdgeNeighborhood = getOutEdgeNeighborhood(g);
 
-		return new GrphModel(g, inEdgeNeighborhood, outEdgeNeighborhood);
+		return g;
 	}
-
+/*
 	private int[][] getInEdgeNeighborhood(Grph g) {
 		int[][] inNeighborhood = g.getInNeighborhoods();
 		int[][] edgeNeighborhood = new int[inNeighborhood.length][];
@@ -156,7 +155,7 @@ public class Rdf2GrphConverter implements Converter<GrphModel, Model> {
 			return -1;
 		}
 	}
-
+*/
 	private int addVertex(Grph g, Node n, Map<Node, Integer> vertexMap, NumericalProperty vertexType, Property vertexLabel) {
 		final int i = vertexMap.size();
 		g.addVertex(i);

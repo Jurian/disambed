@@ -6,8 +6,8 @@ import org.uu.nl.embedding.analyze.bca.grph.util.GraphStatistics;
 import org.uu.nl.embedding.analyze.bca.util.BCAOptions;
 import org.uu.nl.embedding.analyze.bca.util.BCV;
 import org.uu.nl.embedding.analyze.bca.util.OrderedIntegerPair;
-import org.uu.nl.embedding.convert.util.GrphModel;
-import org.uu.nl.embedding.progress.Progress;
+import org.uu.nl.embedding.progress.DoNothingPublisher;
+import org.uu.nl.embedding.progress.ProgressState;
 import org.uu.nl.embedding.progress.ProgressType;
 import org.uu.nl.embedding.progress.Publisher;
 
@@ -27,13 +27,14 @@ public class BookmarkColoring implements CooccurenceMatrix {
 	private double max;
 	private final int vocabSize;
 	private final int cooccurenceCount;
-	private final boolean normalize, includeReverse;
+	private final boolean includeReverse;
 
-	public BookmarkColoring(GrphModel graphModel, BCAOptions options, Publisher publisher) {
+	public BookmarkColoring(Grph graph, BCAOptions options) {
+		this(graph, options, new DoNothingPublisher());
+	}
 
-		final Grph graph = graphModel.getG();
+	public BookmarkColoring(Grph graph, BCAOptions options, Publisher publisher) {
 
-		this.normalize = options.isNormalize();
 		this.includeReverse = options.isReverse();
 		this.alpha = options.getAlpha();
 		this.epsilon = options.getEpsilon();
@@ -49,8 +50,6 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		
 		final int[][] in = graph.getInNeighborhoods();
 		final int[][] out = graph.getOutNeighborhoods();
-		final int[][] edgeIn = graphModel.getInEdgeNeighborhood();
-		final int[][] edgeOut = graphModel.getOutEdgeNeighborhood();
 
 		try {
 
@@ -62,14 +61,14 @@ public class BookmarkColoring implements CooccurenceMatrix {
 				case VANILLA:
 					completionService.submit(new VanillaBCAJob(
 							graph, computedBCV, bookmark,
-							includeReverse, normalize, alpha, epsilon, 
-							in, out, edgeIn, edgeOut));
+							includeReverse, alpha, epsilon,
+							in, out));
 					break;
 				case SEMANTIC:
 					completionService.submit(new SemanticBCAJob(
 							graph, computedBCV, bookmark,
-							includeReverse, normalize, alpha, epsilon, 
-							in, out, edgeIn, edgeOut));
+							includeReverse, alpha, epsilon,
+							in, out));
 					break;
 				}
 
@@ -77,11 +76,8 @@ public class BookmarkColoring implements CooccurenceMatrix {
 			
 			//now retrieve the futures after computation (auto wait for it)
 			int received = 0;
-			Progress progress = null;
-			if(publisher != null) {
-				publisher.setNewMax(stats.jobs.length);
-				progress = new Progress(ProgressType.BCA);
-			}
+			publisher.setNewMax(stats.jobs.length);
+			ProgressState progressState = new ProgressState(ProgressType.BCA);
 
 			while(received < stats.jobs.length) {
 
@@ -89,9 +85,12 @@ public class BookmarkColoring implements CooccurenceMatrix {
 					BCV bcv = completionService.take().get();
 					// We have to collect all the BCV's first before we can store them
 					// in a more efficient lookup friendly way below
-					if(normalize) bcv.normalize();
+					bcv.normalize();
 
 					bcv.addTo(cooccurrence_map);
+
+					computedBCV.put(bcv.getRootNode(), bcv);
+
 					// It is possible to use this maximum value in GloVe, although in the
 					// literature they set this value to 100 and leave it at that
 					setMax(bcv.max());
@@ -101,26 +100,19 @@ public class BookmarkColoring implements CooccurenceMatrix {
 
 				} finally {
 
-					if(progress != null) {
-						received ++;
-						double p = (received / (double)stats.jobs.length * 100);
+					received ++;
+					double p = (received / (double)stats.jobs.length * 100);
 
-						//if(p - progress.getValue() > 0.5) {
-						progress.setValue(p);
-						progress.setN(received);
-						publisher.updateProgress(progress);
-						//}
-					}
+					progressState.setValue(p);
+					progressState.setN(received);
+					publisher.updateProgress(progressState);
 				}
 			}
 
-
-			if(progress != null) {
-				progress.setValue(stats.jobs.length);
-				progress.setFinished(true);
-				publisher.updateProgress(progress);
-				publisher.setExtraMessage("Processed " + stats.jobs.length + " jobs");
-			}
+			progressState.setValue(stats.jobs.length);
+			progressState.setFinished(true);
+			publisher.updateProgress(progressState);
+			publisher.setExtraMessage("Processed " + stats.jobs.length + " jobs");
 
 		} finally {
 			es.shutdown();
@@ -221,10 +213,6 @@ public class BookmarkColoring implements CooccurenceMatrix {
 	@Override
 	public int literalNodeCount() {
 		return this.stats.getLiteralNodeCount();
-	}
-
-	public boolean isNormalize() {
-		return normalize;
 	}
 
 	public boolean isIncludeReverse() {

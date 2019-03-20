@@ -3,7 +3,8 @@ package org.uu.nl.embedding.analyze.glove.opt;
 import org.apache.commons.math3.util.FastMath;
 import org.uu.nl.embedding.analyze.CooccurenceMatrix;
 import org.uu.nl.embedding.analyze.glove.GloveModel;
-import org.uu.nl.embedding.progress.Progress;
+import org.uu.nl.embedding.progress.DoNothingPublisher;
+import org.uu.nl.embedding.progress.ProgressState;
 import org.uu.nl.embedding.progress.ProgressType;
 import org.uu.nl.embedding.progress.Publisher;
 
@@ -12,17 +13,27 @@ import java.util.concurrent.*;
 
 
 public abstract class GloveOptimizer implements Optimizer {
-	
-	protected final Random r = new Random();
-	protected final CooccurenceMatrix crecs;
-	protected final int dimension, vocabSize, maxIterations, numThreads, crecCount;
-	protected final double  tolerance, xMax, alpha, learningRate = 0.05; 
-	protected final double[] W;
-	protected final int[] linesPerThread;
+
+    final CooccurenceMatrix crecs;
+	final int dimension;
+    final int vocabSize;
+    private final int maxIterations;
+    final int numThreads;
+    final int crecCount;
+	private final double  tolerance;
+    final double xMax;
+    final double alpha;
+    final double learningRate = 0.05;
+	final double[] W;
+	final int[] linesPerThread;
 	private final Publisher publisher;
 	private final ExecutorService es;
-	
-	public GloveOptimizer(GloveModel glove, int maxIterations, int numThreads, double tolerance, Publisher publisher) {
+
+	GloveOptimizer(GloveModel glove, int maxIterations, int numThreads, double tolerance) {
+		this(glove, maxIterations, numThreads, tolerance, new DoNothingPublisher());
+	}
+
+	GloveOptimizer(GloveModel glove, int maxIterations, int numThreads, double tolerance, Publisher publisher) {
 		this.publisher = publisher;
 		this.crecs = glove.getCoMatrix();
 		this.xMax = glove.getxMax();
@@ -33,10 +44,12 @@ public abstract class GloveOptimizer implements Optimizer {
 		this.numThreads = numThreads;
 		this.crecCount = crecs.cooccurrenceCount();
 		int dimension = glove.getDimension() + 1;
-		
+
 		this.W = new double[2 * vocabSize * dimension];
+        final Random r = new Random();
+
 		for (int i = 0; i < 2 * vocabSize; i++) {
-			for (int d = 0; d < dimension; d++) 
+            for (int d = 0; d < dimension; d++)
 				W[i * dimension + d] = (r.nextDouble() - 0.5) / dimension;
 		}
 		
@@ -57,14 +70,12 @@ public abstract class GloveOptimizer implements Optimizer {
 		Optimum opt = new Optimum(this.dimension);
 		CompletionService<Double> completionService = new ExecutorCompletionService<>(es);
 
-		Progress progress = null;
-		if(publisher != null) {
-			publisher.setNewMax(maxIterations);
-			progress = new Progress(ProgressType.GLOVE);
-		}
-
+		publisher.setNewMax(maxIterations);
+		final ProgressState progressState = new ProgressState(ProgressType.GLOVE);
+		double finalCost = 0;
 		try {
 			double prevCost = 0;
+			double iterDiff;
 			for(int iteration = 0; iteration < maxIterations; iteration++ ) {
 				
 				for(int id = 0; id < numThreads; id++) 
@@ -83,16 +94,18 @@ public abstract class GloveOptimizer implements Optimizer {
 				}
 
 				localCost = (localCost / crecCount);
-				if(FastMath.abs(prevCost - localCost) <= tolerance) break;
-				prevCost = localCost;
-				opt.addCost(prevCost);
-
-				if(publisher != null) {
-					progress.setN(iteration);
-					progress.setValue(prevCost);
-					publisher.updateProgress(progress);
-					publisher.setExtraMessage((prevCost - tolerance) + "");
+				iterDiff= FastMath.abs(prevCost - localCost);
+				if(iterDiff <= tolerance) {
+					finalCost = localCost;
+					break;
 				}
+				prevCost = localCost;
+				//opt.addCost(prevCost);
+
+				progressState.setN(iteration);
+				progressState.setValue(prevCost);
+				publisher.updateProgress(progressState);
+				publisher.setExtraMessage(String.format("%.8f", iterDiff) + "/" + String.format("%.5f", tolerance));
 			}
 			
 		} finally {
@@ -100,20 +113,18 @@ public abstract class GloveOptimizer implements Optimizer {
 		}
 
 		opt.setResult(extractResult());
+		opt.setFinalCost(finalCost);
 
-		if(publisher != null) {
-			progress.setValue(opt.finalResult());
-			progress.setFinished(true);
-			publisher.updateProgress(progress);
-
-		}
+		progressState.setValue(finalCost);
+		progressState.setFinished(true);
+		publisher.updateProgress(progressState);
 
 		return opt;
 	}
 
 	/**
 	 * Create a new double array containing the averaged values between the focus and context vectors
-	 * @return
+	 * @return a new double array containing the averaged values between the focus and context vectors
 	 */
 	private double[] extractResult() {
 		double[] U = new double[vocabSize * dimension];
@@ -131,6 +142,6 @@ public abstract class GloveOptimizer implements Optimizer {
 		return U;
 	}
 	
-	public abstract GloveJob createJob(int id, int iteration);
-	
+	protected abstract GloveJob createJob(int id, int iteration);
+
 }

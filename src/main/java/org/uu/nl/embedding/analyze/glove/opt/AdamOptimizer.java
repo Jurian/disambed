@@ -22,6 +22,7 @@ import org.uu.nl.embedding.progress.Publisher;
  * @see <a href="http://nlp.stanford.edu/projects/glove/">Stanford GloVe page</a>
  * @author Jurian Baas
  */
+@SuppressWarnings("Duplicates")
 public class AdamOptimizer extends GloveOptimizer {
 
 	/**
