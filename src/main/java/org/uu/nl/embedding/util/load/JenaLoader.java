@@ -16,18 +16,21 @@ public class JenaLoader implements Loader<Model> {
 
     private Model getDataDump(File dumpFile) {
 
-        Model model = null;
+        Model model;
 
         if(dumpFile.isFile()) {
             logger.info( "Loading " + dumpFile.getName());
             model = ModelFactory.createDefaultModel();
             RDFDataMgr.read(model, dumpFile.getPath()) ;
+
+            logger.info( "Done loading, number of triples: " + model.size());
         } else {
+            throw new IllegalArgumentException("Supplied argument is not a file");
            // System.out.println("Loading in all files in directory " + dumpFile.getPath());
            // Dataset ds = TDBFactory.createDataset(dumpFile.getPath());
            // model = ds.getDefaultModel();
         }
-        logger.info( "Done loading, final model size: " + model.size());
+
         return model;
     }
 }
