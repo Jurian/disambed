@@ -5,7 +5,10 @@ import grph.properties.NumericalProperty;
 import grph.properties.Property;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -44,14 +47,26 @@ public class GraphStatistics {
 		
 		Property labelProperties = graph.getVertexLabelProperty();
 		NumericalProperty typeProperties = graph.getVertexColorProperty();
-		
+		Property edgeLabels = graph.getEdgeLabelProperty();
+
+		int nrOfVertices = graph.getVertices().size();
+		int nrOfEdges = graph.getEdges().size();
+
+		Map<Integer, Integer> edgeTypes = new HashMap<>();
+		for(int i = nrOfVertices; i < nrOfVertices + nrOfEdges; i++) {
+			int type = graph.getEdgeColorProperty().getValueAsInt(i);
+			edgeTypes.putIfAbsent(type, i);
+		}
+
+		int nrOfEdgeTypes = edgeTypes.size();
+
 		this.keys = graph.getVertices().toIntArray();
-		this.types = new byte[keys.length];
-		this.dict = new String[keys.length];
-		this.jobs = new int[keys.length];
+		this.types = new byte[nrOfVertices + nrOfEdgeTypes];
+		this.dict = new String[nrOfVertices + nrOfEdgeTypes];
+		this.jobs = new int[nrOfVertices];
 		
-		int job_i = 0;
-		for(int i = 0; i < keys.length; i++) {
+		//int job_i = 0;
+		for(int i = 0; i < nrOfVertices; i++) {
 			int node = keys[i];
 			types[i] = (byte) typeProperties.getValue(node);
 			dict[i] = labelProperties.getValueAsString(node);
@@ -65,8 +80,17 @@ public class GraphStatistics {
 			}
 			else if(types[i] == NodeInfo.LITERAL) literalNodeCount++;
 		}
-		
-		//this.jobs = Arrays.copyOf(jobs, job_i);
+
+
+		for(Map.Entry<Integer, Integer> entry : edgeTypes.entrySet()) {
+
+			int type = entry.getKey();
+			int edge = entry.getValue();
+
+			dict[type + nrOfVertices] = edgeLabels.getValueAsString(edge);
+			types[type + nrOfVertices] = NodeInfo.PREDICATE;
+		}
+
 		this.totalNodeCount = uriNodeCount + blankNodeCount + literalNodeCount;
 	}
 

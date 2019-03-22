@@ -42,7 +42,7 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		this.stats = new GraphStatistics(graph);
 		this.types = stats.types;
 		this.dict = stats.dict;
-		this.vocabSize = stats.keys.length;
+		this.vocabSize = stats.dict.length;
 		
 		final Map<OrderedIntegerPair, Double> cooccurrence_map = new ConcurrentHashMap<>(vocabSize);
 		final ExecutorService es = Executors.newFixedThreadPool(options.getnThreads());

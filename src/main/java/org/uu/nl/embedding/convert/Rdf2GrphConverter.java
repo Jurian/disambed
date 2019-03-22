@@ -31,7 +31,7 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 		
 		final Grph g = new InMemoryGrph();
 
-		final NumericalProperty edgeType = g.getEdgeColorProperty();
+		final NumericalProperty edgeTypes = g.getEdgeColorProperty();
 
 		final Property edgeLabel = g.getEdgeLabelProperty();
 		
@@ -42,7 +42,7 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 
 		logger.info("Converting Jena model with "+vertexCount+" vertices");
 
-		int s_i, o_i, p_i = 0;
+		int s_i, o_i, p_i = vertexCount;
 		Node s, p, o;
 		Triple t;
 		
@@ -64,13 +64,15 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 				// Every edge is unique, we always add one to the graph
 				// However there are only a few types of edges (relationships)
 				// So we also store a reference to a unique edge-type id
-				g.addDirectedSimpleEdge(s_i, p_i + vertexCount, o_i);
-				edgeLabel.setValue(p_i + vertexCount, p.toString());
+				g.addDirectedSimpleEdge(s_i, p_i, o_i);
+				edgeLabel.setValue(p_i, p.toString());
 
 				// If we have not encountered this edge-type before, give it a unique id
 				edgeMap.putIfAbsent(p, edgeMap.size());
 				// Store the edge-type value for this new edge
-				edgeType.setValue(p_i + vertexCount, edgeMap.get(p));
+				int edgeType = edgeMap.get(p);
+
+				edgeTypes.setValue(p_i, edgeType);
 				p_i++;
 			}
 		} finally {
