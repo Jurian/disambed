@@ -103,7 +103,7 @@ public class SemanticBCAJob extends BCAJob {
 				if(isLiteral(focusNode)) {
 					neighbors = in[focusNode];
 					edges = new int[neighbors.length];
-					predicate = getEdgeType(node.predicateID);
+					predicate = node.predicateID == SKIP ? SKIP : getEdgeType(node.predicateID);
 					// Cache edges and reuse in loop
 					edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
 					

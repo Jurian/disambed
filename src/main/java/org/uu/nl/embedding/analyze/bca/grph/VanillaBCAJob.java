@@ -30,7 +30,11 @@ public class VanillaBCAJob extends BCAJob {
 	private int getEdgeType(int e) {
 		return graph.getEdgeColorProperty().getValueAsInt(e);
 	}
-	
+
+	private String edgeLabel(int e) {
+		return graph.getEdgeLabelProperty().getValueAsString(e);
+	}
+
 	@Override
 	protected BCV doWork(Grph graph, boolean reverse) {
 		
@@ -52,7 +56,7 @@ public class VanillaBCAJob extends BCAJob {
 			final double wetPaint = wetPaintRegister.get(focusNode);
 
 			precomputed = computedBCV.get(focusNode);
-			if(precomputed != null) {
+			if(false){//if(precomputed != null) {
 				precomputed.forEach((index, precomputedPaint) -> {
 					final double scaled = precomputedPaint * wetPaint;
 					if(scaled > (epsilon * alpha)) bcv.add(index, scaled);
@@ -76,11 +80,8 @@ public class VanillaBCAJob extends BCAJob {
 
 				partialWetPaint = (1 - alpha) * wetPaint / neighbors.length;
 
-				// We can already tell that the neighbors will not have enough paint to continue
-				if(partialWetPaint < epsilon)
-					continue;
 
-				if(debug)
+				if(false)
 					System.out.println(
 							nodeLabel(bookmark) +
 									" Focus node: " + nodeLabel(focusNode) +
@@ -89,6 +90,10 @@ public class VanillaBCAJob extends BCAJob {
 									" wet paint:" + wetPaint +
 									" partial wet paint:" + partialWetPaint);
 
+				// We can already tell that the neighbors will not have enough paint to continue
+				if(partialWetPaint < epsilon)
+					continue;
+
 				for (int neighbor : neighbors) {
 
 					if (reverse)
@@ -96,7 +101,8 @@ public class VanillaBCAJob extends BCAJob {
 					else
 						predicate = getEdge(focusNode, neighbor, edgeCache, graph.getInOnlyEdges(neighbor).toIntArray());
 
-					bcv.add(getEdgeType(predicate), partialWetPaint);
+					//System.out.println(nodeLabel(bookmark) + ": " + edgeLabel(predicate) + " -> " + getEdgeType(predicate));
+					bcv.add(graph.getVertices().size() + getEdgeType(predicate), partialWetPaint);
 
 					if (nodeQueue.contains(neighbor)) {
 						wetPaintRegister.add(neighbor, partialWetPaint);
@@ -106,6 +112,8 @@ public class VanillaBCAJob extends BCAJob {
 					}
 				}
 			}
+
+			if(debug) System.out.println(nodeLabel(bookmark) + ": " + bcv);
 		}
 		return bcv;
 	}
