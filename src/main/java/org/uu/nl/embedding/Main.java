@@ -148,7 +148,7 @@ public class Main {
             }
 
         } catch (ParseException | NumberFormatException | UnsupportedAlgorithmException | IOException | FileNotFoundException  exception) {
-            logger.error(exception.getMessage());
+            logger.error(exception);
             formatter.printHelp("Graph Embeddings", options);
             System.exit(1);
         }

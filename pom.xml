@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.uu.nl</groupId>
 	<artifactId>graph-embeddings</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.3-SNAPSHOT</version>
 	<name>Analysis of RDF graphs using embeddings</name>
 	<packaging>jar</packaging>
 

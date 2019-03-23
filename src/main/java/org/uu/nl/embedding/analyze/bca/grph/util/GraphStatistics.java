@@ -48,24 +48,25 @@ public class GraphStatistics {
 		this.keys = graph.getVertices().toIntArray();
 		this.types = new byte[keys.length];
 		this.dict = new String[keys.length];
-		
-		int[] jobs = new int[keys.length];
+		this.jobs = new int[keys.length];
 		
 		int job_i = 0;
 		for(int i = 0; i < keys.length; i++) {
 			int node = keys[i];
 			types[i] = (byte) typeProperties.getValue(node);
 			dict[i] = labelProperties.getValueAsString(node);
-			
+
+			jobs[i] = node;
+
 			if(types[i] == NodeInfo.BLANK) blankNodeCount++;
 			else if(types[i] == NodeInfo.URI) {
 				uriNodeCount++;
-				jobs[job_i++] = node;
+				//jobs[job_i++] = node;
 			}
 			else if(types[i] == NodeInfo.LITERAL) literalNodeCount++;
 		}
 		
-		this.jobs = Arrays.copyOf(jobs, job_i);
+		//this.jobs = Arrays.copyOf(jobs, job_i);
 		this.totalNodeCount = uriNodeCount + blankNodeCount + literalNodeCount;
 	}
 
