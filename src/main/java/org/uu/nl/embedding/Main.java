@@ -8,7 +8,6 @@ import org.uu.nl.embedding.analyze.bca.util.BCAOptions;
 import org.uu.nl.embedding.analyze.glove.GloveModel;
 import org.uu.nl.embedding.analyze.glove.opt.*;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
-import org.uu.nl.embedding.convert.util.GrphModel;
 import org.uu.nl.embedding.progress.CommandLineProgress;
 import org.uu.nl.embedding.util.load.JenaLoader;
 import org.uu.nl.embedding.util.save.GloveTextWriter;
@@ -147,8 +146,8 @@ public class Main {
                 writer.write(model, currentRelativePath.resolve("out"), writeProgress);
             }
 
-        } catch (ParseException | NumberFormatException | UnsupportedAlgorithmException | IOException | FileNotFoundException  exception) {
-            logger.error(exception);
+        } catch (ParseException | NumberFormatException | UnsupportedAlgorithmException | IOException | FileNotFoundException  e) {
+            logger.error(e.getMessage(), e);
             formatter.printHelp("Graph Embeddings", options);
             System.exit(1);
         }
