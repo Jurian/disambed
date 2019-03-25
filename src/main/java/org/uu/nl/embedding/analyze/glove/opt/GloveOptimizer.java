@@ -1,6 +1,6 @@
 package org.uu.nl.embedding.analyze.glove.opt;
 
-import org.apache.commons.math3.util.FastMath;
+import org.apache.commons.math.util.FastMath;
 import org.uu.nl.embedding.analyze.CooccurenceMatrix;
 import org.uu.nl.embedding.analyze.glove.GloveModel;
 import org.uu.nl.embedding.progress.DoNothingPublisher;
@@ -72,7 +72,7 @@ public abstract class GloveOptimizer implements Optimizer {
 
 		publisher.setNewMax(maxIterations);
 		final ProgressState progressState = new ProgressState(ProgressType.GLOVE);
-
+		double finalCost = 0;
 		try {
 			double prevCost = 0;
 			double iterDiff;
@@ -96,16 +96,16 @@ public abstract class GloveOptimizer implements Optimizer {
 				localCost = (localCost / crecCount);
 				iterDiff= FastMath.abs(prevCost - localCost);
 				if(iterDiff <= tolerance) {
-					publisher.setExtraMessage("Converged with cost " + localCost);
+					finalCost = localCost;
 					break;
 				}
 				prevCost = localCost;
-				opt.addCost(prevCost);
+				//opt.addCost(prevCost);
 
 				progressState.setN(iteration);
 				progressState.setValue(prevCost);
 				publisher.updateProgress(progressState);
-				publisher.setExtraMessage(String.format("%.5f", iterDiff) + "/" + String.format("%.5f", tolerance));
+				publisher.setExtraMessage(String.format("%.8f", iterDiff) + "/" + String.format("%.5f", tolerance));
 			}
 			
 		} finally {
@@ -113,8 +113,9 @@ public abstract class GloveOptimizer implements Optimizer {
 		}
 
 		opt.setResult(extractResult());
+		opt.setFinalCost(finalCost);
 
-		progressState.setValue(opt.finalResult());
+		progressState.setValue(finalCost);
 		progressState.setFinished(true);
 		publisher.updateProgress(progressState);
 

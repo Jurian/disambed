@@ -130,6 +130,7 @@ public class Main {
                 }
                 model.setOptimum(optimizer.optimize());
             }
+            logger.info("GloVe converged with final average cost " + model.getOptimum().getFinalCost());
 
             try(CommandLineProgress writeProgress = new CommandLineProgress("Writing to file")) {
 
@@ -145,8 +146,8 @@ public class Main {
                 writer.write(model, currentRelativePath.resolve("out"), writeProgress);
             }
 
-        } catch (ParseException | NumberFormatException | UnsupportedAlgorithmException | IOException | FileNotFoundException  exception) {
-            logger.error(exception);
+        } catch (ParseException | NumberFormatException | UnsupportedAlgorithmException | IOException | FileNotFoundException  e) {
+            logger.error(e.getMessage(), e);
             formatter.printHelp("Graph Embeddings", options);
             System.exit(1);
         }
