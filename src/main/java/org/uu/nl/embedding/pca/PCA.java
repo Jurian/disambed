@@ -1,118 +1,176 @@
 package org.uu.nl.embedding.pca;
 
-import no.uib.cipr.matrix.DenseMatrix;
-import no.uib.cipr.matrix.EVD;
-import no.uib.cipr.matrix.NotConvergedException;
-import org.apache.log4j.Logger;
+import com.github.fommil.netlib.LAPACK;
 
+import org.apache.commons.math.util.FastMath;
+import org.apache.log4j.Logger;
+import org.netlib.util.intW;
+
+import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.stream.IntStream;
 
 public class PCA {
 
     private final static Logger logger = Logger.getLogger(PCA.class);
 
     public static void main(String[] args) {
-        try {
-            PCA pca = new PCA();
 
-            int dim = 3;
+        double[] vectors = new double[] {4, 6, 10, 3, 10, 13, -2, -6, -8, 1, 7, 5};
+        int dim = 3;
 
-            double[] vectors = new double[] {8,5,2, 7,1,9, 2,2,2, 2,2,2};
-            //double[] vectors = new double[] {8,7,2,2, 5,1,2,2, 2,9,2,2};
+        PCA pca = new PCA(vectors, dim, false);
 
-           // double[] vectors = new double[] {0,3,6, 1,4,7, 2,5,8};
+    }
 
-            System.out.println(Arrays.toString(vectors));
-            System.out.println(Arrays.toString(pca.toColumnMajor(vectors, dim)));
+    private String toString(double[] data, int nCols) {
 
-            System.out.println(Arrays.toString(pca.toColumnMajor2(new double[] {8,5,2, 7,1,9, 2,2,2, 2,2,2}, dim)));
+        StringBuilder out = new StringBuilder();
+        DecimalFormat df = new DecimalFormat("####0.0000");
+        final int nRows = data.length / nCols;
+        for (int i = 0; i < nRows; i++) {
+            for (int j = 0; j < nCols; j++) {
+                double value = data[i + j * nRows];
+                if (value >= 0)
+                    out.append(" ");
+                out.append(" " + df.format(value));
+            }
+            out.append("\n");
+        }
 
-            double[] cov = pca.covariance(vectors, dim);
-            // Note that cov is symmetric
-            DenseMatrix covMatrix = new DenseMatrix(cov.length / dim, dim, cov, false);
-            DenseMatrix vectorMatrix = new DenseMatrix(vectors.length / dim, dim, vectors, false);
+        return out.toString();
+    }
 
-            //System.out.println(Arrays.toString(vectors));
-            System.out.println(covMatrix);
+    /**
+     * Contains the real and imaginary parts of the eigenvalues
+     */
+    private final double[] eigenValuesReal, eigenValuesImaginary, varPercentage, sd;
+    private final double[] data, work, covarianceMatrix, leftEigenVectors;
+    private final int nRows, nCols;
+    int[] sortedIndices;
 
-            EVD eigen = new EVD(dim, true , false);
-            eigen.factor(covMatrix);
+    public PCA(double[] vectors, int dim, boolean colMajor)  {
 
-            DenseMatrix eigenVectors = eigen.getLeftEigenvectors();
+        assert vectors.length != 0;
+        assert vectors.length % dim == 0;
 
-            vectorMatrix = transpose(vectorMatrix);
-            DenseMatrix projectedVectors = (DenseMatrix) eigenVectors.transAmult(
-                    vectorMatrix,
-                    new DenseMatrix(vectorMatrix.numRows(), vectorMatrix.numColumns())
-            );
-            projectedVectors = transpose(projectedVectors);
+        this.nCols = dim;
+        this.nRows = vectors.length / dim;
 
-            System.out.println(projectedVectors);
+        // Allocate space for the decomposition
+        eigenValuesReal = new double[nRows];
+        eigenValuesImaginary = new double[nRows];
+        sd = new double[nRows];
+        varPercentage = new double[nRows];
+        leftEigenVectors = new double[nCols * nCols];
 
+        this.data = Arrays.copyOf(vectors, vectors.length);
+        if(!colMajor)
+            toColumnMajorInPlace();
 
-        } catch (NotConvergedException e) {
-            logger.error(e.getMessage(), e);
+        System.out.println(toString(data, dim));
+        center();
+        System.out.println(toString(data, dim));
+        covarianceMatrix = covariance();
+        System.out.println(toString(covarianceMatrix, dim));
+
+        // Find the needed workspace
+        double[] workSize = new double[1];
+        intW info = new intW(0);
+        int ld = FastMath.max(1, nCols);
+        LAPACK.getInstance().dgeev("V", "N", nCols,
+                new double[0], ld, new double[0], new double[0],
+                new double[0], ld, new double[0], ld,
+                workSize, -1, info);
+
+        // Allocate workspace
+        int workSpace = 0;
+        if (info.val != 0) {
+            workSpace = 4 * nRows;
+        } else
+            workSpace = (int) workSize[0];
+
+        workSpace = Math.max(1, workSpace);
+        work = new double[workSpace];
+
+        info = new intW(0);
+        ld = FastMath.max(1, nCols);
+        LAPACK.getInstance().dgeev("V", "N", nCols,
+                covarianceMatrix, ld, eigenValuesReal, eigenValuesImaginary,
+                leftEigenVectors, ld, new double[0],
+                ld, work, work.length, info);
+
+        sortedIndices = IntStream.range(0, eigenValuesReal.length)
+                .boxed().sorted(Comparator.comparingDouble(i -> -eigenValuesReal[i]))
+                .mapToInt(i -> i).toArray();
+
+        double sum = 0;
+        for(int i = 0; i < eigenValuesReal.length; i++) sum += eigenValuesReal[i];
+
+        for(int i = 0; i < eigenValuesReal.length; i++) {
+            varPercentage[i] = FastMath.abs(eigenValuesReal[i] / sum);
+            sd[i] = FastMath.sqrt(FastMath.abs(eigenValuesReal[i]));
+        }
+
+        System.out.println("eigen values:\n"+toString(eigenValuesReal, dim));
+        System.out.println("variance as percentage:\n"+toString(varPercentage, dim));
+        System.out.println("standard deviation:\n"+toString(sd, dim));
+        System.out.println("eigen vectors:\n"+toString(leftEigenVectors, dim));
+        System.out.println("projection:\n"+toString(project(), dim));
+    }
+
+    private double[] project() {
+
+        double[] projection = new double[data.length];
+        int nRowsData = data.length / nCols;
+        int nColsEigenVectors = nCols;
+
+        for (int r = 0; r < nRowsData; r++) {
+            for (int c = 0; c < nColsEigenVectors; c++) {
+                for (int k = 0; k < nColsEigenVectors; k++) {
+                    projection[r + c * nRowsData] += data[r + k * nRowsData] * leftEigenVectors[k + sortedIndices[c] * nColsEigenVectors];
+                }
+            }
+        }
+        return  projection;
+    }
+
+    private void toColumnMajorInPlace() {
+        final int mn1 = data.length - 1;
+        final boolean[] visited = new boolean[data.length];
+        int c = 0;
+        while (++c != data.length) {
+            if (visited[c]) continue;
+            int a = c;
+            do {
+                a = a == mn1 ? mn1 : (nRows * a) % mn1;
+                swap(data, a, c);
+                visited[a] = true;
+            } while (a != c);
         }
     }
 
-    private double[] toColumnMajor(double[] data, int numCols) {
-
-        final int numRows = data.length / numCols;
-        final double[] transposed = new double[data.length];
-        for(int i = 0; i < data.length; i++) {
-            transposed[(i / numCols) + ((i % numCols) * numRows)] = data[i];
-        }
-        return transposed;
-    }
-
-    private double[] toColumnMajor2(double[] data, int numCols) {
-
-        final int numRows = data.length / numCols;
-
-        int a;
-        int marker = 0;
-        double t = 0;
-
-        for(int i = 0; i < data.length; ) {
-
-            data[i] = t;
-
-            a = (i / numCols) + ((i % numCols) * numRows);
-            t = data[a];
-            i = a;
-
-
-
-
-
-
-
-            if(i == marker) i = marker + 1;
-        }
-        return data;
-    }
-
-    private static DenseMatrix transpose(DenseMatrix m) {
-        return (DenseMatrix) m.transpose(invert(m));
-    }
-
-    private static DenseMatrix invert(DenseMatrix m) {
-        return new DenseMatrix(m.numColumns(), m.numRows());
+    /**
+     * Swaps the values of two indices in the given array
+     * @param d The array to swap values in
+     * @param a The first index
+     * @param b The second index
+     */
+    private void swap(double[] d, int a, int b) {
+        double t = d[a];
+        d[a] = d[b];
+        d[b] = t;
     }
 
     /**
      * Calculate the mean of every column
-     * @param data The matrix, column-major
-     * @param dim The number of columns in the matrix
      * @return An array of means
      */
-    private double[] columnMeans(double[] data, int dim) {
-        assert data.length % dim == 0;
-
-        int rowCount = data.length / dim;
-        double[] means = new double[dim];
+    private double[] columnMeans() {
+        double[] means = new double[nCols];
         for(int i = 0; i < data.length; i++) {
-            int row = i % rowCount, col = i / rowCount;
+            int row = i % nRows, col = i / nRows;
             means[col] = (data[i] + row * means[col]) / (row + 1);
         }
         return means;
@@ -120,49 +178,39 @@ public class PCA {
 
     /**
      * Center the data around 0, will replace the input matrix with new values
-     * @param data The matrix, column-major
-     * @param dim The number of columns in the matrix
      */
-    private void center(double[] data, int dim) {
-        assert data.length % dim == 0;
-        int rowCount = data.length / dim;
-        double[] means = columnMeans(data, dim);
+    private void center() {
+        double[] means = columnMeans();
         for(int i = 0; i < data.length; i++) {
-            data[i] -= means[i / rowCount];
+            data[i] -= means[i / nRows];
         }
     }
 
     /**
      * Calculate the covariance of an input matrix
-     * @param data The matrix, row-major
-     * @param dim The number of columns in the matrix
-     * @return A new square matrix of size dim*dim
+     * @return A new square matrix of size nCols*nCols
      */
-    private double[] covariance(double[] data, int dim) {
-        assert data.length != 0;
-        assert data.length % dim == 0;
+    private double[] covariance() {
 
-        int rowCount = data.length / dim;
-        double[] covMatrix = new double[dim*dim];
-
-        center(data, dim);
+        double[] covMatrix = new double[nCols*nCols];
 
         /*
         Note that at this point the data has been centered, which means that
         we do not have to subtract the column means as they are all 0
          */
 
-        for(int col1 = 0; col1 < dim; col1++) {
-            for(int col2 = 0; col2 < dim; col2++) {
+        for(int col1 = 0; col1 < nCols; col1++) {
+            for(int col2 = 0; col2 < nCols; col2++) {
 
                 double cov = 0;
-                for(int i = 0; i < rowCount; i++) {
-                    cov += (data[i + col1 * rowCount] ) * (data[i + col2 * rowCount] );
+                for(int i = 0; i < nRows; i++) {
+                    cov += (data[i + col1 * nRows] ) * (data[i + col2 * nRows] );
                 }
-                cov /= (rowCount - 1);
-                covMatrix[col1 + col2 * dim] = cov;
+                cov /= (nRows - 1);
+                covMatrix[col1 + col2 * nCols] = cov;
             }
         }
         return covMatrix;
     }
+
 }
