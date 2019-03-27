@@ -1,6 +1,6 @@
-package org.uu.nl.embedding.analyze;
+package org.uu.nl.embedding;
 
-import org.uu.nl.embedding.analyze.glove.opt.Optimum;
+import org.uu.nl.embedding.glove.opt.Optimum;
 import org.uu.nl.embedding.ann.kdtree.KDTree;
 
 import java.util.Map;
@@ -8,8 +8,8 @@ import java.util.Map;
 
 public abstract class Embedding {
 	
-	protected final int dimension;
-	protected final CooccurenceMatrix coMatrix;
+	protected int dimension;
+	protected CooccurenceMatrix coMatrix;
 	protected Optimum optimum;
 	protected Map<String, Integer> keys;
 	protected KDTree<String> tree;
@@ -50,4 +50,6 @@ public abstract class Embedding {
 	public void setTree(KDTree<String> tree) {
 		this.tree = tree;
 	}
+
+	public abstract void setDimension(int dimension);
 }

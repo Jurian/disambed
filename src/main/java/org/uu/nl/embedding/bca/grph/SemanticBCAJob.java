@@ -1,9 +1,9 @@
-package org.uu.nl.embedding.analyze.bca.grph;
+package org.uu.nl.embedding.bca.grph;
 
 import grph.Grph;
-import org.uu.nl.embedding.analyze.bca.grph.util.BCAJob;
-import org.uu.nl.embedding.analyze.bca.util.BCV;
-import org.uu.nl.embedding.analyze.bca.util.PaintRegistry;
+import org.uu.nl.embedding.bca.grph.util.BCAJob;
+import org.uu.nl.embedding.bca.util.BCV;
+import org.uu.nl.embedding.bca.util.PaintRegistry;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 
 import java.util.LinkedList;

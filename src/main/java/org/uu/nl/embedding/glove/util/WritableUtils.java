@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.analyze.glove.util;
+package org.uu.nl.embedding.glove.util;
 
 import java.io.DataInput;
 import java.io.DataOutput;

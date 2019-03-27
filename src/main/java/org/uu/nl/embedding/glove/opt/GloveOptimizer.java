@@ -1,8 +1,8 @@
-package org.uu.nl.embedding.analyze.glove.opt;
+package org.uu.nl.embedding.glove.opt;
 
 import org.apache.commons.math.util.FastMath;
-import org.uu.nl.embedding.analyze.CooccurenceMatrix;
-import org.uu.nl.embedding.analyze.glove.GloveModel;
+import org.uu.nl.embedding.CooccurenceMatrix;
+import org.uu.nl.embedding.glove.GloveModel;
 import org.uu.nl.embedding.progress.DoNothingPublisher;
 import org.uu.nl.embedding.progress.ProgressState;
 import org.uu.nl.embedding.progress.ProgressType;
@@ -67,7 +67,7 @@ public abstract class GloveOptimizer implements Optimizer {
 	public Optimum optimize() {
 		
 		//System.out.println("Starting " + getName() + " optimizer");
-		Optimum opt = new Optimum(this.dimension);
+		Optimum opt = new Optimum();
 		CompletionService<Double> completionService = new ExecutorCompletionService<>(es);
 
 		publisher.setNewMax(maxIterations);

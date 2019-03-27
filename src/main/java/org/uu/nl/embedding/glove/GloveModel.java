@@ -1,7 +1,7 @@
-package org.uu.nl.embedding.analyze.glove;
+package org.uu.nl.embedding.glove;
 
-import org.uu.nl.embedding.analyze.CooccurenceMatrix;
-import org.uu.nl.embedding.analyze.Embedding;
+import org.uu.nl.embedding.CooccurenceMatrix;
+import org.uu.nl.embedding.Embedding;
 
 public class GloveModel extends Embedding {
 
@@ -33,4 +33,5 @@ public class GloveModel extends Embedding {
 		return vocabSize;
 	}
 
+	public void setDimension(int dimension) { this.dimension = dimension; }
 }

@@ -1,23 +1,11 @@
-package org.uu.nl.embedding.analyze.glove.opt;
-
-import org.apache.commons.lang3.ArrayUtils;
-
-import java.util.ArrayList;
-import java.util.List;
+package org.uu.nl.embedding.glove.opt;
 
 
 public class Optimum {
 
-
-
 	private double finalCost;
 	private double[] result;
-	private final int dimension;
-	
-	public Optimum(int dimension) {
-		this.dimension = dimension;
-	}
-	
+
 	public double[] getResult() {
 		return result;
 	}

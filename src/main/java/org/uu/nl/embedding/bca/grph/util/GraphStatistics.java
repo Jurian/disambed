@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.analyze.bca.grph.util;
+package org.uu.nl.embedding.bca.grph.util;
 
 import grph.Grph;
 import grph.properties.NumericalProperty;
@@ -6,9 +6,7 @@ import grph.properties.Property;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 
 /**

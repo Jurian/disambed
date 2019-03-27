@@ -1,7 +1,7 @@
-package org.uu.nl.embedding.analyze.glove.opt;
+package org.uu.nl.embedding.glove.opt;
 
 import org.apache.commons.math.util.FastMath;
-import org.uu.nl.embedding.analyze.glove.GloveModel;
+import org.uu.nl.embedding.glove.GloveModel;
 import org.uu.nl.embedding.progress.Publisher;
 
 /**

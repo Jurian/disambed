@@ -1,7 +1,7 @@
-package org.uu.nl.embedding.analyze.bca.grph.util;
+package org.uu.nl.embedding.bca.grph.util;
 
 import grph.Grph;
-import org.uu.nl.embedding.analyze.bca.util.BCV;
+import org.uu.nl.embedding.bca.util.BCV;
 
 import java.util.concurrent.Callable;
 

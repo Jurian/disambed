@@ -1,11 +1,11 @@
-package org.uu.nl.embedding.analyze.bca.grph;
+package org.uu.nl.embedding.bca.grph;
 
 import grph.Grph;
-import org.uu.nl.embedding.analyze.CooccurenceMatrix;
-import org.uu.nl.embedding.analyze.bca.grph.util.GraphStatistics;
-import org.uu.nl.embedding.analyze.bca.util.BCAOptions;
-import org.uu.nl.embedding.analyze.bca.util.BCV;
-import org.uu.nl.embedding.analyze.bca.util.OrderedIntegerPair;
+import org.uu.nl.embedding.CooccurenceMatrix;
+import org.uu.nl.embedding.bca.grph.util.GraphStatistics;
+import org.uu.nl.embedding.bca.util.BCAOptions;
+import org.uu.nl.embedding.bca.util.BCV;
+import org.uu.nl.embedding.bca.util.OrderedIntegerPair;
 import org.uu.nl.embedding.progress.DoNothingPublisher;
 import org.uu.nl.embedding.progress.ProgressState;
 import org.uu.nl.embedding.progress.ProgressType;

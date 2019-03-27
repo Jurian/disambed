@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.analyze.bca.util;
+package org.uu.nl.embedding.bca.util;
 
 /**
  *

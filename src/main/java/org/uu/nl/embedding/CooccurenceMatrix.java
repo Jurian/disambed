@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.analyze;
+package org.uu.nl.embedding;
 
 public interface CooccurenceMatrix {
 	public int vocabSize();

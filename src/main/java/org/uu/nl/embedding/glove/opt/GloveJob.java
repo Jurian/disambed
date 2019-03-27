@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.analyze.glove.opt;
+package org.uu.nl.embedding.glove.opt;
 
 import java.util.concurrent.Callable;
 
