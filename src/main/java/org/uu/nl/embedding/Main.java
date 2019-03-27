@@ -3,10 +3,10 @@ package org.uu.nl.embedding;
 import grph.Grph;
 import org.apache.commons.cli.*;
 import org.apache.log4j.Logger;
-import org.uu.nl.embedding.analyze.bca.grph.BookmarkColoring;
-import org.uu.nl.embedding.analyze.bca.util.BCAOptions;
-import org.uu.nl.embedding.analyze.glove.GloveModel;
-import org.uu.nl.embedding.analyze.glove.opt.*;
+import org.uu.nl.embedding.bca.grph.BookmarkColoring;
+import org.uu.nl.embedding.bca.util.BCAOptions;
+import org.uu.nl.embedding.glove.GloveModel;
+import org.uu.nl.embedding.glove.opt.*;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
 import org.uu.nl.embedding.pca.PCA;
 import org.uu.nl.embedding.progress.CommandLineProgress;
@@ -134,7 +134,10 @@ public class Main {
             logger.info("GloVe converged with final average cost " + model.getOptimum().getFinalCost());
 
             PCA pca = new PCA(model.getOptimum().getResult(), model.getDimension(), false);
+            logger.info(pca);
             PCA.Projection projection = pca.project(0.95);
+            model.getOptimum().setResult(projection.getProjection());
+            model.setDimension(projection.getnCols());
 
             logger.info(projection.getnCols());
 

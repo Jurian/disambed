@@ -1,6 +1,6 @@
 package org.uu.nl.embedding.util.save;
 
-import org.uu.nl.embedding.analyze.glove.GloveModel;
+import org.uu.nl.embedding.glove.GloveModel;
 import org.uu.nl.embedding.progress.DoNothingPublisher;
 import org.uu.nl.embedding.progress.ProgressState;
 import org.uu.nl.embedding.progress.Publisher;

@@ -1,7 +1,7 @@
 package org.uu.nl.embedding.util.save;
 
-import org.uu.nl.embedding.analyze.glove.GloveModel;
-import org.uu.nl.embedding.analyze.glove.util.WritableUtils;
+import org.uu.nl.embedding.glove.GloveModel;
+import org.uu.nl.embedding.glove.util.WritableUtils;
 import org.uu.nl.embedding.progress.Publisher;
 
 import java.io.*;
