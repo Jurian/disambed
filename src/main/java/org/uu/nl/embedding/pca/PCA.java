@@ -8,7 +8,10 @@ import org.netlib.util.intW;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
 /**
@@ -31,14 +34,25 @@ public class PCA {
 
     }
 
+    private static final DecimalFormat df = new DecimalFormat("####0.0000");
+
     private static String toStringMatrix(double[] data, int nCols) {
 
         StringBuilder out = new StringBuilder(data.length * 7 + nCols * 2);
-        DecimalFormat df = new DecimalFormat("####0.0000");
 
         for(int i = 0; i < data.length; i ++) {
             out.append(" ").append(df.format(data[i]));
             if((i % nCols) == nCols-1) out.append("\n");
+        }
+
+        return out.toString();
+    }
+
+    private String toStringOrderedVector(double[] vector) {
+        StringBuilder out = new StringBuilder(vector.length * 7 );
+
+        for(int i = 0; i < vector.length; i ++) {
+            out.append(" ").append(df.format(vector[sortedIndices[i]]));
         }
 
         return out.toString();
@@ -125,7 +139,7 @@ public class PCA {
                 .mapToInt(i -> i).toArray();
 
         double sum = 0;
-        for (double v : eigenValuesReal) sum += v;
+        for (double v : eigenValuesReal) sum += FastMath.abs(v);
 
         for(int i = 0; i < eigenValuesReal.length; i++) {
             varPercentage[i] = FastMath.abs(eigenValuesReal[i] / sum);
@@ -138,10 +152,10 @@ public class PCA {
     public String toString() {
 
         return "PCA:\n" +
-                "\nVariance as percentage:\n" + toStringMatrix(varPercentage, nCols) +
-                "\nStandard deviation:\n" + toStringMatrix(sd, nCols) +
-                "\nEigen-values:\n" + toStringMatrix(eigenValuesReal, nCols) +
-                "\nEigen-vectors:\n" + toStringMatrix(leftEigenVectors, nCols);
+                "\nVariance as percentage:\n" + toStringOrderedVector(varPercentage) +
+                "\nStandard deviation:\n" + toStringOrderedVector(sd) +
+                "\nEigen-values:\n" + toStringOrderedVector(eigenValuesReal);
+                //"\nEigen-vectors:\n" + toStringMatrix(leftEigenVectors, nCols);
     }
 
     /**
@@ -151,22 +165,41 @@ public class PCA {
      */
     public Projection project(double minVariance) {
 
-        int maxEigenCols = getCumulativeVarianceIndex(minVariance);
+        final int maxEigenCols = getCumulativeVarianceIndex(minVariance);
 
-        double[] projection = new double[nRows * maxEigenCols];
-        int nRowsData = data.length / nCols;
-        int nColsEigenVectors = nCols;
+        final double[] projection = new double[nRows * maxEigenCols];
+        final int nRowsData = data.length / nCols;
+        final int nColsEigenVectors = nCols;
 
         // Note that LAPACK returns the eigenvectors in transposed fashion
         // So we have to keep that in mind while indexing
+        final ExecutorService es = Executors.newCachedThreadPool();
+        final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
-        for (int r = 0; r < nRowsData; r++) {
+        try {
             for (int c = 0; c < maxEigenCols; c++) {
-                for (int k = 0; k < nColsEigenVectors; k++) {
-                    projection[c + r * maxEigenCols] +=
-                            data[k + r * nCols] * leftEigenVectors[k + sortedIndices[c] * nColsEigenVectors];
-                }
+                final int constC = c;
+                cs.submit(() -> {
+                    for (int r = 0; r < nRowsData; r++) {
+                        for (int k = 0; k < nColsEigenVectors; k++) {
+                            projection[constC + r * maxEigenCols] +=
+                                    data[k + r * nCols] * leftEigenVectors[k + sortedIndices[constC] * nColsEigenVectors];
+                        }
+                    }
+                    return null;
+                });
             }
+
+            int done = 0;
+            while(done < maxEigenCols) {
+                cs.take();
+                done++;
+            }
+
+        } catch(InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            es.shutdown();
         }
 
         return new Projection(projection, maxEigenCols);
@@ -220,27 +253,37 @@ public class PCA {
 
         // Note that at this point the data has been centered, which means that
         // we do not have to subtract the column means (as they are all 0)
-        final ExecutorService es = Executors.newFixedThreadPool(8);
-        CompletionService<CoVarResult> cs = new ExecutorCompletionService<>(es);
-
+        final ExecutorService es = Executors.newCachedThreadPool();
+        final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
         try {
             for(int col1 = 0; col1 < nCols; col1++) {
-                cs.submit(new CoVarJob(col1));
+                final int constCol1 = col1;
+                cs.submit(() -> {
+                    for(int col2 = 0; col2 < nCols; col2++) {
+
+                        if(constCol1 < col2) continue;
+
+                        double cov = 0;
+                        int offset;
+                        for(int i = 0; i < nRows; i++) {
+                            offset = i * nCols;
+                            cov += data[offset + constCol1] * data[offset + col2] ;
+                        }
+                        cov /= (nRows - 1);
+                        covMatrix[constCol1 + col2 * nCols] = cov;
+                        covMatrix[col2 + constCol1 * nCols] = cov;
+                    }
+                    return null;
+                });
             }
 
-            int received = 0;
-            while( received < nCols) {
-                CoVarResult cov = cs.take().get();
-
-                for(int col2 = 0; col2 < nCols; col2++) {
-                    if(cov.col1 < col2) continue;
-                    covMatrix[cov.col1 + col2 * nCols] = cov.cov[col2];
-                    covMatrix[col2 + cov.col1 * nCols] = cov.cov[col2];
-                }
-
-                received++;
+            int done = 0;
+            while(done < nCols) {
+                cs.take();
+                done++;
             }
-        } catch (InterruptedException | ExecutionException e) {
+
+        } catch(InterruptedException e) {
             e.printStackTrace();
         } finally {
             es.shutdown();
@@ -274,44 +317,5 @@ public class PCA {
         }
     }
 
-    private class CoVarResult {
-        final int col1;
-        final double[] cov;
 
-        private CoVarResult(int col1, double[] cov) {
-            this.col1 = col1;
-            this.cov = cov;
-        }
-    }
-
-    private class CoVarJob implements Callable<CoVarResult> {
-
-        final int col1;
-
-        CoVarJob(int col1) {
-            this.col1 = col1;
-        }
-
-        @Override
-        public CoVarResult call() {
-
-            double[] out = new double[nCols];
-
-            for(int col2 = 0; col2 < nCols; col2++) {
-
-                if(col1 < col2) continue;
-
-                double cov = 0;
-                int offset;
-                for(int i = 0; i < nRows; i++) {
-                    offset = i * nCols;
-                    cov += data[offset + col1] * data[offset + col2] ;
-                }
-
-                out[col2] = cov / (nRows - 1);
-            }
-
-            return new CoVarResult(col1, out);
-        }
-    }
 }
