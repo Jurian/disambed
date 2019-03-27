@@ -8,6 +8,7 @@ import org.uu.nl.embedding.analyze.bca.util.BCAOptions;
 import org.uu.nl.embedding.analyze.glove.GloveModel;
 import org.uu.nl.embedding.analyze.glove.opt.*;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
+import org.uu.nl.embedding.pca.PCA;
 import org.uu.nl.embedding.progress.CommandLineProgress;
 import org.uu.nl.embedding.util.load.JenaLoader;
 import org.uu.nl.embedding.util.save.GloveTextWriter;
@@ -131,6 +132,11 @@ public class Main {
                 model.setOptimum(optimizer.optimize());
             }
             logger.info("GloVe converged with final average cost " + model.getOptimum().getFinalCost());
+
+            PCA pca = new PCA(model.getOptimum().getResult(), model.getDimension(), false);
+            PCA.Projection projection = pca.project(0.95);
+
+            logger.info(projection.getnCols());
 
             try(CommandLineProgress writeProgress = new CommandLineProgress("Writing to file")) {
 
