@@ -1,8 +1,8 @@
-package org.uu.nl.embedding.bca.grph;
+package org.uu.nl.embedding.bca;
 
 import grph.Grph;
 import org.uu.nl.embedding.CooccurenceMatrix;
-import org.uu.nl.embedding.bca.grph.util.GraphStatistics;
+import org.uu.nl.embedding.bca.util.GraphStatistics;
 import org.uu.nl.embedding.bca.util.BCAOptions;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.OrderedIntegerPair;

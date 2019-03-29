@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.bca.grph.util;
+package org.uu.nl.embedding.bca.util;
 
 import grph.Grph;
 import grph.properties.NumericalProperty;

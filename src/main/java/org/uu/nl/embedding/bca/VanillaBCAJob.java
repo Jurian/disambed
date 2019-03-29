@@ -1,7 +1,7 @@
-package org.uu.nl.embedding.bca.grph;
+package org.uu.nl.embedding.bca;
 
 import grph.Grph;
-import org.uu.nl.embedding.bca.grph.util.BCAJob;
+import org.uu.nl.embedding.bca.util.BCAJob;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.PaintRegistry;
 
