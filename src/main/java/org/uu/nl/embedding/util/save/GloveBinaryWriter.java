@@ -2,7 +2,6 @@ package org.uu.nl.embedding.util.save;
 
 import org.uu.nl.embedding.glove.GloveModel;
 import org.uu.nl.embedding.glove.util.WritableUtils;
-import org.uu.nl.embedding.progress.Publisher;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -33,7 +32,7 @@ public class GloveBinaryWriter implements GloveWriter {
 	}
 
 	@Override
-	public void write(GloveModel model, Path outputFolder, Publisher publisher) throws IOException {
+	public void write(GloveModel model, Path outputFolder) throws IOException {
 		Files.createDirectories(outputFolder);
 		
 		long blockSize = -1, offset = 0;
