@@ -3,7 +3,7 @@ package org.uu.nl.embedding;
 import grph.Grph;
 import org.apache.commons.cli.*;
 import org.apache.log4j.Logger;
-import org.uu.nl.embedding.bca.grph.BookmarkColoring;
+import org.uu.nl.embedding.bca.BookmarkColoring;
 import org.uu.nl.embedding.bca.util.BCAOptions;
 import org.uu.nl.embedding.glove.GloveModel;
 import org.uu.nl.embedding.glove.opt.*;
