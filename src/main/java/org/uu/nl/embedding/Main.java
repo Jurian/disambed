@@ -7,6 +7,7 @@ import org.uu.nl.embedding.bca.BookmarkColoring;
 import org.uu.nl.embedding.bca.util.BCAOptions;
 import org.uu.nl.embedding.glove.GloveModel;
 import org.uu.nl.embedding.glove.opt.*;
+import org.uu.nl.embedding.glove.opt.impl.*;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
 import org.uu.nl.embedding.pca.PCA;
 import org.uu.nl.embedding.progress.CommandLineProgress;

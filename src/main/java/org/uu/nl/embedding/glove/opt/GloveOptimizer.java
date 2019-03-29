@@ -14,26 +14,26 @@ import java.util.concurrent.*;
 
 public abstract class GloveOptimizer implements Optimizer {
 
-    final CooccurenceMatrix crecs;
-	final int dimension;
-    final int vocabSize;
+	protected final CooccurenceMatrix crecs;
+	protected final int dimension;
+	protected final int vocabSize;
     private final int maxIterations;
-    final int numThreads;
-    final int crecCount;
+	protected final int numThreads;
+	protected final int crecCount;
 	private final double  tolerance;
-    final double xMax;
-    final double alpha;
-    final double learningRate = 0.05;
-	final double[] W;
-	final int[] linesPerThread;
+	protected final double xMax;
+	protected final double alpha;
+	protected final double learningRate = 0.05;
+	protected final double[] W;
+	protected final int[] linesPerThread;
 	private final Publisher publisher;
 	private final ExecutorService es;
 
-	GloveOptimizer(GloveModel glove, int maxIterations, double tolerance) {
+	protected GloveOptimizer(GloveModel glove, int maxIterations, double tolerance) {
 		this(glove, maxIterations, tolerance, new DoNothingPublisher());
 	}
 
-	GloveOptimizer(GloveModel glove, int maxIterations, double tolerance, Publisher publisher) {
+	protected GloveOptimizer(GloveModel glove, int maxIterations, double tolerance, Publisher publisher) {
 		this.publisher = publisher;
 		this.crecs = glove.getCoMatrix();
 		this.xMax = glove.getxMax();
