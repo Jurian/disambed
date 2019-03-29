@@ -12,7 +12,6 @@ import java.util.Queue;
 
 public class SemanticBCAJob extends BCAJob {
 
-	private final boolean debug = false;
 	private static final int SKIP = -1;
 	private final Map<Integer, BCV> computedBCV;
 	private final int[][] in, out;
@@ -71,7 +70,7 @@ public class SemanticBCAJob extends BCAJob {
 
 		int[] neighbors, edges, edgeCache;
 		int focusNode, neighbor, predicate, edge, neighborCount, ignoredEdgeCount;
-		double weight, partialWetPaint;
+		double partialWetPaint;
 		SemanticNode node;
 		BCV precomputed;
 
@@ -84,8 +83,8 @@ public class SemanticBCAJob extends BCAJob {
 			focusNode = node.nodeID;
 			final double wetPaint = wetPaintRegister.get(focusNode);
 
-			precomputed = computedBCV.get(focusNode);
-			if(precomputed != null) {
+			//precomputed = computedBCV.get(focusNode);
+			if(false){//precomputed != null) {
 				precomputed.forEach((index, precomputedPaint) -> {
 					final double scaled = precomputedPaint * wetPaint;
 					if(scaled > (epsilon * alpha)) bcv.add(index, scaled);
@@ -99,14 +98,13 @@ public class SemanticBCAJob extends BCAJob {
 
 				ignoredEdgeCount = 0;
 
-				// We do something different in case of a literal node
 				if(isLiteral(focusNode)) {
 					neighbors = in[focusNode];
 					edges = new int[neighbors.length];
 					predicate = node.predicateID == SKIP ? SKIP : getEdgeType(node.predicateID);
 					// Cache edges and reuse in loop
 					edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
-					
+
 					// Check which edges we need to follow and which to ignore
 					for(int i = 0; i < neighbors.length; i++) {
 
@@ -118,15 +116,36 @@ public class SemanticBCAJob extends BCAJob {
 						}
 					}
 				} else {
-					neighbors = out[focusNode];
-					// Cache edges and reuse in loop
-					edgeCache = graph.getOutOnlyEdges(focusNode).toIntArray();
-					edges = new int[neighbors.length];
+					if(reverse) {
+						neighbors = new int[in[focusNode].length + out[focusNode].length];
+						// Use all incoming neighbors
+						System.arraycopy(in[focusNode], 0, neighbors, 0, in[focusNode].length);
 
-					for(int i = 0; i < neighbors.length; i++) {
-						edges[i] = getEdge(focusNode, neighbors[i], edgeCache, graph.getInEdges(neighbors[i]).toIntArray());
+						// Also use outgoing neighbors to a literal node
+						for(int i = 0 ; i < out[focusNode].length; i++) {
+							if(isLiteral(out[focusNode][i]))
+								neighbors[i + in[focusNode].length] = out[focusNode][i];
+							else
+								neighbors[i + in[focusNode].length] = SKIP;
+						}
+
+						edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
+						edges = new int[neighbors.length];
+
+						for(int i = 0; i < neighbors.length; i++)
+							edges[i] = getEdge(neighbors[i], focusNode, graph.getInEdges(neighbors[i]).toIntArray(), edgeCache);
+
+					} else {
+						// Simply follow outgoing nodes
+						neighbors = out[focusNode];
+						edgeCache = graph.getOutOnlyEdges(focusNode).toIntArray();
+						edges = new int[neighbors.length];
+
+						for(int i = 0; i < neighbors.length; i++)
+							edges[i] = getEdge(focusNode, neighbors[i], edgeCache, graph.getInEdges(neighbors[i]).toIntArray());
 					}
 				}
+
 
 				neighborCount = neighbors.length - ignoredEdgeCount;
 				if(neighborCount == 0)
@@ -137,13 +156,14 @@ public class SemanticBCAJob extends BCAJob {
 				if(partialWetPaint < epsilon)
 					continue;
 
-				if(debug)
-					System.out.println(
-							nodeLabel(bookmark) +
-									" Focus node: " + nodeLabel(focusNode) +
-									" Queue size:" + nodeQueue.size() +
-									" neighbor count:" + neighborCount +
-									" wet paint:" + wetPaint);
+				/*
+				System.out.println(
+						nodeLabel(bookmark) +
+								" Focus node: " + nodeLabel(focusNode) +
+								" Queue size:" + nodeQueue.size() +
+								" neighbor count:" + neighborCount +
+								" wet paint:" + wetPaint);
+				*/
 
 				for (int i = 0; i < neighbors.length; i++) {
 					
@@ -152,10 +172,7 @@ public class SemanticBCAJob extends BCAJob {
 					
 					if(neighbor == node.prevNodeID || edge == SKIP) continue;
 
-					weight = 1 / (double) neighborCount;
-					partialWetPaint = (1 - alpha) * wetPaint * weight;
-
-					bcv.add(getEdgeType(edge), partialWetPaint);
+					bcv.add(graph.getVertices().size() + getEdgeType(edge), partialWetPaint);
 
 					// Remember which node we came from so we don't go back
 					// Remember which predicate we used to get here
