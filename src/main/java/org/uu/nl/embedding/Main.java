@@ -24,7 +24,7 @@ import java.util.Properties;
 
 public class Main {
 
-    final static Logger logger = Logger.getLogger(Main.class);
+    final static Logger logger = Logger.getLogger("Graph Embeddings");
 
     private static Option option_config = Option.builder( "c")
             .required(true)
@@ -124,7 +124,7 @@ public class Main {
             model.setOptimum(optimizer.optimize());
 
             logger.info("GloVe converged with final average cost " + model.getOptimum().getFinalCost());
-
+            logger.info("Starting PCA...");
             PCA pca = new PCA(model.getOptimum().getResult(), model.getDimension(), false);
             model.updateOptimum(pca.project(0.95));
 
@@ -139,7 +139,7 @@ public class Main {
             GloveWriter writer = new GloveTextWriter(bca_fileName+"."+bca_alg.name().toLowerCase()+"."+glove_alg.toLowerCase()+"."+glove_dim);
             writer.write(model, currentRelativePath.resolve("out"));
 
-        } catch (ParseException | NumberFormatException | UnsupportedAlgorithmException | IOException | FileNotFoundException  e) {
+        } catch (ParseException | NumberFormatException | UnsupportedAlgorithmException | IOException  e) {
             logger.error(e.getMessage(), e);
             formatter.printHelp("Graph Embeddings", options);
             System.exit(1);
