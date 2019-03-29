@@ -10,9 +10,9 @@ import org.uu.nl.embedding.glove.opt.*;
 import org.uu.nl.embedding.glove.opt.impl.*;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
 import org.uu.nl.embedding.pca.PCA;
-import org.uu.nl.embedding.util.load.JenaLoader;
-import org.uu.nl.embedding.util.save.GloveTextWriter;
-import org.uu.nl.embedding.util.save.GloveWriter;
+import org.uu.nl.embedding.util.read.JenaReader;
+import org.uu.nl.embedding.util.write.GloveTextWriter;
+import org.uu.nl.embedding.util.write.GloveWriter;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -94,7 +94,7 @@ public class Main {
             logger.info("GloVe Tolerance: " + glove_tol);
             logger.info("GloVe Maximum Iterations: " + glove_max_iter);
 
-            JenaLoader loader = new JenaLoader();
+            JenaReader loader = new JenaReader();
             Rdf2GrphConverter converter = new Rdf2GrphConverter();
             Grph graph = converter.convert(loader.load(bca_file));
 
