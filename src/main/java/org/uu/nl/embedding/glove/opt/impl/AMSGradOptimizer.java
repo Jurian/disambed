@@ -4,7 +4,6 @@ import org.apache.commons.math.util.FastMath;
 import org.uu.nl.embedding.glove.GloveModel;
 import org.uu.nl.embedding.glove.opt.GloveJob;
 import org.uu.nl.embedding.glove.opt.GloveOptimizer;
-import org.uu.nl.embedding.progress.Publisher;
 
 /**
  * <p>
