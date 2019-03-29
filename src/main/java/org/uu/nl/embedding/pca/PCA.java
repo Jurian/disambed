@@ -118,7 +118,7 @@ public class PCA {
         else
             this.data = Arrays.copyOf(vectors, vectors.length);
 
-        center();
+        center(this.data, nCols);
         double[] covarianceMatrix = covariance();
 
         // Find the needed workspace
@@ -216,6 +216,8 @@ public class PCA {
             es.shutdown();
         }
 
+        center(projection, maxEigenCols);
+
         return new Projection(projection, maxEigenCols);
     }
 
@@ -238,7 +240,7 @@ public class PCA {
      * Calculate the mean of every column
      * @return An array of means
      */
-    private double[] colMeans() {
+    private double[] colMeans(double[] data, int nCols) {
         double[] means = new double[nCols];
         for(int i = 0; i < data.length; i++) {
             int row = i / nCols, col = i % nCols;
@@ -250,8 +252,8 @@ public class PCA {
     /**
      * Center the data around 0, will replace the data matrix with new values
      */
-    private void center() {
-        double[] means = colMeans();
+    private void center(double[] data, int nCols) {
+        double[] means = colMeans(data, nCols);
         for(int i = 0; i < data.length; i++) {
             data[i] -= means[i % nCols];
         }
