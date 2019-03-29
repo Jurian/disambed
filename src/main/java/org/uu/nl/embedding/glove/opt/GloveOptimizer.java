@@ -65,7 +65,7 @@ public abstract class GloveOptimizer implements Optimizer {
 		CompletionService<Double> completionService = new ExecutorCompletionService<>(es);
 
 		double finalCost = 0;
-		try(ProgressBar pb = new ProgressBar(getName(), maxIterations, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " iterations", 1, true )) {
+		try(ProgressBar pb = new ProgressBar("GloVe-"+getName(), maxIterations, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " iterations", 1, true )) {
 			double prevCost = 0;
 			double iterDiff;
 			for(int iteration = 0; iteration < maxIterations; iteration++ ) {
