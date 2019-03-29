@@ -45,7 +45,6 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		
 		final Map<OrderedIntegerPair, Double> cooccurrence_map = new ConcurrentHashMap<>(vocabSize);
 		final ExecutorService es = Executors.newWorkStealingPool(numThreads);
-		final Map<Integer, BCV> computedBCV = new ConcurrentHashMap<>();
 		
 		final int[][] in = graph.getInNeighborhoods();
 		final int[][] out = graph.getOutNeighborhoods();
@@ -59,13 +58,13 @@ public class BookmarkColoring implements CooccurenceMatrix {
 				default:
 				case VANILLA:
 					completionService.submit(new VanillaBCAJob(
-							graph, computedBCV, bookmark,
+							graph, bookmark,
 							includeReverse, alpha, epsilon,
 							in, out));
 					break;
 				case SEMANTIC:
 					completionService.submit(new SemanticBCAJob(
-							graph, computedBCV, bookmark,
+							graph, bookmark,
 							includeReverse, alpha, epsilon,
 							in, out));
 					break;
