@@ -1,10 +1,7 @@
 package org.uu.nl.embedding.util.save;
 
+import me.tongfei.progressbar.ProgressBar;
 import org.uu.nl.embedding.glove.GloveModel;
-import org.uu.nl.embedding.progress.DoNothingPublisher;
-import org.uu.nl.embedding.progress.ProgressState;
-import org.uu.nl.embedding.progress.Publisher;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -29,7 +26,7 @@ public class GloveTextWriter implements GloveWriter {
 	}
 	
 	@Override
-	public void write(GloveModel model, Path outputFolder, Publisher publisher) throws IOException {
+	public void write(GloveModel model, Path outputFolder) throws IOException {
 		
 		Files.createDirectories(outputFolder);
 		
@@ -42,39 +39,28 @@ public class GloveTextWriter implements GloveWriter {
 		final String delimiter = "\t";
 		final String newLine = "\n";
 
-		if(publisher == null) {
-			publisher = new DoNothingPublisher();
-		}
-		publisher.setNewMax(vocabSize);
+		try(ProgressBar pb = new ProgressBar("Writing to file", vocabSize)) {
+			try (Writer dict = new BufferedWriter(new FileWriter(outputFolder.resolve(DICT_FILE).toFile()))) {
+				try (Writer vect = new BufferedWriter(new FileWriter(outputFolder.resolve(VECTORS_FILE).toFile()))) {
 
-		ProgressState progress = new ProgressState();
+					for (int i = 0; i < vocabSize; i++) {
 
-		try(Writer dict = new BufferedWriter(new FileWriter(outputFolder.resolve(DICT_FILE).toFile()))) {
-			try(Writer vect = new BufferedWriter(new FileWriter(outputFolder.resolve(VECTORS_FILE).toFile()))) {
+						for (int d = 0; d < out.length; d++)
+							out[d] = String.format("%11.6E", result[d + i * dimension]);
 
-				for(int i = 0; i < vocabSize; i++) {
-
-					for(int d = 0; d < out.length; d++) 
-						out[d] = String.format("%11.6E", result[d + i*dimension]);
-					
-					vect.write(String.join(delimiter, out) + newLine);
-					dict.write(model.getCoMatrix().getKey(i)
-							// Remove newlines and tabs
-							.replace("\n", "")
-							.replace("\r", "")
-							.replace(delimiter, "")
-							+ delimiter
-							+ model.getCoMatrix().getType(i)
-							+ newLine
-					);
-
-					progress.setN(i);
-					publisher.updateProgress(progress);
+						vect.write(String.join(delimiter, out) + newLine);
+						dict.write(model.getCoMatrix().getKey(i)
+								// Remove newlines and tabs
+								.replace("\n", "")
+								.replace("\r", "")
+								.replace(delimiter, "")
+								+ delimiter
+								+ model.getCoMatrix().getType(i)
+								+ newLine
+						);
+						pb.step();
+					}
 				}
-
-				progress.setFinished(true);
-				progress.setN(vocabSize);
-				publisher.updateProgress(progress);
 			}
 		}
 	}

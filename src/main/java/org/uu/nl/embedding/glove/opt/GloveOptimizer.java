@@ -1,5 +1,6 @@
 package org.uu.nl.embedding.glove.opt;
 
+import me.tongfei.progressbar.ProgressBar;
 import org.apache.commons.math.util.FastMath;
 import org.uu.nl.embedding.CooccurenceMatrix;
 import org.uu.nl.embedding.glove.GloveModel;
@@ -26,15 +27,9 @@ public abstract class GloveOptimizer implements Optimizer {
 	protected final double learningRate = 0.05;
 	protected final double[] W;
 	protected final int[] linesPerThread;
-	private final Publisher publisher;
 	private final ExecutorService es;
 
 	protected GloveOptimizer(GloveModel glove, int maxIterations, double tolerance) {
-		this(glove, maxIterations, tolerance, new DoNothingPublisher());
-	}
-
-	protected GloveOptimizer(GloveModel glove, int maxIterations, double tolerance, Publisher publisher) {
-		this.publisher = publisher;
 		this.crecs = glove.getCoMatrix();
 		this.xMax = glove.getxMax();
 		this.alpha = glove.getAlpha();
@@ -65,15 +60,12 @@ public abstract class GloveOptimizer implements Optimizer {
 	
 	@Override
 	public Optimum optimize() {
-		
-		//System.out.println("Starting " + getName() + " optimizer");
+
 		Optimum opt = new Optimum();
 		CompletionService<Double> completionService = new ExecutorCompletionService<>(es);
 
-		publisher.setNewMax(maxIterations);
-		final ProgressState progressState = new ProgressState(ProgressType.GLOVE);
 		double finalCost = 0;
-		try {
+		try(ProgressBar pb = new ProgressBar(getName(), maxIterations)) {
 			double prevCost = 0;
 			double iterDiff;
 			for(int iteration = 0; iteration < maxIterations; iteration++ ) {
@@ -97,15 +89,14 @@ public abstract class GloveOptimizer implements Optimizer {
 				iterDiff= FastMath.abs(prevCost - localCost);
 				if(iterDiff <= tolerance) {
 					finalCost = localCost;
+					pb.step();
+					pb.setExtraMessage(formatMessage(iterDiff));
 					break;
 				}
 				prevCost = localCost;
-				//opt.addCost(prevCost);
 
-				progressState.setN(iteration);
-				progressState.setValue(prevCost);
-				publisher.updateProgress(progressState);
-				publisher.setExtraMessage(String.format("%.8f", iterDiff) + "/" + String.format("%.5f", tolerance));
+				pb.step();
+				pb.setExtraMessage(formatMessage(iterDiff));
 			}
 			
 		} finally {
@@ -115,11 +106,11 @@ public abstract class GloveOptimizer implements Optimizer {
 		opt.setResult(extractResult());
 		opt.setFinalCost(finalCost);
 
-		progressState.setValue(finalCost);
-		progressState.setFinished(true);
-		publisher.updateProgress(progressState);
-
 		return opt;
+	}
+
+	private String formatMessage(double iterDiff) {
+		return String.format("%.8f", iterDiff) + "/" + String.format("%.5f", tolerance);
 	}
 
 	/**

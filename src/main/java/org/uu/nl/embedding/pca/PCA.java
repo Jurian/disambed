@@ -2,6 +2,7 @@ package org.uu.nl.embedding.pca;
 
 import com.github.fommil.netlib.LAPACK;
 
+import me.tongfei.progressbar.ProgressBar;
 import org.apache.commons.math.util.FastMath;
 import org.netlib.util.intW;
 
@@ -178,7 +179,7 @@ public class PCA {
         final ExecutorService es = Executors.newWorkStealingPool(numThreads);
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
-        try {
+        try(ProgressBar pb = new ProgressBar("Projecting", maxEigenCols)) {
             for (int c = 0; c < maxEigenCols; c++) {
                 final int constC = c;
                 cs.submit(() -> {
@@ -196,6 +197,7 @@ public class PCA {
             while(done < maxEigenCols) {
                 cs.take();
                 done++;
+                pb.step();
             }
 
         } catch(InterruptedException e) {
@@ -257,7 +259,9 @@ public class PCA {
         // we do not have to subtract the column means (as they are all 0)
         final ExecutorService es = Executors.newWorkStealingPool(numThreads);
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
-        try {
+
+        try(ProgressBar pb = new ProgressBar("Covariance Matrix", nCols)) {
+
             for(int col1 = 0; col1 < nCols; col1++) {
                 final int constCol1 = col1;
                 cs.submit(() -> {
@@ -283,6 +287,7 @@ public class PCA {
             while(done < nCols) {
                 cs.take();
                 done++;
+                pb.step();
             }
 
         } catch(InterruptedException e) {

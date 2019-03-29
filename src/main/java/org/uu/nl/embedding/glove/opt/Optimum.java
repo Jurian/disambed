@@ -21,4 +21,5 @@ public class Optimum {
 	public void setFinalCost(double finalCost) {
 		this.finalCost = finalCost;
 	}
+
 }

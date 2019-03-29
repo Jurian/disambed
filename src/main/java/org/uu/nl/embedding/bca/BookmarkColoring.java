@@ -1,15 +1,12 @@
 package org.uu.nl.embedding.bca;
 
 import grph.Grph;
+import me.tongfei.progressbar.ProgressBar;
 import org.uu.nl.embedding.CooccurenceMatrix;
 import org.uu.nl.embedding.bca.util.GraphStatistics;
 import org.uu.nl.embedding.bca.util.BCAOptions;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.OrderedIntegerPair;
-import org.uu.nl.embedding.progress.DoNothingPublisher;
-import org.uu.nl.embedding.progress.ProgressState;
-import org.uu.nl.embedding.progress.ProgressType;
-import org.uu.nl.embedding.progress.Publisher;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -30,10 +27,6 @@ public class BookmarkColoring implements CooccurenceMatrix {
 	private final boolean includeReverse;
 
 	public BookmarkColoring(Grph graph, BCAOptions options) {
-		this(graph, options, new DoNothingPublisher());
-	}
-
-	public BookmarkColoring(Grph graph, BCAOptions options, Publisher publisher) {
 
 		this.includeReverse = options.isReverse();
 		this.alpha = options.getAlpha();
@@ -53,7 +46,7 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		final int[][] in = graph.getInNeighborhoods();
 		final int[][] out = graph.getOutNeighborhoods();
 
-		try {
+		try(ProgressBar pb = new ProgressBar("BCA", stats.jobs.length)) {
 
 			CompletionService<BCV> completionService = new ExecutorCompletionService<>(es);
 			//System.out.println("Submitting " + stats.jobs.length + " jobs");
@@ -73,13 +66,10 @@ public class BookmarkColoring implements CooccurenceMatrix {
 							in, out));
 					break;
 				}
-
 			}
 			
 			//now retrieve the futures after computation (auto wait for it)
 			int received = 0;
-			publisher.setNewMax(stats.jobs.length);
-			ProgressState progressState = new ProgressState(ProgressType.BCA);
 
 			while(received < stats.jobs.length) {
 
@@ -103,18 +93,11 @@ public class BookmarkColoring implements CooccurenceMatrix {
 				} finally {
 
 					received ++;
-					double p = (received / (double)stats.jobs.length * 100);
-
-					progressState.setValue(p);
-					progressState.setN(received);
-					publisher.updateProgress(progressState);
+					pb.step();
 				}
 			}
 
-			progressState.setValue(stats.jobs.length);
-			progressState.setFinished(true);
-			publisher.updateProgress(progressState);
-			publisher.setExtraMessage("Processed " + stats.jobs.length + " jobs");
+			pb.setExtraMessage("Processed " + stats.jobs.length + " jobs");
 
 		} finally {
 			es.shutdown();

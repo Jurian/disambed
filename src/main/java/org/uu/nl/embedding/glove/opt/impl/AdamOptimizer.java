@@ -48,8 +48,8 @@ public class AdamOptimizer extends GloveOptimizer {
 	 */
 	private final double epsilon = 1;
 	
-	public AdamOptimizer(GloveModel glove, int maxIterations, double tolerance, Publisher publisher) {
-		super(glove, maxIterations, tolerance, publisher);
+	public AdamOptimizer(GloveModel glove, int maxIterations, double tolerance) {
+		super(glove, maxIterations, tolerance);
 		
 		// Increase dimension to make room for bias terms
 		int dimension = this.dimension + 1;

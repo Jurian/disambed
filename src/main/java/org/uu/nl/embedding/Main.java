@@ -10,7 +10,6 @@ import org.uu.nl.embedding.glove.opt.*;
 import org.uu.nl.embedding.glove.opt.impl.*;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
 import org.uu.nl.embedding.pca.PCA;
-import org.uu.nl.embedding.progress.CommandLineProgress;
 import org.uu.nl.embedding.util.load.JenaLoader;
 import org.uu.nl.embedding.util.save.GloveTextWriter;
 import org.uu.nl.embedding.util.save.GloveWriter;
@@ -101,56 +100,44 @@ public class Main {
 
             BCAOptions bcaOptions = new BCAOptions(bca_alg, bca_reverse, bca_alpha, bca_epsilon);
 
-            BookmarkColoring bca;
-            try(CommandLineProgress bcaProgress = new CommandLineProgress("BCA")) {
-                bca = new BookmarkColoring(graph, bcaOptions, bcaProgress );
-            }
+            BookmarkColoring bca = new BookmarkColoring(graph, bcaOptions);
 
             GloveModel model = new GloveModel(glove_dim, bca);
 
-            try(CommandLineProgress gloveProgress = new CommandLineProgress("GloVe")) {
-                final Optimizer optimizer;
-                switch(glove_alg) {
-                    default:
-                        throw new UnsupportedAlgorithmException("Unsupported optimization algorithm. Use one of: adagrad, adam, adadelta, amsgrad");
-                    case "adagrad":
-                        optimizer = new AdagradOptimizer(model, glove_max_iter, glove_tol, gloveProgress);
-                        break;
-                    case "adam":
-                        optimizer = new AdamOptimizer(model, glove_max_iter, glove_tol, gloveProgress);
-                        break;
-                    case "adadelta":
-                        optimizer = new AdadeltaOptimizer(model, glove_max_iter, glove_tol, gloveProgress);
-                        break;
-                    case "amsgrad":
-                        optimizer = new AMSGradOptimizer(model, glove_max_iter, glove_tol, gloveProgress);
-                        break;
-                }
-                model.setOptimum(optimizer.optimize());
+            final Optimizer optimizer;
+            switch(glove_alg) {
+                default:
+                    throw new UnsupportedAlgorithmException("Unsupported optimization algorithm. Use one of: adagrad, adam, adadelta, amsgrad");
+                case "adagrad":
+                    optimizer = new AdagradOptimizer(model, glove_max_iter, glove_tol);
+                    break;
+                case "adam":
+                    optimizer = new AdamOptimizer(model, glove_max_iter, glove_tol);
+                    break;
+                case "adadelta":
+                    optimizer = new AdadeltaOptimizer(model, glove_max_iter, glove_tol);
+                    break;
+                case "amsgrad":
+                    optimizer = new AMSGradOptimizer(model, glove_max_iter, glove_tol);
+                    break;
             }
+            model.setOptimum(optimizer.optimize());
+
             logger.info("GloVe converged with final average cost " + model.getOptimum().getFinalCost());
 
             PCA pca = new PCA(model.getOptimum().getResult(), model.getDimension(), false);
-            logger.info(pca);
-            PCA.Projection projection = pca.project(0.95);
-            model.getOptimum().setResult(projection.getProjection());
-            model.setDimension(projection.getnCols());
+            model.updateOptimum(pca.project(0.95));
 
-            logger.info(projection.getnCols());
-
-            try(CommandLineProgress writeProgress = new CommandLineProgress("Writing to file")) {
-
-                String bca_fileName = bca_file.getName().toLowerCase();
-                if(bca_fileName.contains(".")) {
-                    int idx = bca_fileName.lastIndexOf(".");
-                    bca_fileName = bca_fileName.substring(0, idx);
-                }
-                if(bca_reverse){
-                    bca_fileName += ".reverse";
-                }
-                GloveWriter writer = new GloveTextWriter(bca_fileName+"."+bca_alg.name().toLowerCase()+"."+glove_alg.toLowerCase()+"."+glove_dim);
-                writer.write(model, currentRelativePath.resolve("out"), writeProgress);
+            String bca_fileName = bca_file.getName().toLowerCase();
+            if(bca_fileName.contains(".")) {
+                int idx = bca_fileName.lastIndexOf(".");
+                bca_fileName = bca_fileName.substring(0, idx);
             }
+            if(bca_reverse){
+                bca_fileName += ".reverse";
+            }
+            GloveWriter writer = new GloveTextWriter(bca_fileName+"."+bca_alg.name().toLowerCase()+"."+glove_alg.toLowerCase()+"."+glove_dim);
+            writer.write(model, currentRelativePath.resolve("out"));
 
         } catch (ParseException | NumberFormatException | UnsupportedAlgorithmException | IOException | FileNotFoundException  e) {
             logger.error(e.getMessage(), e);

@@ -4,6 +4,7 @@ import grph.Grph;
 import grph.in_memory.InMemoryGrph;
 import grph.properties.NumericalProperty;
 import grph.properties.Property;
+import me.tongfei.progressbar.ProgressBar;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.query.*;
@@ -48,7 +49,7 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 		
 		final ExtendedIterator<Triple> triples = model.getGraph().find();
 
-		try {
+		try(ProgressBar pb = new ProgressBar("Converting", model.size())) {
 			while (triples.hasNext()) {
 				t = triples.next();
 				s = t.getSubject();
@@ -74,6 +75,7 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 
 				edgeTypes.setValue(p_i, edgeType);
 				p_i++;
+				pb.step();
 			}
 		} finally {
 			triples.close();

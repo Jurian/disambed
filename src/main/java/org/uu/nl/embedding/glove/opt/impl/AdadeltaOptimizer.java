@@ -46,8 +46,8 @@ public class AdadeltaOptimizer extends GloveOptimizer {
 	 */
 	private final double epsilon = 1e-8;
 
-	public AdadeltaOptimizer(GloveModel glove, int maxIterations, double tolerance, Publisher publisher) {
-		super(glove, maxIterations, tolerance, publisher);
+	public AdadeltaOptimizer(GloveModel glove, int maxIterations, double tolerance) {
+		super(glove, maxIterations, tolerance);
 
 		// Increase dimension to make room for bias terms
 		int dimension = this.dimension + 1;
