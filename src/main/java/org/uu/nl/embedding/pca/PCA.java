@@ -173,7 +173,7 @@ public class PCA {
 
         // Note that LAPACK returns the eigenvectors in transposed fashion
         // So we have to keep that in mind while indexing
-        final ExecutorService es = Executors.newCachedThreadPool();
+        final ExecutorService es = Executors.newWorkStealingPool();
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
         try {
@@ -253,7 +253,7 @@ public class PCA {
 
         // Note that at this point the data has been centered, which means that
         // we do not have to subtract the column means (as they are all 0)
-        final ExecutorService es = Executors.newCachedThreadPool();
+        final ExecutorService es = Executors.newWorkStealingPool();
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
         try {
             for(int col1 = 0; col1 < nCols; col1++) {
