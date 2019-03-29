@@ -55,8 +55,8 @@ public class VanillaBCAJob extends BCAJob {
 			focusNode = nodeQueue.poll();
 			final double wetPaint = wetPaintRegister.get(focusNode);
 
-			precomputed = computedBCV.get(focusNode);
-			if(false){//if(precomputed != null) {
+			//precomputed = computedBCV.get(focusNode);
+			if(false){//precomputed != null) {
 				precomputed.forEach((index, precomputedPaint) -> {
 					final double scaled = precomputedPaint * wetPaint;
 					if(scaled > (epsilon * alpha)) bcv.add(index, scaled);
