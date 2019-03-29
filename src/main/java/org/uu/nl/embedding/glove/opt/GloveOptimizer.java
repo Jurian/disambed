@@ -1,13 +1,10 @@
 package org.uu.nl.embedding.glove.opt;
 
 import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.commons.math.util.FastMath;
 import org.uu.nl.embedding.CooccurenceMatrix;
 import org.uu.nl.embedding.glove.GloveModel;
-import org.uu.nl.embedding.progress.DoNothingPublisher;
-import org.uu.nl.embedding.progress.ProgressState;
-import org.uu.nl.embedding.progress.ProgressType;
-import org.uu.nl.embedding.progress.Publisher;
 
 import java.util.Random;
 import java.util.concurrent.*;
@@ -28,6 +25,9 @@ public abstract class GloveOptimizer implements Optimizer {
 	protected final double[] W;
 	protected final int[] linesPerThread;
 	private final ExecutorService es;
+
+    private static final int PB_UPDATE_INTERVAL = 250;
+    private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
 
 	protected GloveOptimizer(GloveModel glove, int maxIterations, double tolerance) {
 		this.crecs = glove.getCoMatrix();
@@ -65,7 +65,7 @@ public abstract class GloveOptimizer implements Optimizer {
 		CompletionService<Double> completionService = new ExecutorCompletionService<>(es);
 
 		double finalCost = 0;
-		try(ProgressBar pb = new ProgressBar(getName(), maxIterations)) {
+		try(ProgressBar pb = new ProgressBar(getName(), maxIterations, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " iterations", 1, true )) {
 			double prevCost = 0;
 			double iterDiff;
 			for(int iteration = 0; iteration < maxIterations; iteration++ ) {

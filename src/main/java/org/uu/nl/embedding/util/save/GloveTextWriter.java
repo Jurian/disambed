@@ -1,6 +1,7 @@
 package org.uu.nl.embedding.util.save;
 
 import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 import org.uu.nl.embedding.glove.GloveModel;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -24,7 +25,10 @@ public class GloveTextWriter implements GloveWriter {
 		this.VECTORS_FILE = fileName + "." + "vectors" + FILETYPE;
 		this.DICT_FILE = fileName + "." + "dict" + FILETYPE;
 	}
-	
+
+	private static final int PB_UPDATE_INTERVAL = 250;
+	private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
+
 	@Override
 	public void write(GloveModel model, Path outputFolder) throws IOException {
 		
@@ -39,7 +43,7 @@ public class GloveTextWriter implements GloveWriter {
 		final String delimiter = "\t";
 		final String newLine = "\n";
 
-		try(ProgressBar pb = new ProgressBar("Writing to file", vocabSize)) {
+		try(ProgressBar pb = new ProgressBar("Writing to file", vocabSize, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " triples", 1 , true)) {
 			try (Writer dict = new BufferedWriter(new FileWriter(outputFolder.resolve(DICT_FILE).toFile()))) {
 				try (Writer vect = new BufferedWriter(new FileWriter(outputFolder.resolve(VECTORS_FILE).toFile()))) {
 

@@ -2,6 +2,7 @@ package org.uu.nl.embedding.bca;
 
 import grph.Grph;
 import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 import org.uu.nl.embedding.CooccurenceMatrix;
 import org.uu.nl.embedding.bca.util.GraphStatistics;
 import org.uu.nl.embedding.bca.util.BCAOptions;
@@ -26,6 +27,9 @@ public class BookmarkColoring implements CooccurenceMatrix {
 	private final int cooccurenceCount;
 	private final boolean includeReverse;
 
+	private static final int PB_UPDATE_INTERVAL = 250;
+	private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
+
 	public BookmarkColoring(Grph graph, BCAOptions options) {
 
 		this.includeReverse = options.isReverse();
@@ -46,7 +50,7 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		final int[][] in = graph.getInNeighborhoods();
 		final int[][] out = graph.getOutNeighborhoods();
 
-		try(ProgressBar pb = new ProgressBar("BCA", stats.jobs.length)) {
+		try(ProgressBar pb = new ProgressBar("BCA", stats.jobs.length,  PB_UPDATE_INTERVAL, System.out, PB_STYLE, " nodes", 1,true)) {
 
 			CompletionService<BCV> completionService = new ExecutorCompletionService<>(es);
 			//System.out.println("Submitting " + stats.jobs.length + " jobs");

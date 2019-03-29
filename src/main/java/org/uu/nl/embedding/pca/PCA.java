@@ -3,6 +3,7 @@ package org.uu.nl.embedding.pca;
 import com.github.fommil.netlib.LAPACK;
 
 import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.commons.math.util.FastMath;
 import org.netlib.util.intW;
 
@@ -13,6 +14,8 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import java.util.stream.IntStream;
 
 /**
@@ -22,6 +25,11 @@ import java.util.stream.IntStream;
  */
 public class PCA {
 
+    static {
+        // Tell the LAPACK logger to shut up
+        final Logger logger = Logger.getLogger(LAPACK.class.getName());
+        logger.setLevel(Level.OFF);
+    }
 
     public static void main(String[] args) {
 
@@ -29,12 +37,14 @@ public class PCA {
         int dim = 3;
 
         PCA pca = new PCA(vectors, dim);
-        System.out.println(pca);
         Projection projection = pca.project(0.5);
+        System.out.println(pca);
         System.out.println("Projection:\n" + projection);
 
     }
 
+    private static final int PB_UPDATE_INTERVAL = 250;
+    private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
     private static final DecimalFormat df = new DecimalFormat("####0.0000");
 
     private static String toStringMatrix(double[] data, int nCols) {
@@ -154,10 +164,10 @@ public class PCA {
     @Override
     public String toString() {
 
-        return "PCA:\n" +
-                "\nVariance as percentage:\n" + toStringOrderedVector(varPercentage) +
-                "\nStandard deviation:\n" + toStringOrderedVector(sd) +
-                "\nEigen-values:\n" + toStringOrderedVector(eigenValuesReal);
+        return
+                "Variance as percentage:\n" + toStringOrderedVector(varPercentage) +
+                "\n\nStandard deviation:\n" + toStringOrderedVector(sd) +
+                "\n\nEigen-values:\n" + toStringOrderedVector(eigenValuesReal);
                 //"\nEigen-vectors:\n" + toStringMatrix(leftEigenVectors, nCols);
     }
 
@@ -179,7 +189,7 @@ public class PCA {
         final ExecutorService es = Executors.newWorkStealingPool(numThreads);
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
-        try(ProgressBar pb = new ProgressBar("Projecting", maxEigenCols)) {
+        try(ProgressBar pb = new ProgressBar("Projecting", maxEigenCols, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " columns", 1 , true)) {
             for (int c = 0; c < maxEigenCols; c++) {
                 final int constC = c;
                 cs.submit(() -> {
@@ -260,7 +270,7 @@ public class PCA {
         final ExecutorService es = Executors.newWorkStealingPool(numThreads);
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
-        try(ProgressBar pb = new ProgressBar("Covariance Matrix", nCols)) {
+        try(ProgressBar pb = new ProgressBar("Covariance Matrix", nCols, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " columns", 1, true)) {
 
             for(int col1 = 0; col1 < nCols; col1++) {
                 final int constCol1 = col1;

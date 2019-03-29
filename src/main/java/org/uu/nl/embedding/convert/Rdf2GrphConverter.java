@@ -5,6 +5,7 @@ import grph.in_memory.InMemoryGrph;
 import grph.properties.NumericalProperty;
 import grph.properties.Property;
 import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.query.*;
@@ -19,6 +20,8 @@ import java.util.Map;
 public class Rdf2GrphConverter implements Converter<Grph, Model> {
 
 	final static Logger logger = Logger.getLogger(Rdf2GrphConverter.class);
+	private static final int PB_UPDATE_INTERVAL = 250;
+	private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
 
 	private static int type2color(Node node) {
 		if(node.isURI()) return NodeInfo.URI;
@@ -49,7 +52,7 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 		
 		final ExtendedIterator<Triple> triples = model.getGraph().find();
 
-		try(ProgressBar pb = new ProgressBar("Converting", model.size())) {
+		try(ProgressBar pb = new ProgressBar("Converting", model.size(), PB_UPDATE_INTERVAL, System.out, PB_STYLE, " triples", 1 , true)) {
 			while (triples.hasNext()) {
 				t = triples.next();
 				s = t.getSubject();
