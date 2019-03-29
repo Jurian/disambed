@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Queue;
 
 public class VanillaBCAJob extends BCAJob {
-	private boolean debug = false;
+
 	private final Map<Integer, BCV> computedBCV;
 	private final int[][] out, in;
 	
@@ -80,15 +80,15 @@ public class VanillaBCAJob extends BCAJob {
 
 				partialWetPaint = (1 - alpha) * wetPaint / neighbors.length;
 
-
-				if(false)
-					System.out.println(
-							nodeLabel(bookmark) +
-									" Focus node: " + nodeLabel(focusNode) +
-									" Queue size:" + nodeQueue.size() +
-									" neighbor count:" + neighbors.length +
-									" wet paint:" + wetPaint +
-									" partial wet paint:" + partialWetPaint);
+				/*
+				System.out.println(
+						nodeLabel(bookmark) +
+								" Focus node: " + nodeLabel(focusNode) +
+								" Queue size:" + nodeQueue.size() +
+								" neighbor count:" + neighbors.length +
+								" wet paint:" + wetPaint +
+								" partial wet paint:" + partialWetPaint);
+				*/
 
 				// We can already tell that the neighbors will not have enough paint to continue
 				if(partialWetPaint < epsilon)
@@ -113,7 +113,7 @@ public class VanillaBCAJob extends BCAJob {
 				}
 			}
 
-			if(debug) System.out.println(nodeLabel(bookmark) + ": " + bcv);
+			//if(debug) System.out.println(nodeLabel(bookmark) + ": " + bcv);
 		}
 		return bcv;
 	}
