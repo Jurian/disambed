@@ -67,7 +67,6 @@ public class Main {
 
             double bca_alpha = Double.parseDouble(prop.getProperty("bca_alpha", "1e-2"));
             double bca_epsilon = Double.parseDouble(prop.getProperty("bca_epsilon", "1e-4"));
-            int bca_threads = Integer.parseInt(prop.getProperty("bca_threads", "1"));
 
             BCAOptions.BCAType bca_alg;
             String bca_alg_str = prop.getProperty("bca_algorithm", "vanilla").toLowerCase();
@@ -83,26 +82,23 @@ public class Main {
             int glove_dim = Integer.parseInt(prop.getProperty("glove_dimensions", "50"));
             double glove_tol = Double.parseDouble(prop.getProperty("glove_tolerance", "1e-5"));
             int glove_max_iter = Integer.parseInt(prop.getProperty("glove_max-iter", "1000"));
-            int glove_threads = Integer.parseInt(prop.getProperty("glove_threads", "1"));
 
             logger.info("Starting the embedding creation process with following settings:");
             logger.info("BCA File: " + bca_file_str);
             logger.info("BCA Alpha: " + bca_alpha);
             logger.info("BCA Epsilon: " + bca_epsilon);
-            logger.info("BCA Threads: " + bca_threads);
             logger.info("BCA Algorithm: " + bca_alg_str);
             logger.info("BCA Reverse: " + bca_reverse);
             logger.info("GloVe Algorithm: " + glove_alg);
             logger.info("GloVe Dimensions: " + glove_dim);
             logger.info("GloVe Tolerance: " + glove_tol);
             logger.info("GloVe Maximum Iterations: " + glove_max_iter);
-            logger.info("GloVe Threads: " + glove_threads);
 
             JenaLoader loader = new JenaLoader();
             Rdf2GrphConverter converter = new Rdf2GrphConverter();
             Grph graph = converter.convert(loader.load(bca_file));
 
-            BCAOptions bcaOptions = new BCAOptions(bca_alg, bca_reverse, bca_alpha, bca_epsilon, bca_threads);
+            BCAOptions bcaOptions = new BCAOptions(bca_alg, bca_reverse, bca_alpha, bca_epsilon);
 
             BookmarkColoring bca;
             try(CommandLineProgress bcaProgress = new CommandLineProgress("BCA")) {
@@ -117,16 +113,16 @@ public class Main {
                     default:
                         throw new UnsupportedAlgorithmException("Unsupported optimization algorithm. Use one of: adagrad, adam, adadelta, amsgrad");
                     case "adagrad":
-                        optimizer = new AdagradOptimizer(model, glove_max_iter, glove_threads, glove_tol, gloveProgress);
+                        optimizer = new AdagradOptimizer(model, glove_max_iter, glove_tol, gloveProgress);
                         break;
                     case "adam":
-                        optimizer = new AdamOptimizer(model, glove_max_iter, glove_threads, glove_tol, gloveProgress);
+                        optimizer = new AdamOptimizer(model, glove_max_iter, glove_tol, gloveProgress);
                         break;
                     case "adadelta":
-                        optimizer = new AdadeltaOptimizer(model, glove_max_iter, glove_threads, glove_tol, gloveProgress);
+                        optimizer = new AdadeltaOptimizer(model, glove_max_iter, glove_tol, gloveProgress);
                         break;
                     case "amsgrad":
-                        optimizer = new AMSGradOptimizer(model, glove_max_iter, glove_threads, glove_tol, gloveProgress);
+                        optimizer = new AMSGradOptimizer(model, glove_max_iter, glove_tol, gloveProgress);
                         break;
                 }
                 model.setOptimum(optimizer.optimize());

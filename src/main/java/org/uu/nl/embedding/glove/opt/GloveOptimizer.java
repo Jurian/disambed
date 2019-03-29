@@ -29,11 +29,11 @@ public abstract class GloveOptimizer implements Optimizer {
 	private final Publisher publisher;
 	private final ExecutorService es;
 
-	GloveOptimizer(GloveModel glove, int maxIterations, int numThreads, double tolerance) {
-		this(glove, maxIterations, numThreads, tolerance, new DoNothingPublisher());
+	GloveOptimizer(GloveModel glove, int maxIterations, double tolerance) {
+		this(glove, maxIterations, tolerance, new DoNothingPublisher());
 	}
 
-	GloveOptimizer(GloveModel glove, int maxIterations, int numThreads, double tolerance, Publisher publisher) {
+	GloveOptimizer(GloveModel glove, int maxIterations, double tolerance, Publisher publisher) {
 		this.publisher = publisher;
 		this.crecs = glove.getCoMatrix();
 		this.xMax = glove.getxMax();
@@ -41,7 +41,7 @@ public abstract class GloveOptimizer implements Optimizer {
 		this.maxIterations = maxIterations;
 		this.tolerance = tolerance;
 		this.vocabSize = glove.getVocabSize();
-		this.numThreads = numThreads;
+		this.numThreads = Runtime.getRuntime().availableProcessors() - 1;
 		this.crecCount = crecs.cooccurrenceCount();
 		int dimension = glove.getDimension() + 1;
 
@@ -52,7 +52,7 @@ public abstract class GloveOptimizer implements Optimizer {
             for (int d = 0; d < dimension; d++)
 				W[i * dimension + d] = (r.nextDouble() - 0.5) / dimension;
 		}
-		
+
 		this.linesPerThread = new int[numThreads];
 		for(int i = 0; i < numThreads-1; i++) {
 			linesPerThread[i] = crecCount / numThreads;
@@ -60,7 +60,7 @@ public abstract class GloveOptimizer implements Optimizer {
 		linesPerThread[numThreads-1] =  crecCount / numThreads + crecCount % numThreads;
 		
 		this.dimension = dimension-1;
-		this.es = Executors.newFixedThreadPool(numThreads);
+		this.es = Executors.newWorkStealingPool(numThreads);
 	}
 	
 	@Override

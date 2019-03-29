@@ -66,8 +66,8 @@ public class AMSGradOptimizer extends GloveOptimizer {
 	 */
 	private final double epsilon = 1;
 
-	public AMSGradOptimizer(GloveModel glove, int maxIterations, int numThreads, double tolerance, Publisher publisher) {
-		super(glove, maxIterations, numThreads, tolerance, publisher);
+	public AMSGradOptimizer(GloveModel glove, int maxIterations, double tolerance, Publisher publisher) {
+		super(glove, maxIterations, tolerance, publisher);
 
 		// Increase dimension to make room for bias terms
 		int dimension = this.dimension + 1;

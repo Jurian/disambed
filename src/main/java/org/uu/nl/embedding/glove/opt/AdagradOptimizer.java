@@ -32,8 +32,8 @@ public class AdagradOptimizer extends GloveOptimizer {
 	 */
 	private final double[] gradsq;
 
-	public AdagradOptimizer(GloveModel glove, int maxIterations, int numThreads, double tolerance, Publisher publisher) {
-		super(glove, maxIterations, numThreads, tolerance, publisher);
+	public AdagradOptimizer(GloveModel glove, int maxIterations, double tolerance, Publisher publisher) {
+		super(glove, maxIterations, tolerance, publisher);
 
 		// Increase dimension to make room for bias terms
 		int dimension = this.dimension + 1;

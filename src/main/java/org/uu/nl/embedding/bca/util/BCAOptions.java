@@ -10,13 +10,11 @@ public class BCAOptions {
 	private final boolean reverse;
 	private final double alpha;
 	private final double epsilon;
-	private final int nThreads;
 	
-	public BCAOptions(BCAType type, boolean reverse, double alpha, double epsilon, int nThreads) {
+	public BCAOptions(BCAType type, boolean reverse, double alpha, double epsilon) {
 		this.reverse = reverse;
 		this.alpha = alpha;
 		this.epsilon = epsilon;
-		this.nThreads = nThreads;
 		this.type = type;
 	}
 
@@ -36,9 +34,4 @@ public class BCAOptions {
 		return epsilon;
 	}
 
-	public int getnThreads() {
-		return nThreads;
-	}
-	
-	
 }

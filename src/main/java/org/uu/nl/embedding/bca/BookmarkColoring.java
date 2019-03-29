@@ -43,9 +43,11 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		this.types = stats.types;
 		this.dict = stats.dict;
 		this.vocabSize = stats.dict.length;
+
+		final int numThreads = Runtime.getRuntime().availableProcessors() - 1;
 		
 		final Map<OrderedIntegerPair, Double> cooccurrence_map = new ConcurrentHashMap<>(vocabSize);
-		final ExecutorService es = Executors.newFixedThreadPool(options.getnThreads());
+		final ExecutorService es = Executors.newWorkStealingPool(numThreads);
 		final Map<Integer, BCV> computedBCV = new ConcurrentHashMap<>();
 		
 		final int[][] in = graph.getInNeighborhoods();
