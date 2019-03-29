@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.load;
+package org.uu.nl.embedding.util.read;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
@@ -7,9 +7,9 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 
-public class JenaLoader implements Loader<Model> {
+public class JenaReader implements Reader<Model> {
 
-    final static Logger logger = Logger.getLogger(JenaLoader.class);
+    final static Logger logger = Logger.getLogger(JenaReader.class);
     public Model load(File file) {
         return getDataDump(file);
     }

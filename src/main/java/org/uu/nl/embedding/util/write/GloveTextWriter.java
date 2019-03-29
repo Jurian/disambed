@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.save;
+package org.uu.nl.embedding.util.write;
 
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
@@ -43,7 +43,7 @@ public class GloveTextWriter implements GloveWriter {
 		final String delimiter = "\t";
 		final String newLine = "\n";
 
-		try(ProgressBar pb = new ProgressBar("Writing to file", vocabSize, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " triples", 1 , true)) {
+		try(ProgressBar pb = new ProgressBar("Writing to file", vocabSize, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " vectors", 1 , true)) {
 			try (Writer dict = new BufferedWriter(new FileWriter(outputFolder.resolve(DICT_FILE).toFile()))) {
 				try (Writer vect = new BufferedWriter(new FileWriter(outputFolder.resolve(VECTORS_FILE).toFile()))) {
 

@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.save;
+package org.uu.nl.embedding.util.write;
 
 import org.uu.nl.embedding.glove.GloveModel;
 import java.io.IOException;
