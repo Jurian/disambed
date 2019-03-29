@@ -47,6 +47,8 @@ public class GloveTextWriter implements GloveWriter {
 			try (Writer dict = new BufferedWriter(new FileWriter(outputFolder.resolve(DICT_FILE).toFile()))) {
 				try (Writer vect = new BufferedWriter(new FileWriter(outputFolder.resolve(VECTORS_FILE).toFile()))) {
 
+					dict.write("key" + delimiter + "type" +newLine);
+
 					for (int i = 0; i < vocabSize; i++) {
 
 						for (int d = 0; d < out.length; d++)
