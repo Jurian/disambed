@@ -48,6 +48,12 @@ public class PCA {
     private static final DecimalFormat df = new DecimalFormat("####0.0000");
     private static final Settings settings = Settings.getInstance();
 
+    /**
+     * Write a matrix as a pretty String
+     * @param data The data of the matrix
+     * @param nCols The number of columns of the matrix
+     * @return Formatted String
+     */
     private static String toStringMatrix(double[] data, int nCols) {
 
         StringBuilder out = new StringBuilder(data.length * 7 + nCols * 2);
@@ -60,6 +66,11 @@ public class PCA {
         return out.toString();
     }
 
+    /**
+     * Create a String of a vector ordered to the eigen values
+     * @param vector The vector to create a String version of
+     * @return The vector but ordered to the eigen values
+     */
     private String toStringOrderedVector(double[] vector) {
         StringBuilder out = new StringBuilder(vector.length * 7 );
 
@@ -313,6 +324,9 @@ public class PCA {
         return covMatrix;
     }
 
+    /**
+     * Wrapper for a projection, we need to store the data and also the number of columns
+     */
     public class Projection {
 
         final double[] projection;
