@@ -81,6 +81,8 @@ public class SemanticBCAJob extends BCAJob {
 
             ignoredEdgeCount = 0;
 
+            // In the case of a literal node, we follow incoming relationships of the same
+            // type as the one that was used to reach the literal node
             if(isLiteral(focusNode)) {
                 neighbors = in[focusNode];
                 edges = new int[neighbors.length];
