@@ -34,7 +34,7 @@ public class VanillaBCAJob extends BCAJob {
 		wetPaintRegister.put(bookmark, 1d);
 		
 		int[] neighbors, edgeCache;
-		int focusNode, predicate;
+		int focusNode, edge;
 		double partialWetPaint;
 
 		
@@ -62,16 +62,6 @@ public class VanillaBCAJob extends BCAJob {
 
             partialWetPaint = (1 - alpha) * wetPaint / neighbors.length;
 
-				/*
-				System.out.println(
-						nodeLabel(bookmark) +
-								" Focus node: " + nodeLabel(focusNode) +
-								" Queue size:" + nodeQueue.size() +
-								" neighbor count:" + neighbors.length +
-								" wet paint:" + wetPaint +
-								" partial wet paint:" + partialWetPaint);
-				*/
-
             // We can already tell that the neighbors will not have enough paint to continue
             if(partialWetPaint < epsilon)
                 continue;
@@ -79,12 +69,12 @@ public class VanillaBCAJob extends BCAJob {
             for (int neighbor : neighbors) {
 
                 if (reverse)
-                    predicate = getEdge(neighbor, focusNode, graph.getOutOnlyEdges(neighbor).toIntArray(), edgeCache);
+                    edge = getEdge(neighbor, focusNode, graph.getOutOnlyEdges(neighbor).toIntArray(), edgeCache);
                 else
-                    predicate = getEdge(focusNode, neighbor, edgeCache, graph.getInOnlyEdges(neighbor).toIntArray());
+                    edge = getEdge(focusNode, neighbor, edgeCache, graph.getInOnlyEdges(neighbor).toIntArray());
 
-                //System.out.println(nodeLabel(bookmark) + ": " + edgeLabel(predicate) + " -> " + getEdgeType(predicate));
-                bcv.add(graph.getVertices().size() + getEdgeType(predicate), partialWetPaint);
+                // Add the predicate to the context
+                bcv.add(graph.getVertices().size() + getEdgeType(edge), partialWetPaint);
 
                 if (nodeQueue.contains(neighbor)) {
                     wetPaintRegister.add(neighbor, partialWetPaint);
@@ -94,8 +84,6 @@ public class VanillaBCAJob extends BCAJob {
                 }
             }
 
-
-			//if(debug) System.out.println(nodeLabel(bookmark) + ": " + bcv);
 		}
 		return bcv;
 	}
