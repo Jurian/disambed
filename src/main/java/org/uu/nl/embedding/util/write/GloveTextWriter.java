@@ -2,6 +2,7 @@ package org.uu.nl.embedding.util.write;
 
 import me.tongfei.progressbar.ProgressBar;
 import org.uu.nl.embedding.Settings;
+import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.glove.GloveModel;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -33,6 +34,7 @@ public class GloveTextWriter implements GloveWriter {
 
 		Files.createDirectories(outputFolder);
 
+		byte type;
 		final int vocabSize = model.getVocabSize();
 		final int dimension = model.getDimension();
 		final String[] out = new String[dimension];
@@ -50,6 +52,14 @@ public class GloveTextWriter implements GloveWriter {
 
 			for (int i = 0; i < vocabSize; i++) {
 
+				type = model.getCoMatrix().getType(i);
+
+				// Do not write blank nodes
+				if(type == NodeInfo.BLANK) {
+					pb.step();
+					continue;
+				}
+
 				for (int d = 0; d < out.length; d++)
 					out[d] = String.format("%11.6E", result[d + i * dimension]);
 
@@ -60,7 +70,7 @@ public class GloveTextWriter implements GloveWriter {
 						.replace("\r", "")
 						.replace(delimiter, "")
 						+ delimiter
-						+ model.getCoMatrix().getType(i)
+						+ type
 						+ newLine
 				);
 				pb.step();
