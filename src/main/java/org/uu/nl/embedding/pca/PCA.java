@@ -3,9 +3,9 @@ package org.uu.nl.embedding.pca;
 import com.github.fommil.netlib.LAPACK;
 
 import me.tongfei.progressbar.ProgressBar;
-import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.commons.math.util.FastMath;
 import org.netlib.util.intW;
+import org.uu.nl.embedding.Settings;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
@@ -19,9 +19,11 @@ import java.util.logging.Level;
 import java.util.stream.IntStream;
 
 /**
+ * <p>
  * Principal component analysis (PCA) is a statistical procedure that uses an orthogonal transformation to convert a set
  * of observations of possibly correlated variables (entities each of which takes on various numerical values) into a
  * set of values of linearly uncorrelated variables called principal components.
+ * </p>
  */
 public class PCA {
 
@@ -43,9 +45,8 @@ public class PCA {
 
     }
 
-    private static final int PB_UPDATE_INTERVAL = 250;
-    private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
     private static final DecimalFormat df = new DecimalFormat("####0.0000");
+    private static final Settings settings = Settings.getInstance();
 
     private static String toStringMatrix(double[] data, int nCols) {
 
@@ -189,7 +190,7 @@ public class PCA {
         final ExecutorService es = Executors.newWorkStealingPool(numThreads);
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
-        try(ProgressBar pb = new ProgressBar("Projecting", maxEigenCols, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " columns", 1 , true)) {
+        try(ProgressBar pb = settings.progressBar("Projecting", maxEigenCols, "columns")) {
             for (int c = 0; c < maxEigenCols; c++) {
                 final int constC = c;
                 cs.submit(() -> {
@@ -272,7 +273,7 @@ public class PCA {
         final ExecutorService es = Executors.newWorkStealingPool(numThreads);
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
-        try(ProgressBar pb = new ProgressBar("Covariance Matrix", nCols, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " columns", 1, true)) {
+        try(ProgressBar pb = settings.progressBar("Covariance Matrix", nCols, "columns")) {
 
             for(int col1 = 0; col1 < nCols; col1++) {
                 final int constCol1 = col1;
