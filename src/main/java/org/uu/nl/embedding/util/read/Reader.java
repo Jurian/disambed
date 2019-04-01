@@ -6,6 +6,6 @@ import java.io.File;
  * @author Jurian Baas
  * @param <T> The type to read
  */
-public interface Reader<T> {
+interface Reader<T> {
     T load(File file);
 }

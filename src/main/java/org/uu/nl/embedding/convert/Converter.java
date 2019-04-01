@@ -5,6 +5,6 @@ package org.uu.nl.embedding.convert;
  * @param <A> To
  * @param <B> From
  */
-public interface Converter<B, A> {
+interface Converter<B, A> {
 	A convert(B b);
 }

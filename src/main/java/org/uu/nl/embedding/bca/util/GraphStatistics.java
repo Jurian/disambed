@@ -15,12 +15,7 @@ import java.util.Map;
  * @author Jurian Baas
  */
 public class GraphStatistics {
-	
-	/**
-	 * A mapping between nodes and a unique index, used in the bookmark 
-	 * coloring algorithm to do look-ups in constant time.
-	 */
-	public final int[] keys;
+
 	/**
 	 * The type (URI, blank, literal, predicate) for each node in the graph
 	 */
@@ -58,7 +53,11 @@ public class GraphStatistics {
 
 		int nrOfEdgeTypes = edgeTypes.size();
 
-		this.keys = graph.getVertices().toIntArray();
+		/*
+		 * A mapping between nodes and a unique index, used in the bookmark
+		 * coloring algorithm to do look-ups in constant time.
+		 */
+		int[] keys = graph.getVertices().toIntArray();
 		this.types = new byte[nrOfVertices + nrOfEdgeTypes];
 		this.dict = new String[nrOfVertices + nrOfEdgeTypes];
 		this.jobs = new int[nrOfVertices];

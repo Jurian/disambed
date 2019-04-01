@@ -1,10 +1,5 @@
 package org.uu.nl.embedding.ann.kdtree.split;
 
-import org.uu.nl.embedding.ann.kdtree.ANNArrayTree.TreeNode;
-
-import java.util.List;
-
-
 
 /**
  * This version has been modified to make use of primitive arrays
@@ -20,12 +15,11 @@ public interface SplitPolicy<T> {
    * 
    * @param v the vector.
    * @param level the tree level.
-   * @param treeNodes the tree nodes that were added so far.
    * @return an index of the dimension between 0 and v.getDimension()
    *         (exclusive).
    */
-  public int splitDimension(double[] v, int level, List<TreeNode<T>> treeNodes);
+  int splitDimension(double[] v, int level);
 
-  public int splitDimension(int dimension, int level);
+  int splitDimension(int dimension, int level);
   
 }

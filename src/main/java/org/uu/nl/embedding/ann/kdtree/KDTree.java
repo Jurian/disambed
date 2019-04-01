@@ -12,10 +12,10 @@ import org.uu.nl.embedding.ann.kdtree.split.KDTreeSplitPolicy;
  * @see <a href="https://github.com/thomasjungblut/JRPT/blob/master/src/de/jungblut/jrpt/KDTree.java">Original</a>
  * @param <T> the payload value type
  */
-public final class KDTree<T> extends StaticANNArrayTree<T> {
+final class KDTree<T> extends StaticANNArrayTree<T> {
 
   public KDTree(double[] data, T[] payloads, int dimension) {
-    super(new KDTreeSplitPolicy<T>(), data, payloads, dimension);
+    super(new KDTreeSplitPolicy<>(), data, payloads, dimension);
   }
 
 }

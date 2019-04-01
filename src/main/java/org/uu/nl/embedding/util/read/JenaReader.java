@@ -12,7 +12,7 @@ import java.io.File;
  */
 public class JenaReader implements Reader<Model> {
 
-    final static Logger logger = Logger.getLogger(JenaReader.class);
+    private final static Logger logger = Logger.getLogger(JenaReader.class);
     public Model load(File file) {
         return getDataDump(file);
     }

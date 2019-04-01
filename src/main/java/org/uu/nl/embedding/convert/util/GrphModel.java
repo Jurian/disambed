@@ -2,7 +2,7 @@ package org.uu.nl.embedding.convert.util;
 
 import grph.Grph;
 
-public class GrphModel {
+class GrphModel {
 
     private final Grph g;
     private final int[][] inEdgeNeighborhood;

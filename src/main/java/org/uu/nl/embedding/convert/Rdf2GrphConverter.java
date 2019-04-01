@@ -115,14 +115,13 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 		return vertexMap;
 	}
 
-	private int addVertex(Grph g, Node n, Map<Node, Integer> vertexMap) {
+	private void addVertex(Grph g, Node n, Map<Node, Integer> vertexMap) {
 		final int i = vertexMap.size();
 		g.addVertex(i);
 		g.getVertexColorProperty().setValue(i, type2color(n));
 		g.getVertexLabelProperty().setValue(i, n.toString());
 		vertexMap.put(n, i);
-		return i;
-	}
+    }
 
 	/*
 	private int getVertexCount(Model model) {

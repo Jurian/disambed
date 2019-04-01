@@ -27,18 +27,18 @@ import java.util.Properties;
  */
 public class Main {
 
-    final static Logger logger = Logger.getLogger("Graph Embeddings");
+    private final static Logger logger = Logger.getLogger("Graph Embeddings");
 
-    private static Option option_config = Option.builder( "c")
+    private static final Option option_config = Option.builder( "c")
             .required(true)
             .desc("Location of configuration file")
             .longOpt("config")
             .hasArg()
             .build();
 
-    private static Options options = new Options();
-    private static CommandLineParser parser = new DefaultParser();
-    private static HelpFormatter formatter = new HelpFormatter();
+    private static final Options options = new Options();
+    private static final CommandLineParser parser = new DefaultParser();
+    private static final HelpFormatter formatter = new HelpFormatter();
 
     static {
         options.addOption(option_config);

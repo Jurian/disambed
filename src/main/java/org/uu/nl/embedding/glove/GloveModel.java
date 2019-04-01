@@ -12,16 +12,16 @@ public class GloveModel extends Embedding {
 	private final double xMax;
 	private final int vocabSize;
 
-	public GloveModel(int dimension, double xMax, double alpha, CooccurenceMatrix coMatrix) {
+	private GloveModel(int dimension, double xMax, CooccurenceMatrix coMatrix) {
 		super(dimension, coMatrix);
 		this.vocabSize = coMatrix.vocabSize();
 		// Used for the weight function in GloVe
 		this.xMax = xMax;
-		this.alpha = alpha;
+		this.alpha = 0.75;
 	}
 	
 	public GloveModel(int dimension, CooccurenceMatrix coMatrix) {
-		this(dimension, coMatrix.max(), 0.75, coMatrix);
+		this(dimension, coMatrix.max(), coMatrix);
 	}
 
 	public double getAlpha() {

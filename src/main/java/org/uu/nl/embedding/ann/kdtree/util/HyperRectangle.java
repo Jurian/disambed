@@ -1,5 +1,7 @@
 package org.uu.nl.embedding.ann.kdtree.util;
 
+import java.util.Arrays;
+
 /**
  * Higher dimensional rectangle, modified to use primitive arrays
  * 
@@ -51,6 +53,6 @@ public final class HyperRectangle {
 
 	@Override
 	public String toString() {
-		return "min: " + min + " ; max: " + max;
+		return "min: " + Arrays.toString(min) + " ; max: " + Arrays.toString(max);
 	}
 }

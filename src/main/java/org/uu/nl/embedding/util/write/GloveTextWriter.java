@@ -19,9 +19,9 @@ public class GloveTextWriter implements GloveWriter {
 
 	private final String VECTORS_FILE;
 	private final String DICT_FILE;
-	private final String FILETYPE = ".tsv";
 
 	public GloveTextWriter(String fileName) {
+		String FILETYPE = ".tsv";
 		this.VECTORS_FILE = fileName + "." + "vectors" + FILETYPE;
 		this.DICT_FILE = fileName + "." + "dict" + FILETYPE;
 	}

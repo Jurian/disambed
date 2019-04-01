@@ -37,7 +37,7 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 		TreeNode<V> left;
 		TreeNode<V> right;
 
-		public TreeNode(int index, int splitDimension, V val) {
+		TreeNode(int index, int splitDimension, V val) {
 			this.splitDimension = splitDimension;
 			this.value = val;
 			this.index = index;
@@ -50,17 +50,17 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 		 * Even though optimized, this is still an expensive operation. Use sparingly!
 		 * @return The coordinate information
 		 */
-		public double[] keyVector() {
+		double[] keyVector() {
 			double[] vec = new double[dimension];
 			System.arraycopy(data, index * dimension, vec, 0, dimension);
 			return vec;
 		}
 		
-		public int dataIndex() {
+		int dataIndex() {
 			return dataIndex;
 		}
 
-		public double splitValue() {
+		double splitValue() {
 			return data[splitIndex];
 		}
 
@@ -78,11 +78,11 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 	private final int dimension;
 	private final double[] data;
 
-	public StaticANNArrayTree(SplitPolicy<T> splitRule, double[] data, T[] payloads, int dimension) {
+	StaticANNArrayTree(SplitPolicy<T> splitRule, double[] data, T[] payloads, int dimension) {
 		this.splitRule = splitRule;
 		this.data = data;
 		this.dimension = dimension;
-		this.root = new TreeNode<T>(0, splitRule.splitDimension(dimension, 0), payloads[0]);
+		this.root = new TreeNode<>(0, splitRule.splitDimension(dimension, 0), payloads[0]);
 		this.treeNodes.add(root);
 		this.size++;
 		build(payloads);
@@ -110,7 +110,7 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 			
 			// do the "real" insert
 			// note that current in this case is the parent
-			child = new TreeNode<T>(i, splitRule.splitDimension(dimension, level), payloads[i]);
+			child = new TreeNode<>(i, splitRule.splitDimension(dimension, level), payloads[i]);
 			treeNodes.add(child);
 			if (right) {
 				parent.right = child;
@@ -125,7 +125,7 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 
 	@Override
 	public void balance() {
-		Collections.sort(treeNodes, (o1, o2) -> Double.compare(o1.splitValue(), o2.splitValue()));
+		treeNodes.sort(Comparator.comparingDouble(TreeNode::splitValue));
 		// do an inverse binary search to build up the tree from the root
 		root = fix(treeNodes, 0, treeNodes.size() - 1);
 	}
@@ -170,7 +170,7 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 		List<ValueDistanceTuple<T>> list = new ArrayList<>();
 		List<TreeNode<T>> rangeInternal = rangeInternal(lower, upper);
 		for (TreeNode<T> node : rangeInternal) {
-			list.add(new ValueDistanceTuple<T>(node.value, 0));
+			list.add(new ValueDistanceTuple<>(node.value, 0));
 		}
 		return list;
 	}
@@ -182,7 +182,7 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 		List<VectorDistanceTuple<T>> list = new ArrayList<>();
 		List<TreeNode<T>> rangeInternal = rangeInternal(lower, upper);
 		for (TreeNode<T> node : rangeInternal) {
-			list.add(new VectorDistanceTuple<T>(node.keyVector(), node.value, 0));
+			list.add(new VectorDistanceTuple<>(node.keyVector(), node.value, 0));
 		}
 		return list;
 	}
@@ -196,9 +196,9 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 			
 			if (strictLower(upper, next.dataIndex()) && strictHigher(lower, next.dataIndex())) 
 				list.add(next);
-			if (next.left != null && checkSubtree(lower, upper, next.left)) 
+			if (checkSubtree(lower, upper, next.left))
 				toVisit.add(next.left);
-			if (next.right != null && checkSubtree(lower, upper, next.right)) 
+			if (checkSubtree(lower, upper, next.right))
 				toVisit.add(next.right);
 		}
 		return list;
@@ -248,10 +248,9 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 		double pivot = current.splitValue();
 		double distancePivotToTarget = Distance.euclidean(data, dimension, current.index, target);
 
-		HyperRectangle leftHyperRectangle = hyperRectangle;
-		HyperRectangle rightHyperRectangle = leftHyperRectangle.copy();
+		HyperRectangle rightHyperRectangle = hyperRectangle.copy();
 
-		leftHyperRectangle.max[s] = pivot;
+		hyperRectangle.max[s] = pivot;
 		rightHyperRectangle.min[s] = pivot;
 
 		boolean left = target[s] > pivot;
@@ -261,14 +260,14 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 		HyperRectangle furtherstHyperRectangle;
 		if (left) {
 			nearestNode = current.left;
-			nearestHyperRectangle = leftHyperRectangle;
+			nearestHyperRectangle = hyperRectangle;
 			furtherstNode = current.right;
 			furtherstHyperRectangle = rightHyperRectangle;
 		} else {
 			nearestNode = current.right;
 			nearestHyperRectangle = rightHyperRectangle;
 			furtherstNode = current.left;
-			furtherstHyperRectangle = leftHyperRectangle;
+			furtherstHyperRectangle = hyperRectangle;
 		}
 		getNearestNeighbourInternal(nearestNode, target, nearestHyperRectangle, maxDistSquared, k, radius, queue);
 
@@ -306,10 +305,9 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 		double pivot = current.splitValue();
 		double distancePivotToTarget = Distance.euclidean(data, dimension, current.index, target);
 
-		HyperRectangle leftHyperRectangle = hyperRectangle;
-		HyperRectangle rightHyperRectangle = leftHyperRectangle.copy();
+		HyperRectangle rightHyperRectangle = hyperRectangle.copy();
 
-		leftHyperRectangle.max[s] = pivot;
+		hyperRectangle.max[s] = pivot;
 		rightHyperRectangle.min[s] = pivot;
 
 		boolean left = target[s] > pivot;
@@ -319,14 +317,14 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 		HyperRectangle furtherstHyperRectangle;
 		if (left) {
 			nearestNode = current.left;
-			nearestHyperRectangle = leftHyperRectangle;
+			nearestHyperRectangle = hyperRectangle;
 			furtherstNode = current.right;
 			furtherstHyperRectangle = rightHyperRectangle;
 		} else {
 			nearestNode = current.right;
 			nearestHyperRectangle = rightHyperRectangle;
 			furtherstNode = current.left;
-			furtherstHyperRectangle = leftHyperRectangle;
+			furtherstHyperRectangle = hyperRectangle;
 		}
 		getValueNearestNeighbourInternal(nearestNode, target, nearestHyperRectangle, maxDistSquared, k, radius, queue);
 
@@ -376,20 +374,19 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 		return sb.toString();
 	}
 
-	private StringBuilder prettyPrintIternal(TreeNode<T> node, StringBuilder sb, int depth) {
+	private void prettyPrintIternal(TreeNode<T> node, StringBuilder sb, int depth) {
 		if (node != null) {
-			sb.append("\n").append(repeatString("\t", depth));
+			sb.append("\n").append(repeatString(depth));
 			sb.append(node.value);
 			prettyPrintIternal(node.left, sb, depth + 1);
 			prettyPrintIternal(node.right, sb, depth + 1);
 		}
-		return sb;
 	}
 	
-	private String repeatString(String s, int count) {
-		String out = "";
-		for(int i = 0; i < count; i++) out += s;
-		return out;
+	private String repeatString(int count) {
+		StringBuilder out = new StringBuilder();
+		for(int i = 0; i < count; i++) out.append("\t");
+		return out.toString();
 	}
 
 	private boolean strictHigher(double[] lower, int current) {
@@ -420,7 +417,7 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 		private final Deque<TreeNode<T>> toVisit = new ArrayDeque<>();
 		private TreeNode<T> current;
 
-		public BreadthFirstIterator() {
+		BreadthFirstIterator() {
 			toVisit.add(root);
 		}
 
@@ -447,9 +444,9 @@ public class StaticANNArrayTree<T> implements ANN<T>, ANNValueSearch<T> {
 
 	private final class VectorBFSIterator implements Iterator<double[]> {
 
-		private BreadthFirstIterator inOrderIterator;
+		private final BreadthFirstIterator inOrderIterator;
 
-		public VectorBFSIterator() {
+		VectorBFSIterator() {
 			inOrderIterator = new BreadthFirstIterator();
 		}
 

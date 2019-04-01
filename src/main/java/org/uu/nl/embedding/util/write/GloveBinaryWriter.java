@@ -30,8 +30,7 @@ public class GloveBinaryWriter implements GloveWriter {
 	}
 	
 	private void writeVectorData(double[] v, DataOutput out) throws IOException {
-		for (int i = 0; i < v.length; i++) 
-			out.writeInt(Float.floatToIntBits((float) v[i]));
+		for (double v1 : v) out.writeInt(Float.floatToIntBits((float) v1));
 	}
 
 	private BufferedOutputStream createStream(Path outputFolder, String fileName) throws FileNotFoundException {

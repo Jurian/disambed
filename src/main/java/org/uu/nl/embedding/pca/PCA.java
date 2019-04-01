@@ -105,7 +105,7 @@ public class PCA {
      * @param vectors Input matrix
      * @param dim Number of columns of the input matrix
      */
-    public PCA(double[] vectors, int dim) {
+    private PCA(double[] vectors, int dim) {
         this(vectors, dim, false);
     }
 
