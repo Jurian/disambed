@@ -3,6 +3,9 @@ package org.uu.nl.embedding.glove;
 import org.uu.nl.embedding.CooccurenceMatrix;
 import org.uu.nl.embedding.Embedding;
 
+/**
+ * @author Jurian Baas
+ */
 public class GloveModel extends Embedding {
 
 	private final double alpha;

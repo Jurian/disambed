@@ -13,6 +13,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
 
+/**
+ * @author Jurian Baas
+ */
 public class BookmarkColoring implements CooccurenceMatrix {
 
 	private final String[] dict;

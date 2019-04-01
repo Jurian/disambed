@@ -7,6 +7,8 @@ import java.io.PrintStream;
 
 /**
  * Mainly used for consistency of the look and feel among the application parts
+ *
+ * @author Jurian Baas
  */
 public class Settings {
 

@@ -3,6 +3,9 @@ package org.uu.nl.embedding;
 import org.uu.nl.embedding.glove.opt.Optimum;
 import org.uu.nl.embedding.pca.PCA;
 
+/**
+ * @author Jurian Baas
+ */
 public abstract class Embedding {
 	
 	protected int dimension;

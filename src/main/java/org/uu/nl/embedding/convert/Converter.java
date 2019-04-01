@@ -1,5 +1,10 @@
 package org.uu.nl.embedding.convert;
 
-public interface Converter<A, B> {
-	public A convert(B b);
+/**
+ * @author Jurian Baas
+ * @param <A> To
+ * @param <B> From
+ */
+public interface Converter<B, A> {
+	A convert(B b);
 }

@@ -1,6 +1,8 @@
 package org.uu.nl.embedding.glove.opt;
 
-
+/**
+ * @author Jurian Baas
+ */
 public class Optimum {
 
 	private double finalCost;

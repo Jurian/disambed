@@ -9,7 +9,9 @@ import org.uu.nl.embedding.glove.GloveModel;
 import java.util.Random;
 import java.util.concurrent.*;
 
-
+/**
+ * @author Jurian Baas
+ */
 public abstract class GloveOptimizer implements Optimizer {
 
 	protected final CooccurenceMatrix crecs;

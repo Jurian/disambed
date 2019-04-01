@@ -22,6 +22,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+/**
+ * @author Jurian Baas
+ */
 public class Main {
 
     final static Logger logger = Logger.getLogger("Graph Embeddings");

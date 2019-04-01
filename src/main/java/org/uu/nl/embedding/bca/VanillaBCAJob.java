@@ -8,6 +8,9 @@ import org.uu.nl.embedding.bca.util.PaintRegistry;
 import java.util.LinkedList;
 import java.util.Queue;
 
+/**
+ * @author Jurian Baas
+ */
 public class VanillaBCAJob extends BCAJob {
 
 	private final int[][] out, in;

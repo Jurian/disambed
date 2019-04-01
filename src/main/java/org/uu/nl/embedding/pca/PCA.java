@@ -29,6 +29,8 @@ import java.util.stream.IntStream;
  *  This class is useful because it turns out that most of the time, the vast majority of principal components can
  *  be discarded while keeping 95% of variance.
  * </p>
+ *
+ * @author Jurian Baas
  */
 public class PCA {
 

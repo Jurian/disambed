@@ -16,7 +16,12 @@ import org.uu.nl.embedding.convert.util.NodeInfo;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Rdf2GrphConverter implements Converter<Grph, Model> {
+/**
+ * Converts an RDF graph to the Grph form
+ *
+ * @author Jurian Baas
+ */
+public class Rdf2GrphConverter implements Converter<Model, Grph> {
 
 	private static final Logger logger = Logger.getLogger(Rdf2GrphConverter.class);
 	private static final Settings settings = Settings.getInstance();

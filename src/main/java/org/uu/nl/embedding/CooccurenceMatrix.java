@@ -1,18 +1,21 @@
 package org.uu.nl.embedding;
 
+/**
+ * @author Jurian Baas
+ */
 public interface CooccurenceMatrix {
-	public int vocabSize();
-	public double max();
-	public String[] getKeys();
-	public String getKey(int index);
-	public byte[] getTypes();
-	public byte getType(int index);
-	public int cIdx_I(int i);
-	public int cIdx_J(int j);
-	public double cIdx_C(int i);
-	public int cooccurrenceCount();
-	public int uriNodeCount();
-	public int predicateNodeCount();
-	public int blankNodeCount();
-	public int literalNodeCount();
+	int vocabSize();
+	double max();
+	String[] getKeys();
+	String getKey(int index);
+	byte[] getTypes();
+	 byte getType(int index);
+	int cIdx_I(int i);
+	int cIdx_J(int j);
+	double cIdx_C(int i);
+	int cooccurrenceCount();
+	int uriNodeCount();
+	int predicateNodeCount();
+	int blankNodeCount();
+	int literalNodeCount();
 }
