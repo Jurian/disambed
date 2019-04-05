@@ -8,6 +8,8 @@ import org.uu.nl.embedding.bca.util.GraphStatistics;
 import org.uu.nl.embedding.bca.util.BCAOptions;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.OrderedIntegerPair;
+import org.uu.nl.embedding.convert.util.EdgeNeighborhoodAlgorithm;
+import org.uu.nl.embedding.convert.util.VertexNeighborHoodAlgorithm;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -43,13 +45,15 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		this.dict = stats.dict;
 		this.vocabSize = stats.dict.length;
 
-		final int numThreads = Runtime.getRuntime().availableProcessors() - 1;
+		final int numThreads = 1;//Runtime.getRuntime().availableProcessors() - 1;
 		
 		final Map<OrderedIntegerPair, Double> cooccurrence_map = new ConcurrentHashMap<>(vocabSize);
 		final ExecutorService es = Executors.newWorkStealingPool(numThreads);
-		
-		final int[][] in = graph.getInNeighborhoods();
-		final int[][] out = graph.getOutNeighborhoods();
+
+		final int[][] inEdge = new EdgeNeighborhoodAlgorithm.In().compute(graph);
+		final int[][] outEdge = new EdgeNeighborhoodAlgorithm.Out().compute(graph);
+		final int[][] in = new VertexNeighborHoodAlgorithm.In().compute(graph);
+		final int[][] out = new VertexNeighborHoodAlgorithm.Out().compute(graph);
 
 		try(ProgressBar pb = settings.progressBar("BCA", stats.jobs.length, "nodes")) {
 
@@ -62,7 +66,7 @@ public class BookmarkColoring implements CooccurenceMatrix {
 					completionService.submit(new VanillaBCAJob(
 							graph, bookmark,
 							includeReverse, alpha, epsilon,
-							in, out));
+							in, out, inEdge, outEdge));
 					break;
 				case SEMANTIC:
 					completionService.submit(new SemanticBCAJob(
