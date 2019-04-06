@@ -15,14 +15,17 @@ public class SemanticBCAJob extends BCAJob {
 
 	private static final int SKIP = -1;
 
-	private final int[][] in, out;
+    private final int[][] vertexOut, vertexIn, edgeOut, edgeIn;
+
 	public SemanticBCAJob(
 			Grph graph, int bookmark,
 			boolean reverse, double alpha, double epsilon,
-			int[][] in, int[][] out) {
+			int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
 		super(bookmark, reverse, alpha, epsilon, graph);
-		this.in = in;
-		this.out = out;
+        this.vertexOut = vertexOut;
+        this.vertexIn = vertexIn;
+        this.edgeOut = edgeOut;
+        this.edgeIn = edgeIn;
 	}
 
     /**
@@ -65,7 +68,8 @@ public class SemanticBCAJob extends BCAJob {
 		final BCV bcv = new BCV(bookmark);
 
 		boolean focusIsLiteral;
-		int[] neighbors, precomputedEdges, edgeCache;
+		boolean[] skip;
+		int[] neighbors, edges;
 		int focusNode, neighbor, edge, neighborCount, ignoredEdgeCount;
 		double partialWetPaint;
 		SemanticNode node;
@@ -88,16 +92,17 @@ public class SemanticBCAJob extends BCAJob {
             ignoredEdgeCount = 0;
             focusIsLiteral = isLiteral(focusNode);
 
+
+            skip = null;
             // In the case of a literal node, we follow incoming relationships of the same
             // type as the one that was used to reach the literal node
             if(focusIsLiteral) {
-                neighbors = in[focusNode];
-                precomputedEdges = new int[neighbors.length];
-
+                neighbors = vertexIn[focusNode];
+                skip = new boolean[edgeIn[focusNode].length];
                 assert neighbors.length > 0;
 
                 // Cache edges and reuse in loop
-                edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
+                edges = edgeIn[focusNode];
 
                 // If the bookmark is a literal, the previous predicate ID will be SKIP
                 int prevEdgeType = (node.prevNodeID == SKIP) ? SKIP : getEdgeType(node.predicateID);
@@ -105,26 +110,26 @@ public class SemanticBCAJob extends BCAJob {
                 // Check which edges we need to follow and which to ignore
                 for(int i = 0; i < neighbors.length; i++) {
 
-                    precomputedEdges[i] = getEdge(neighbors[i], focusNode, graph.getOutEdges(neighbors[i]).toIntArray(), edgeCache);
+                    edge = edges[i];
+
                     // In case the predicate is SKIP, we consider all edges
                     if(prevEdgeType == SKIP) continue;
                     // otherwise filter out the ones that are not like the incoming predicate
-                    if(getEdgeType(precomputedEdges[i]) != prevEdgeType) {
-                        precomputedEdges[i] = SKIP;
+                    if(getEdgeType(edge) != prevEdgeType) {
+                        skip[i] = true;
                         ignoredEdgeCount++;
                     }
                 }
             } else {
 
-                if(reverse) neighbors = in[focusNode];
-                else neighbors = out[focusNode];
+                if(reverse) neighbors = vertexIn[focusNode];
+                else neighbors = vertexOut[focusNode];
 
-                if(reverse) edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
-                else edgeCache = graph.getOutOnlyEdges(focusNode).toIntArray();
+                if(reverse) edges = edgeIn[focusNode];
+                else edges = edgeOut[focusNode];
 
                 if(neighbors.length > 0 && node.predicateID == SKIP) ignoredEdgeCount++;
 
-                precomputedEdges = null;
             }
 
             neighborCount = neighbors.length - ignoredEdgeCount;
@@ -140,20 +145,15 @@ public class SemanticBCAJob extends BCAJob {
 
             for (int i = 0; i < neighbors.length; i++) {
 
+                // Skip any edges we don't want to follow
+                if(focusIsLiteral && skip[i]) continue;
+
                 neighbor = neighbors[i];
+                edge = edges[i];
 
                 // Skip the previous node
                 if(neighbor == node.prevNodeID) continue;
 
-                if(focusIsLiteral)
-                    edge = precomputedEdges[i];
-                else if (reverse)
-                    edge = getEdge(neighbor, focusNode, graph.getOutOnlyEdges(neighbor).toIntArray(), edgeCache);
-                else
-                    edge = getEdge(focusNode, neighbor, edgeCache, graph.getInOnlyEdges(neighbor).toIntArray());
-
-                // Skip any edges we don't want to follow
-                if(edge == SKIP) continue;
 
                 // Add the predicate to the context
                 bcv.add(graph.getVertices().size() + getEdgeType(edge), partialWetPaint);

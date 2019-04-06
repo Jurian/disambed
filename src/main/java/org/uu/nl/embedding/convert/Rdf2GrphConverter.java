@@ -47,7 +47,7 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 
 		logger.info("Converting Jena model with "+vertexCount+" vertices");
 
-		int s_i, o_i, p_i = vertexCount, edgeType;
+		int s_i, o_i, p_i = vertexCount , edgeType;
 		Node s, p, o;
 		Triple t;
 		

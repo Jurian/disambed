@@ -36,8 +36,8 @@ public class VanillaBCAJob extends BCAJob {
 		nodeQueue.add(bookmark);
 		wetPaintRegister.put(bookmark, 1d);
 		
-		int[] neighbors, edgeCache;
-		int focusNode, edge;
+		int[] neighbors, edges;
+		int focusNode, edge, neighbor;
 		double partialWetPaint;
 
 		
@@ -57,11 +57,14 @@ public class VanillaBCAJob extends BCAJob {
             if(reverse) neighbors = vertexIn[focusNode];
             else neighbors = vertexOut[focusNode];
 
+            if(reverse) edges = edgeIn[focusNode];
+            else edges = edgeOut[focusNode];
+
             if(neighbors.length == 0)
                 continue;
 
-            if(reverse) edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
-            else edgeCache = graph.getOutOnlyEdges(focusNode).toIntArray();
+            //if(reverse) edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
+           // else edgeCache = graph.getOutOnlyEdges(focusNode).toIntArray();
 
             partialWetPaint = (1 - alpha) * wetPaint / neighbors.length;
 
@@ -77,16 +80,10 @@ public class VanillaBCAJob extends BCAJob {
                 System.out.println();
             }
 
-            for (int neighbor : neighbors) {
+            for (int i = 0; i < neighbors.length; i++) {
 
-                if (reverse)
-                    edge = getEdge(neighbor, focusNode, graph.getOutOnlyEdges(neighbor).toIntArray(), edgeCache);
-                else
-                    edge = getEdge(focusNode, neighbor, edgeCache, graph.getInOnlyEdges(neighbor).toIntArray());
-
-                if(!reverse) {
-                    System.out.println(getEdgeType(edge));
-                }
+                neighbor = neighbors[i];
+                edge = edges[i];
 
                 // Add the predicate to the context
                 bcv.add(graph.getVertices().size() + getEdgeType(edge), partialWetPaint);

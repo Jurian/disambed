@@ -40,21 +40,6 @@ public abstract class BCAJob implements Callable<BCV> {
 
 	protected abstract BCV doWork(Grph graph, boolean reverse);
 
-	protected int getEdge(int source, int destination, int[] out, int[] in) {
-		if (out.length == 0 || in.length == 0) {
-			return -1;
-		} else {
-			if (out.length < in.length) {
-				for(int e : out)
-					if (graph.getDirectedSimpleEdgeHead(e) == destination) return e;
-			} else {
-				for(int e : in)
-					if (graph.getDirectedSimpleEdgeTail(e) == source) return e;
-			}
-			return -1;
-		}
-	}
-
 	protected boolean isLiteral(int n) {
 		return graph.getVertexColorProperty().getValue(n) ==  NodeInfo.LITERAL;
 	}
