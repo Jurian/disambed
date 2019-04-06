@@ -16,7 +16,7 @@ public class Distance {
 	 */
 	public static double euclidean(double[] v, int dimension, int a, int b) {
 		double distance = 0;
-		double temp = 0;
+		double temp;
 		for(int d = 0; d < dimension; d++) {
 			temp = v[a * dimension + d] - v[b * dimension + d];
 			distance += temp * temp;
@@ -36,7 +36,7 @@ public class Distance {
 	 */
 	public static double euclidean(double[] v, int dimension, int a, double[] b) {
 		double distance = 0;
-		double temp = 0;
+		double temp;
 		for(int d = 0; d < dimension; d++) {
 			temp = v[a * dimension + d] - b[d];
 			distance += temp * temp;
@@ -53,7 +53,7 @@ public class Distance {
 	 */
 	public static double euclidean(double[] a, double[] b) {
 		double distance = 0;
-		double temp = 0;
+		double temp;
 		for(int i = 0; i < a.length; i++) {
 			temp = (a[i] - b[i]);
 			distance += temp * temp;

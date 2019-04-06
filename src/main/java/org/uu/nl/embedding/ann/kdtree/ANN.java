@@ -23,23 +23,23 @@ import java.util.Iterator;
  * @see <a href="https://github.com/thomasjungblut/JRPT/blob/master/src/de/jungblut/jrpt/ANN.java">Original</a>
  * @param <T> the payload type for the data structure.
  */
-public interface ANN<T> extends ANNConstruction<T>, ANNVectorSearch<T>, Iterable<double[]> {
+interface ANN<T> extends ANNConstruction<T>, ANNVectorSearch<T>, Iterable<double[]> {
 
   /**
    * @return the size of the tree.
    */
-  public int size();
+  int size();
 
   /**
    * Balances this tree by sorting along the split dimensions and rebuilding the
    * entire tree.
    */
-  public void balance();
+  void balance();
 
   /**
    * Iterates over the vectors in the tree.
    */
   @Override
-  public Iterator<double[]> iterator();
+  Iterator<double[]> iterator();
 
 }

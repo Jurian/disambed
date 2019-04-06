@@ -18,7 +18,7 @@ public final class WritableUtils {
    *
    * @param stream Binary output stream
    * @param i Long to be serialized
-   * @throws java.io.IOException
+   * @throws java.io.IOException If an I/O error occurs
    */
   public static void writeVLong(DataOutput stream, long i) throws IOException {
     if (i >= -112 && i <= 127) {
@@ -53,7 +53,7 @@ public final class WritableUtils {
    * Reads a zero-compressed encoded long from input stream and returns it.
    *
    * @param stream Binary input stream
-   * @throws java.io.IOException
+   * @throws java.io.IOException If an I/O error occurs
    * @return deserialized long from stream.
    */
   public static long readVLong(DataInput stream) throws IOException {
@@ -77,7 +77,7 @@ public final class WritableUtils {
    * @param value the first byte of the vint/vlong
    * @return the total number of bytes (1 to 9)
    */
-  public static int decodeVIntSize(byte value) {
+  private static int decodeVIntSize(byte value) {
     if (value >= -112) {
       return 1;
     } else if (value < -120) {
@@ -92,7 +92,7 @@ public final class WritableUtils {
    * @param value the first byte
    * @return is the value negative
    */
-  public static boolean isNegativeVInt(byte value) {
+  private static boolean isNegativeVInt(byte value) {
     return value < -120 || value >= -112 && value < 0;
   }
 

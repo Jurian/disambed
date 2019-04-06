@@ -2,6 +2,10 @@ package org.uu.nl.embedding.util.read;
 
 import java.io.File;
 
-public interface Reader<T> {
+/**
+ * @author Jurian Baas
+ * @param <T> The type to read
+ */
+interface Reader<T> {
     T load(File file);
 }

@@ -2,8 +2,8 @@ package org.uu.nl.embedding.bca;
 
 import grph.Grph;
 import me.tongfei.progressbar.ProgressBar;
-import me.tongfei.progressbar.ProgressBarStyle;
 import org.uu.nl.embedding.CooccurenceMatrix;
+import org.uu.nl.embedding.Settings;
 import org.uu.nl.embedding.bca.util.GraphStatistics;
 import org.uu.nl.embedding.bca.util.BCAOptions;
 import org.uu.nl.embedding.bca.util.BCV;
@@ -13,6 +13,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
 
+/**
+ * @author Jurian Baas
+ */
 public class BookmarkColoring implements CooccurenceMatrix {
 
 	private final String[] dict;
@@ -27,8 +30,7 @@ public class BookmarkColoring implements CooccurenceMatrix {
 	private final int cooccurenceCount;
 	private final boolean includeReverse;
 
-	private static final int PB_UPDATE_INTERVAL = 250;
-	private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
+	private static final Settings settings = Settings.getInstance();
 
 	public BookmarkColoring(Grph graph, BCAOptions options) {
 
@@ -45,12 +47,11 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		
 		final Map<OrderedIntegerPair, Double> cooccurrence_map = new ConcurrentHashMap<>(vocabSize);
 		final ExecutorService es = Executors.newWorkStealingPool(numThreads);
-		final Map<Integer, BCV> computedBCV = new ConcurrentHashMap<>();
 		
 		final int[][] in = graph.getInNeighborhoods();
 		final int[][] out = graph.getOutNeighborhoods();
 
-		try(ProgressBar pb = new ProgressBar("BCA", stats.jobs.length,  PB_UPDATE_INTERVAL, System.out, PB_STYLE, " nodes", 1,true)) {
+		try(ProgressBar pb = settings.progressBar("BCA", stats.jobs.length, "nodes")) {
 
 			CompletionService<BCV> completionService = new ExecutorCompletionService<>(es);
 			//System.out.println("Submitting " + stats.jobs.length + " jobs");
@@ -59,13 +60,13 @@ public class BookmarkColoring implements CooccurenceMatrix {
 				default:
 				case VANILLA:
 					completionService.submit(new VanillaBCAJob(
-							graph, computedBCV, bookmark,
+							graph, bookmark,
 							includeReverse, alpha, epsilon,
 							in, out));
 					break;
 				case SEMANTIC:
 					completionService.submit(new SemanticBCAJob(
-							graph, computedBCV, bookmark,
+							graph, bookmark,
 							includeReverse, alpha, epsilon,
 							in, out));
 					break;

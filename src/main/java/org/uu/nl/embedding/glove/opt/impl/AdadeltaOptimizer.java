@@ -61,101 +61,96 @@ public class AdadeltaOptimizer extends GloveOptimizer {
 	
 	@Override
 	public GloveJob createJob(int id, int iteration) {
-		return new GloveJob(id) {
+		return () -> {
+			int a, d, l1, l2;
+			double cost = 0, innerCost, weightedCost, grad1, grad2;
+			double RMSx1, RMSx2, accg1, accg2, RMSg1, RMSg2, deltax1, deltax2, accx1, accx2;
 
-			@Override
-			public Double call() {
-				
-				int a, d, l1, l2;
-				double cost = 0, innerCost, weightedCost, grad1, grad2;
-				double RMSx1, RMSx2, accg1, accg2, RMSg1, RMSg2, deltax1, deltax2, accx1, accx2;
+			final int offset = crecCount / numThreads * id;
 
-				final int offset = crecCount / numThreads * id;
+			for (a = 0; a < linesPerThread[id]; a++) {
+				int crWord1 = crecs.cIdx_I(a + offset);
+				int crWord2 = crecs.cIdx_J(a + offset);
+				double crVal = crecs.cIdx_C(a + offset);
 
-				for (a = 0; a < linesPerThread[id]; a++) {
-					int crWord1 = crecs.cIdx_I(a + offset);
-					int crWord2 = crecs.cIdx_J(a + offset);
-					double crVal = crecs.cIdx_C(a + offset);
+				l1 = crWord1 * (dimension + 1);
+				l2 = (crWord2 + vocabSize) * (dimension + 1);
 
-					l1 = crWord1 * (dimension + 1);
-					l2 = (crWord2 + vocabSize) * (dimension + 1);
+				/* Calculate cost, save diff for gradients */
+				innerCost = 0;
+				// dot product of word and context word vector
+				for (d = 0; d < dimension; d++)
+					innerCost += W[d + l1] * W[d + l2];
+				// add separate bias for each word
+				innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(crVal);
+				// multiply weighting function (f) with diff
+				weightedCost = (crVal > xMax) ? innerCost : FastMath.pow(crVal / xMax, alpha) * innerCost;
 
-					/* Calculate cost, save diff for gradients */
-					innerCost = 0;
-					// dot product of word and context word vector
-					for (d = 0; d < dimension; d++)
-						innerCost += W[d + l1] * W[d + l2];
-					// add separate bias for each word
-					innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(crVal);
-					// multiply weighting function (f) with diff
-					weightedCost = (crVal > xMax) ? innerCost : FastMath.pow(crVal / xMax, alpha) * innerCost;
+				// Check for NaN and inf() in the diffs.
+				if (Double.isNaN(innerCost) || Double.isNaN(weightedCost) || Double.isInfinite(innerCost)
+						|| Double.isInfinite(weightedCost)) {
+					System.err.println("Caught NaN in diff for kdiff for thread. Skipping update");
+					continue;
+				}
 
-					// Check for NaN and inf() in the diffs.
-					if (Double.isNaN(innerCost) || Double.isNaN(weightedCost) || Double.isInfinite(innerCost)
-							|| Double.isInfinite(weightedCost)) {
-						System.err.println("Caught NaN in diff for kdiff for thread. Skipping update");
-						continue;
-					}
+				cost += 0.5 * weightedCost * innerCost; // weighted squared error
 
-					cost += 0.5 * weightedCost * innerCost; // weighted squared error
-
-					/* Adaptive gradient updates */
-					//weightedCost *= learningRate; // for ease in calculating gradient
-					for (d = 0; d < dimension; d++) {
-						// Compute gradients
-						grad1 = weightedCost * W[d + l2];
-						grad2 = weightedCost * W[d + l1];
-						// Compute RMS of previous accumulated updates
-						RMSx1 = FastMath.sqrt(D[d + l1] + epsilon);
-						RMSx2 = FastMath.sqrt(D[d + l2] + epsilon);
-						// Accumulate gradients
-						accg1 = gamma * G[d + l1] + (1 - gamma) * (grad1 * grad1);
-						accg2 = gamma * G[d + l2] + (1 - gamma) * (grad2 * grad2);
-						// Compute RMS of current accumulated gradients
-						RMSg1 = FastMath.sqrt(accg1 + epsilon);
-						RMSg2 = FastMath.sqrt(accg2 + epsilon);
-						// Compute updates
-						deltax1 = RMSx1 / RMSg1 * grad1;
-						deltax2 = RMSx2 / RMSg2 * grad2;
-						// Accumulate updates
-						accx1 = gamma * D[d + l1] + (1 - gamma) * (deltax1 * deltax1);
-						accx2 = gamma * D[d + l2] + (1 - gamma) * (deltax2 * deltax2);
-						// Apply updates
-						W[d + l1] -= deltax1;
-						W[d + l2] -= deltax2;
-						// Store accumulated gradients and updates
-						G[d + l1] = accg1;
-						G[d + l2] = accg2;
-						D[d + l1] = accx1;
-						D[d + l2] = accx2;
-					}
-
+				/* Adaptive gradient updates */
+				//weightedCost *= learningRate; // for ease in calculating gradient
+				for (d = 0; d < dimension; d++) {
+					// Compute gradients
+					grad1 = weightedCost * W[d + l2];
+					grad2 = weightedCost * W[d + l1];
 					// Compute RMS of previous accumulated updates
-					RMSx1 = FastMath.sqrt(D[dimension + l1] + epsilon);
-					RMSx2 = FastMath.sqrt(D[dimension + l2] + epsilon);
+					RMSx1 = FastMath.sqrt(D[d + l1] + epsilon);
+					RMSx2 = FastMath.sqrt(D[d + l2] + epsilon);
 					// Accumulate gradients
-					accg1 = gamma * G[dimension + l1] + (1 - gamma) * (weightedCost * weightedCost);
-					accg2 = gamma * G[dimension + l2] + (1 - gamma) * (weightedCost * weightedCost);
+					accg1 = gamma * G[d + l1] + (1 - gamma) * (grad1 * grad1);
+					accg2 = gamma * G[d + l2] + (1 - gamma) * (grad2 * grad2);
 					// Compute RMS of current accumulated gradients
 					RMSg1 = FastMath.sqrt(accg1 + epsilon);
 					RMSg2 = FastMath.sqrt(accg2 + epsilon);
-					// Compute update
-					deltax1 = RMSx1 / RMSg1 * weightedCost;
-					deltax2 = RMSx2 / RMSg2 * weightedCost;
+					// Compute updates
+					deltax1 = RMSx1 / RMSg1 * grad1;
+					deltax2 = RMSx2 / RMSg2 * grad2;
 					// Accumulate updates
-					accx1 = gamma * D[dimension + l1] + (1 - gamma) * (deltax1 * deltax1);
-					accx2 = gamma * D[dimension + l2] + (1 - gamma) * (deltax2 * deltax2);
+					accx1 = gamma * D[d + l1] + (1 - gamma) * (deltax1 * deltax1);
+					accx2 = gamma * D[d + l2] + (1 - gamma) * (deltax2 * deltax2);
 					// Apply updates
-					W[dimension + l1] -= deltax1;
-					W[dimension + l2] -= deltax2;
+					W[d + l1] -= deltax1;
+					W[d + l2] -= deltax2;
 					// Store accumulated gradients and updates
-					G[dimension + l1] = accg1;
-					G[dimension + l2] = accg2;
-					D[dimension + l1] = accx1;
-					D[dimension + l2] = accx2;
+					G[d + l1] = accg1;
+					G[d + l2] = accg2;
+					D[d + l1] = accx1;
+					D[d + l2] = accx2;
 				}
-				return cost;
+
+				// Compute RMS of previous accumulated updates
+				RMSx1 = FastMath.sqrt(D[dimension + l1] + epsilon);
+				RMSx2 = FastMath.sqrt(D[dimension + l2] + epsilon);
+				// Accumulate gradients
+				accg1 = gamma * G[dimension + l1] + (1 - gamma) * (weightedCost * weightedCost);
+				accg2 = gamma * G[dimension + l2] + (1 - gamma) * (weightedCost * weightedCost);
+				// Compute RMS of current accumulated gradients
+				RMSg1 = FastMath.sqrt(accg1 + epsilon);
+				RMSg2 = FastMath.sqrt(accg2 + epsilon);
+				// Compute update
+				deltax1 = RMSx1 / RMSg1 * weightedCost;
+				deltax2 = RMSx2 / RMSg2 * weightedCost;
+				// Accumulate updates
+				accx1 = gamma * D[dimension + l1] + (1 - gamma) * (deltax1 * deltax1);
+				accx2 = gamma * D[dimension + l2] + (1 - gamma) * (deltax2 * deltax2);
+				// Apply updates
+				W[dimension + l1] -= deltax1;
+				W[dimension + l2] -= deltax2;
+				// Store accumulated gradients and updates
+				G[dimension + l1] = accg1;
+				G[dimension + l2] = accg2;
+				D[dimension + l1] = accx1;
+				D[dimension + l2] = accx2;
 			}
+			return cost;
 		};
 	}
 }

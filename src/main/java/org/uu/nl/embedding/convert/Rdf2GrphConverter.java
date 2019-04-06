@@ -5,23 +5,26 @@ import grph.in_memory.InMemoryGrph;
 import grph.properties.NumericalProperty;
 import grph.properties.Property;
 import me.tongfei.progressbar.ProgressBar;
-import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
-import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.log4j.Logger;
+import org.uu.nl.embedding.Settings;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class Rdf2GrphConverter implements Converter<Grph, Model> {
+/**
+ * Converts an RDF graph to the Grph form
+ *
+ * @author Jurian Baas
+ */
+public class Rdf2GrphConverter implements Converter<Model, Grph> {
 
-	final static Logger logger = Logger.getLogger(Rdf2GrphConverter.class);
-	private static final int PB_UPDATE_INTERVAL = 250;
-	private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
+	private static final Logger logger = Logger.getLogger(Rdf2GrphConverter.class);
+	private static final Settings settings = Settings.getInstance();
 
 	private static int type2color(Node node) {
 		if(node.isURI()) return NodeInfo.URI;
@@ -36,23 +39,21 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 		final Grph g = new InMemoryGrph();
 
 		final NumericalProperty edgeTypes = g.getEdgeColorProperty();
-
 		final Property edgeLabel = g.getEdgeLabelProperty();
 		
 		final Map<Node, Integer> vertexMap = getVertices(model, g);
 		final Map<Node, Integer> edgeMap = new HashMap<>();
-
 		final int vertexCount = vertexMap.size();
 
 		logger.info("Converting Jena model with "+vertexCount+" vertices");
 
-		int s_i, o_i, p_i = vertexCount;
+		int s_i, o_i, p_i = vertexCount, edgeType;
 		Node s, p, o;
 		Triple t;
 		
 		final ExtendedIterator<Triple> triples = model.getGraph().find();
 
-		try(ProgressBar pb = new ProgressBar("Converting", model.size(), PB_UPDATE_INTERVAL, System.out, PB_STYLE, " triples", 1 , true)) {
+		try(ProgressBar pb = settings.progressBar("Converting", model.size(), "triples")) {
 			while (triples.hasNext()) {
 				t = triples.next();
 				s = t.getSubject();
@@ -74,7 +75,7 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 				// If we have not encountered this edge-type before, give it a unique id
 				edgeMap.putIfAbsent(p, edgeMap.size());
 				// Store the edge-type value for this new edge
-				int edgeType = edgeMap.get(p);
+				edgeType = edgeMap.get(p);
 
 				edgeTypes.setValue(p_i, edgeType);
 				p_i++;
@@ -114,14 +115,13 @@ public class Rdf2GrphConverter implements Converter<Grph, Model> {
 		return vertexMap;
 	}
 
-	private int addVertex(Grph g, Node n, Map<Node, Integer> vertexMap) {
+	private void addVertex(Grph g, Node n, Map<Node, Integer> vertexMap) {
 		final int i = vertexMap.size();
 		g.addVertex(i);
 		g.getVertexColorProperty().setValue(i, type2color(n));
 		g.getVertexLabelProperty().setValue(i, n.toString());
 		vertexMap.put(n, i);
-		return i;
-	}
+    }
 
 	/*
 	private int getVertexCount(Model model) {

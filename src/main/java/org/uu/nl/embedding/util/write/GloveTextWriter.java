@@ -1,7 +1,8 @@
 package org.uu.nl.embedding.util.write;
 
 import me.tongfei.progressbar.ProgressBar;
-import me.tongfei.progressbar.ProgressBarStyle;
+import org.uu.nl.embedding.Settings;
+import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.glove.GloveModel;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -19,21 +20,21 @@ public class GloveTextWriter implements GloveWriter {
 
 	private final String VECTORS_FILE;
 	private final String DICT_FILE;
-	private final String FILETYPE = ".tsv";
 
 	public GloveTextWriter(String fileName) {
+		String FILETYPE = ".tsv";
 		this.VECTORS_FILE = fileName + "." + "vectors" + FILETYPE;
 		this.DICT_FILE = fileName + "." + "dict" + FILETYPE;
 	}
 
-	private static final int PB_UPDATE_INTERVAL = 250;
-	private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
+	private static final Settings settings = Settings.getInstance();
 
 	@Override
 	public void write(GloveModel model, Path outputFolder) throws IOException {
-		
+
 		Files.createDirectories(outputFolder);
-		
+
+		byte type;
 		final int vocabSize = model.getVocabSize();
 		final int dimension = model.getDimension();
 		final String[] out = new String[dimension];
@@ -43,30 +44,36 @@ public class GloveTextWriter implements GloveWriter {
 		final String delimiter = "\t";
 		final String newLine = "\n";
 
-		try(ProgressBar pb = new ProgressBar("Writing to file", vocabSize, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " vectors", 1 , true)) {
-			try (Writer dict = new BufferedWriter(new FileWriter(outputFolder.resolve(DICT_FILE).toFile()))) {
-				try (Writer vect = new BufferedWriter(new FileWriter(outputFolder.resolve(VECTORS_FILE).toFile()))) {
+		try (ProgressBar pb = settings.progressBar("Writing to file", vocabSize, "vectors");
+			 Writer dict = new BufferedWriter(new FileWriter(outputFolder.resolve(DICT_FILE).toFile()));
+			 Writer vect = new BufferedWriter(new FileWriter(outputFolder.resolve(VECTORS_FILE).toFile()))) {
 
-					dict.write("key" + delimiter + "type" +newLine);
+			dict.write("key" + delimiter + "type" + newLine);
 
-					for (int i = 0; i < vocabSize; i++) {
+			for (int i = 0; i < vocabSize; i++) {
 
-						for (int d = 0; d < out.length; d++)
-							out[d] = String.format("%11.6E", result[d + i * dimension]);
+				type = model.getCoMatrix().getType(i);
 
-						vect.write(String.join(delimiter, out) + newLine);
-						dict.write(model.getCoMatrix().getKey(i)
-								// Remove newlines and tabs
-								.replace("\n", "")
-								.replace("\r", "")
-								.replace(delimiter, "")
-								+ delimiter
-								+ model.getCoMatrix().getType(i)
-								+ newLine
-						);
-						pb.step();
-					}
+				// Do not write blank nodes
+				if(type == NodeInfo.BLANK) {
+					pb.step();
+					continue;
 				}
+
+				for (int d = 0; d < out.length; d++)
+					out[d] = String.format("%11.6E", result[d + i * dimension]);
+
+				vect.write(String.join(delimiter, out) + newLine);
+				dict.write(model.getCoMatrix().getKey(i)
+						// Remove newlines and tabs
+						.replace("\n", "")
+						.replace("\r", "")
+						.replace(delimiter, "")
+						+ delimiter
+						+ type
+						+ newLine
+				);
+				pb.step();
 			}
 		}
 	}

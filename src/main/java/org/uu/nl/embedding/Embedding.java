@@ -3,13 +3,16 @@ package org.uu.nl.embedding;
 import org.uu.nl.embedding.glove.opt.Optimum;
 import org.uu.nl.embedding.pca.PCA;
 
+/**
+ * @author Jurian Baas
+ */
 public abstract class Embedding {
 	
 	protected int dimension;
-	protected CooccurenceMatrix coMatrix;
-	protected Optimum optimum;
+	private final CooccurenceMatrix coMatrix;
+	private Optimum optimum;
 	
-	public Embedding(int dim, CooccurenceMatrix coMatrix) {
+	protected Embedding(int dim, CooccurenceMatrix coMatrix) {
 		this.coMatrix = coMatrix;
 		this.dimension = dim;
 	}

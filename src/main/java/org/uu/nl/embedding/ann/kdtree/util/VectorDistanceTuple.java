@@ -1,5 +1,7 @@
 package org.uu.nl.embedding.ann.kdtree.util;
 
+import java.util.Arrays;
+
 /**
  * Tuple for holding element information from an ANN. Comparable is implemented
  * on the distance, enabling a descending sort mainly designed for use in a
@@ -43,6 +45,6 @@ public final class VectorDistanceTuple<T> implements
 
   @Override
   public String toString() {
-    return keyVector + " - " + value + " -> " + dist;
+    return Arrays.toString(keyVector) + " - " + value + " -> " + dist;
   }
 }

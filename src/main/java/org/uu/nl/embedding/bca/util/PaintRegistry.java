@@ -17,10 +17,8 @@ public class PaintRegistry<T> extends HashMap<T, Double> {
 	 * record if the key was not present before
 	 * @param key key with which the specified value is to be associated
 	 * @param value value to be associated with the specified key
-	 * @return the previous value associated with key, or null if there was no mapping for key.
-		(A null return can also indicate that the map previously associated null with key.)
 	 */
-	public Double add(T key, Double value) {
-		return super.put(key, getOrDefault(key, 0d) + value);
+	public void add(T key, Double value) {
+		super.put(key, getOrDefault(key, 0d) + value);
 	}
 }

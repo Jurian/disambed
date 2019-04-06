@@ -52,77 +52,72 @@ public class AdagradOptimizer extends GloveOptimizer {
 	
 	@Override
 	public GloveJob createJob(int id, int iteration) {
-		return new GloveJob(id) {
+		return () -> {
+			int a, d, l1, l2;
+			double cost = 0, innerCost, weightedCost, grad1, grad2;
 
-			@Override
-			public Double call() {
-				
-				int a, d, l1, l2;
-				double cost = 0, innerCost, weightedCost, grad1, grad2;
+			final int offset = crecCount / numThreads * id;
 
-				final int offset = crecCount / numThreads * id;
+			for (a = 0; a < linesPerThread[id]; a++) {
+				int crWord1 = crecs.cIdx_I(a + offset);
+				int crWord2 = crecs.cIdx_J(a + offset);
+				double crVal = crecs.cIdx_C(a + offset);
 
-				for (a = 0; a < linesPerThread[id]; a++) {
-					int crWord1 = crecs.cIdx_I(a + offset);
-					int crWord2 = crecs.cIdx_J(a + offset);
-					double crVal = crecs.cIdx_C(a + offset);
+				l1 = crWord1 * (dimension + 1);
+				l2 = (crWord2 + vocabSize) * (dimension + 1);
 
-					l1 = crWord1 * (dimension + 1);
-					l2 = (crWord2 + vocabSize) * (dimension + 1);
+				/* Calculate cost, save diff for gradients */
+				innerCost = 0;
+				// dot product of word and context word vector
+				for (d = 0; d < dimension; d++)
+					innerCost += W[d + l1] * W[d + l2];
+				// add separate bias for each word
+				innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(crVal);
+				// multiply weighting function (f) with diff
+				weightedCost = (crVal > xMax) ? innerCost : FastMath.pow(crVal / xMax, alpha) * innerCost;
 
-					/* Calculate cost, save diff for gradients */
-					innerCost = 0;
-					// dot product of word and context word vector
-					for (d = 0; d < dimension; d++)
-						innerCost += W[d + l1] * W[d + l2];
-					// add separate bias for each word
-					innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(crVal);
-					// multiply weighting function (f) with diff
-					weightedCost = (crVal > xMax) ? innerCost : FastMath.pow(crVal / xMax, alpha) * innerCost;
-
-					// Check for NaN and inf() in the diffs.
-					if (Double.isNaN(innerCost) || Double.isNaN(weightedCost) || Double.isInfinite(innerCost)
-							|| Double.isInfinite(weightedCost)) {
-						System.err.println("Caught NaN in diff for kdiff for thread. Skipping update");
-						continue;
-					}
-
-					cost += 0.5 * weightedCost * innerCost; // weighted squared error
-
-					/* Adaptive gradient updates */
-					//weightedCost *= learningRate; // for ease in calculating gradient
-					
-					/*---------------------------
-					 * Compute for word vectors *
-					 ---------------------------*/
-					
-					for (d = 0; d < dimension; d++) {
-						// Compute gradients
-						grad1 = weightedCost * W[d + l2];
-						grad2 = weightedCost * W[d + l1];
-						// Compute and apply updates
-						W[d + l1] -= grad1 / FastMath.sqrt(gradsq[d + l1]) * learningRate;
-						W[d + l2] -= grad2 / FastMath.sqrt(gradsq[d + l2]) * learningRate;
-						// Store squared gradients
-						gradsq[d + l1] += grad1 * grad1;
-						gradsq[d + l2] += grad2 * grad2;
-					}
-					
-					/*---------------------
-					 * Compute for biases *
-					 ---------------------*/
-					
-					// Compute updates (gradient of bias is the weighted cost)
-					W[dimension + l1] -= weightedCost / FastMath.sqrt(gradsq[dimension + l1]);
-					W[dimension + l2] -= weightedCost / FastMath.sqrt(gradsq[dimension + l2]);
-					weightedCost *= weightedCost;
-					// Store squared gradients
-					gradsq[dimension + l1] += weightedCost;
-					gradsq[dimension + l2] += weightedCost;
-
+				// Check for NaN and inf() in the diffs.
+				if (Double.isNaN(innerCost) || Double.isNaN(weightedCost) || Double.isInfinite(innerCost)
+						|| Double.isInfinite(weightedCost)) {
+					System.err.println("Caught NaN in diff for kdiff for thread. Skipping update");
+					continue;
 				}
-				return cost;
+
+				cost += 0.5 * weightedCost * innerCost; // weighted squared error
+
+				/* Adaptive gradient updates */
+				//weightedCost *= learningRate; // for ease in calculating gradient
+
+				/*---------------------------
+				 * Compute for word vectors *
+				 ---------------------------*/
+
+				for (d = 0; d < dimension; d++) {
+					// Compute gradients
+					grad1 = weightedCost * W[d + l2];
+					grad2 = weightedCost * W[d + l1];
+					// Compute and apply updates
+					W[d + l1] -= grad1 / FastMath.sqrt(gradsq[d + l1]) * learningRate;
+					W[d + l2] -= grad2 / FastMath.sqrt(gradsq[d + l2]) * learningRate;
+					// Store squared gradients
+					gradsq[d + l1] += grad1 * grad1;
+					gradsq[d + l2] += grad2 * grad2;
+				}
+
+				/*---------------------
+				 * Compute for biases *
+				 ---------------------*/
+
+				// Compute updates (gradient of bias is the weighted cost)
+				W[dimension + l1] -= weightedCost / FastMath.sqrt(gradsq[dimension + l1]);
+				W[dimension + l2] -= weightedCost / FastMath.sqrt(gradsq[dimension + l2]);
+				weightedCost *= weightedCost;
+				// Store squared gradients
+				gradsq[dimension + l1] += weightedCost;
+				gradsq[dimension + l2] += weightedCost;
+
 			}
+			return cost;
 		};
 	}
 

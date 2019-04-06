@@ -1,9 +1,5 @@
 package org.uu.nl.embedding.ann.kdtree.split;
 
-import org.uu.nl.embedding.ann.kdtree.ANNArrayTree.TreeNode;
-
-import java.util.List;
-
 /**
  * This version has been modified to make use of primitive arrays and greatly simplified as in the 
  * GloVe use-case we are only faced with dense high dimensional (between 50 and 300) vectors.
@@ -15,7 +11,7 @@ import java.util.List;
 public final class KDTreeSplitPolicy<T> implements SplitPolicy<T> {
 
 	@Override
-	public int splitDimension(double[] v, int level, List<TreeNode<T>> treeNodes) {
+	public int splitDimension(double[] v, int level) {
 		return (v.length == 1) ? 0 : (level + 1) % v.length;
 	}
 

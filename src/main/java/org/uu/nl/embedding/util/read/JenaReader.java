@@ -7,9 +7,12 @@ import org.apache.log4j.Logger;
 
 import java.io.File;
 
+/**
+ * @author Jurian Baas
+ */
 public class JenaReader implements Reader<Model> {
 
-    final static Logger logger = Logger.getLogger(JenaReader.class);
+    private final static Logger logger = Logger.getLogger(JenaReader.class);
     public Model load(File file) {
         return getDataDump(file);
     }

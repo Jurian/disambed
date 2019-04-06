@@ -1,6 +1,7 @@
 package org.uu.nl.embedding.bca.util;
 
 import grph.Grph;
+import org.uu.nl.embedding.convert.util.NodeInfo;
 
 import java.util.concurrent.Callable;
 
@@ -14,7 +15,7 @@ public abstract class BCAJob implements Callable<BCV> {
 	protected final int bookmark;
 	private final boolean reverse;
 	protected final double alpha, epsilon;
-	protected final Grph graph;
+	private final Grph graph;
 
 	protected BCAJob(
             int bookmark, boolean reverse,
@@ -52,5 +53,21 @@ public abstract class BCAJob implements Callable<BCV> {
 			}
 			return -1;
 		}
+	}
+
+	protected boolean isLiteral(int n) {
+		return graph.getVertexColorProperty().getValue(n) ==  NodeInfo.LITERAL;
+	}
+
+	protected String nodeLabel(int n) {
+		return graph.getVertexLabelProperty().getValueAsString(n);
+	}
+
+	protected String edgeLabel(int e) {
+		return graph.getEdgeLabelProperty().getValueAsString(e);
+	}
+
+	protected int getEdgeType(int e) {
+		return graph.getEdgeColorProperty().getValueAsInt(e);
 	}
 }

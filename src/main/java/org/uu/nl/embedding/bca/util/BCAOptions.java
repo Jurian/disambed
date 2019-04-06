@@ -1,5 +1,8 @@
 package org.uu.nl.embedding.bca.util;
 
+/**
+ * @author Jurian Baas
+ */
 public class BCAOptions {
 	
 	public enum BCAType {

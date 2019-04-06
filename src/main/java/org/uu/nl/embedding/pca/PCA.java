@@ -3,9 +3,9 @@ package org.uu.nl.embedding.pca;
 import com.github.fommil.netlib.LAPACK;
 
 import me.tongfei.progressbar.ProgressBar;
-import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.commons.math.util.FastMath;
 import org.netlib.util.intW;
+import org.uu.nl.embedding.Settings;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
@@ -19,9 +19,18 @@ import java.util.logging.Level;
 import java.util.stream.IntStream;
 
 /**
- * Principal component analysis (PCA) is a statistical procedure that uses an orthogonal transformation to convert a set
- * of observations of possibly correlated variables (entities each of which takes on various numerical values) into a
- * set of values of linearly uncorrelated variables called principal components.
+ * <p>
+ *  Principal component analysis (PCA) is a statistical procedure that uses an orthogonal transformation to convert a set
+ *  of observations of possibly correlated variables (entities each of which takes on various numerical values) into a
+ *  set of values of linearly uncorrelated variables called principal components.
+ * </p>
+ *
+ * <p>
+ *  This class is useful because it turns out that most of the time, the vast majority of principal components can
+ *  be discarded while keeping 95% of variance.
+ * </p>
+ *
+ * @author Jurian Baas
  */
 public class PCA {
 
@@ -43,10 +52,15 @@ public class PCA {
 
     }
 
-    private static final int PB_UPDATE_INTERVAL = 250;
-    private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
     private static final DecimalFormat df = new DecimalFormat("####0.0000");
+    private static final Settings settings = Settings.getInstance();
 
+    /**
+     * Write a matrix as a pretty String
+     * @param data The data of the matrix
+     * @param nCols The number of columns of the matrix
+     * @return Formatted String
+     */
     private static String toStringMatrix(double[] data, int nCols) {
 
         StringBuilder out = new StringBuilder(data.length * 7 + nCols * 2);
@@ -59,6 +73,11 @@ public class PCA {
         return out.toString();
     }
 
+    /**
+     * Create a String of a vector ordered to the eigen values
+     * @param vector The vector to create a String version of
+     * @return The vector but ordered to the eigen values
+     */
     private String toStringOrderedVector(double[] vector) {
         StringBuilder out = new StringBuilder(vector.length * 7 );
 
@@ -86,7 +105,7 @@ public class PCA {
      * @param vectors Input matrix
      * @param dim Number of columns of the input matrix
      */
-    public PCA(double[] vectors, int dim) {
+    private PCA(double[] vectors, int dim) {
         this(vectors, dim, false);
     }
 
@@ -189,7 +208,7 @@ public class PCA {
         final ExecutorService es = Executors.newWorkStealingPool(numThreads);
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
-        try(ProgressBar pb = new ProgressBar("Projecting", maxEigenCols, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " columns", 1 , true)) {
+        try(ProgressBar pb = settings.progressBar("Projecting", maxEigenCols, "columns")) {
             for (int c = 0; c < maxEigenCols; c++) {
                 final int constC = c;
                 cs.submit(() -> {
@@ -272,7 +291,7 @@ public class PCA {
         final ExecutorService es = Executors.newWorkStealingPool(numThreads);
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
-        try(ProgressBar pb = new ProgressBar("Covariance Matrix", nCols, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " columns", 1, true)) {
+        try(ProgressBar pb = settings.progressBar("Covariance Matrix", nCols, "columns")) {
 
             for(int col1 = 0; col1 < nCols; col1++) {
                 final int constCol1 = col1;
@@ -312,6 +331,9 @@ public class PCA {
         return covMatrix;
     }
 
+    /**
+     * Wrapper for a projection, we need to store the data and also the number of columns
+     */
     public class Projection {
 
         final double[] projection;

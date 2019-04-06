@@ -1,5 +1,7 @@
 package org.uu.nl.embedding.util.write;
 
+import me.tongfei.progressbar.ProgressBar;
+import org.uu.nl.embedding.Settings;
 import org.uu.nl.embedding.glove.GloveModel;
 import org.uu.nl.embedding.glove.util.WritableUtils;
 
@@ -20,6 +22,7 @@ public class GloveBinaryWriter implements GloveWriter {
 	
 	private final String VECTORS_FILE;
 	private final String DICT_FILE;
+	private static final Settings settings = Settings.getInstance();
 
 	public GloveBinaryWriter(String fileName) {
 		this.VECTORS_FILE = fileName + "." + "vectors.bin";
@@ -27,8 +30,11 @@ public class GloveBinaryWriter implements GloveWriter {
 	}
 	
 	private void writeVectorData(double[] v, DataOutput out) throws IOException {
-		for (int i = 0; i < v.length; i++) 
-			out.writeInt(Float.floatToIntBits((float) v[i]));
+		for (double v1 : v) out.writeInt(Float.floatToIntBits((float) v1));
+	}
+
+	private BufferedOutputStream createStream(Path outputFolder, String fileName) throws FileNotFoundException {
+		return new BufferedOutputStream(new FileOutputStream(outputFolder.resolve(fileName).toFile()));
 	}
 
 	@Override
@@ -40,41 +46,37 @@ public class GloveBinaryWriter implements GloveWriter {
 		final int dimension = model.getDimension();
 		final double[] results = model.getOptimum().getResult();
 		byte[] buf;
-		
-		try (DataOutputStream dict = new DataOutputStream(
-				new BufferedOutputStream(new FileOutputStream(outputFolder.resolve(DICT_FILE).toFile())))) {
 
-			try (BufferedOutputStream vec = new BufferedOutputStream(
-					new FileOutputStream(outputFolder.resolve(VECTORS_FILE).toFile()))) {
+		try(ProgressBar pb = settings.progressBar("Writing to file", vocabSize, "vectors");
+			DataOutputStream dict = new DataOutputStream(createStream(outputFolder, DICT_FILE));
+			BufferedOutputStream vec = new BufferedOutputStream(createStream(outputFolder, VECTORS_FILE));
+			ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream()) {
 
+			for (int i = 0; i < vocabSize; i++) {
 
-				
-				ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
-				for(int i = 0; i < vocabSize; i++) {
-					
-					byteBuffer.reset();
-					
-					try (DataOutputStream out = new DataOutputStream(byteBuffer)) {
-						writeVectorData(Arrays.copyOfRange(results, i*dimension, i*dimension+dimension), out);
-					}
+				byteBuffer.reset();
 
-					buf = byteBuffer.toByteArray();
-					if (blockSize == -1) blockSize = buf.length;
-					
-					if (blockSize != buf.length) {
-						System.err.println(
-								String.format("Can't write different block size! Expected %d but was %d. "
-										+ "This happened because the vectors in the stream had different dimensions.",
-										blockSize, buf.length));
-					}
-
-					vec.write(buf);
-					
-					dict.writeUTF(model.getCoMatrix().getKey(i));
-					WritableUtils.writeVLong(dict, offset);
-					
-					offset += buf.length;
+				try (DataOutputStream out = new DataOutputStream(byteBuffer)) {
+					writeVectorData(Arrays.copyOfRange(results, i * dimension, i * dimension + dimension), out);
 				}
+
+				buf = byteBuffer.toByteArray();
+				if (blockSize == -1) blockSize = buf.length;
+
+				if (blockSize != buf.length) {
+					System.err.println(
+							String.format("Can't write different block size! Expected %d but was %d. "
+											+ "This happened because the vectors in the stream had different dimensions.",
+									blockSize, buf.length));
+				}
+
+				vec.write(buf);
+
+				dict.writeUTF(model.getCoMatrix().getKey(i));
+				WritableUtils.writeVLong(dict, offset);
+
+				offset += buf.length;
+				pb.step();
 			}
 		}
 	}

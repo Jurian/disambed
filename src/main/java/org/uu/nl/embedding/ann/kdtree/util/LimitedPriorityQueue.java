@@ -18,7 +18,7 @@ public final class LimitedPriorityQueue<T> {
     final T data;
     final double value;
 
-    public Entry(final T data, final double value) {
+    Entry(final T data, final double value) {
       this.data = data;
       this.value = value;
     }
@@ -32,9 +32,9 @@ public final class LimitedPriorityQueue<T> {
     public String toString() {
       return data.toString();
     }
-  };
+  }
 
-  private final PriorityQueue<Entry<T>> queue;
+    private final PriorityQueue<Entry<T>> queue;
   private final int maxCapacity;
 
   public LimitedPriorityQueue(int capacity) {
@@ -47,17 +47,16 @@ public final class LimitedPriorityQueue<T> {
     return (p == null) ? Double.POSITIVE_INFINITY : p.value;
   }
 
-  public boolean add(T element, double cost) {
+  public void add(T element, double cost) {
     if (isFull()) {
       if (cost > getMaximumPriority()) {
-        return false;
+        return;
       }
       queue.add(new Entry<>(element, cost));
       queue.poll();
     } else {
       queue.add(new Entry<>(element, cost));
     }
-    return true;
   }
 
   public boolean isFull() {
@@ -73,7 +72,7 @@ public final class LimitedPriorityQueue<T> {
     return queue.size() == 0;
   }
 
-  public int size() {
+  private int size() {
     return queue.size();
   }
 
