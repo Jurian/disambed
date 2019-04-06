@@ -8,7 +8,6 @@ import org.uu.nl.embedding.glove.util.WritableUtils;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 
 /**
@@ -27,10 +26,6 @@ public class GloveBinaryWriter implements GloveWriter {
 	public GloveBinaryWriter(String fileName) {
 		this.VECTORS_FILE = fileName + "." + "vectors.bin";
 		this.DICT_FILE = fileName + "." + "dict.bin";
-	}
-	
-	private void writeVectorData(double[] v, DataOutput out) throws IOException {
-		for (double v1 : v) out.writeInt(Float.floatToIntBits((float) v1));
 	}
 
 	private BufferedOutputStream createStream(Path outputFolder, String fileName) throws FileNotFoundException {
@@ -57,7 +52,8 @@ public class GloveBinaryWriter implements GloveWriter {
 				byteBuffer.reset();
 
 				try (DataOutputStream out = new DataOutputStream(byteBuffer)) {
-					writeVectorData(Arrays.copyOfRange(results, i * dimension, i * dimension + dimension), out);
+					for (int x = i * dimension; x < i * dimension + dimension; x++)
+						out.writeInt(Float.floatToIntBits((float) results[x]));
 				}
 
 				buf = byteBuffer.toByteArray();

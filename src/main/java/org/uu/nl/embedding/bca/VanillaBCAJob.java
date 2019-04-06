@@ -5,6 +5,7 @@ import org.uu.nl.embedding.bca.util.BCAJob;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.PaintRegistry;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -13,14 +14,16 @@ import java.util.Queue;
  */
 public class VanillaBCAJob extends BCAJob {
 
-	private final int[][] out, in;
+	private final int[][] vertexOut, vertexIn, edgeOut, edgeIn;
 	
 	public VanillaBCAJob(Grph graph,
-			int bookmark, boolean reverse, double alpha, double epsilon,
-			int[][] in, int[][] out) {
+                         int bookmark, boolean reverse, double alpha, double epsilon,
+                         int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
 		super(bookmark, reverse, alpha, epsilon, graph);
-		this.out = out;
-		this.in = in;
+		this.vertexOut = vertexOut;
+		this.vertexIn = vertexIn;
+		this.edgeOut = edgeOut;
+		this.edgeIn = edgeIn;
 	}
 
 	@Override
@@ -51,8 +54,8 @@ public class VanillaBCAJob extends BCAJob {
             if (wetPaint < epsilon)
                 continue;
 
-            if(reverse) neighbors = in[focusNode];
-            else neighbors = out[focusNode];
+            if(reverse) neighbors = vertexIn[focusNode];
+            else neighbors = vertexOut[focusNode];
 
             if(neighbors.length == 0)
                 continue;
@@ -66,12 +69,24 @@ public class VanillaBCAJob extends BCAJob {
             if(partialWetPaint < epsilon)
                 continue;
 
+            if(!reverse) {
+                System.out.println(focusNode);
+                System.out.println();
+                for(int e : edgeOut[focusNode])
+                    System.out.println(getEdgeType(e));
+                System.out.println();
+            }
+
             for (int neighbor : neighbors) {
 
                 if (reverse)
                     edge = getEdge(neighbor, focusNode, graph.getOutOnlyEdges(neighbor).toIntArray(), edgeCache);
                 else
                     edge = getEdge(focusNode, neighbor, edgeCache, graph.getInOnlyEdges(neighbor).toIntArray());
+
+                if(!reverse) {
+                    System.out.println(getEdgeType(edge));
+                }
 
                 // Add the predicate to the context
                 bcv.add(graph.getVertices().size() + getEdgeType(edge), partialWetPaint);
@@ -83,7 +98,11 @@ public class VanillaBCAJob extends BCAJob {
                     wetPaintRegister.put(neighbor, partialWetPaint);
                 }
             }
-
+            if(!reverse) {
+                System.out.println();
+                System.out.println("-------------------");
+                System.out.println();
+            }
 		}
 		return bcv;
 	}
