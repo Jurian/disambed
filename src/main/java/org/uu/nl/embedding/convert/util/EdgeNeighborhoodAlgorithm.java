@@ -120,7 +120,7 @@ public abstract class EdgeNeighborhoodAlgorithm extends VertexAdjacencyAlgorithm
             final ExecutorService es = Executors.newWorkStealingPool(numThreads);
             final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
-            try(ProgressBar bp = settings.progressBar("Edge in", numVertices, "nodes")) {
+            try(ProgressBar bp = settings.progressBar("Edge out", numVertices, "nodes")) {
 
                 for(int t = 0; t < numThreads; t++) {
                     final int threadId = t;
