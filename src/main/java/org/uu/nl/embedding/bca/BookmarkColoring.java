@@ -8,7 +8,8 @@ import org.uu.nl.embedding.bca.util.GraphStatistics;
 import org.uu.nl.embedding.bca.util.BCAOptions;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.OrderedIntegerPair;
-import org.uu.nl.embedding.convert.util.EdgeNeighborhoodAlgorithm;
+import org.uu.nl.embedding.convert.util.InEdgeNeighborhoodAlgorithm;
+import org.uu.nl.embedding.convert.util.OutEdgeNeighborhoodAlgorithm;
 
 import java.util.Map;
 import java.util.Map.Entry;
@@ -51,9 +52,8 @@ public class BookmarkColoring implements CooccurenceMatrix {
 
 		final int[][] inVertex = graph.getInNeighborhoods();
 		final int[][] outVertex = graph.getOutNeighborhoods();
-		final int[][] inEdge = new EdgeNeighborhoodAlgorithm.In().compute(graph);
-		final int[][] outEdge = new EdgeNeighborhoodAlgorithm.Out().compute(graph);
-
+		final int[][] inEdge = new InEdgeNeighborhoodAlgorithm().compute(graph);
+		final int[][] outEdge = new OutEdgeNeighborhoodAlgorithm().compute(graph);
 
 		try(ProgressBar pb = settings.progressBar("BCA", stats.jobs.length, "nodes")) {
 
