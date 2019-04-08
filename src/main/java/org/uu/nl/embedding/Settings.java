@@ -14,6 +14,11 @@ public class Settings {
 
     private Settings() {}
 
+    public int threads() {
+        int threads = Runtime.getRuntime().availableProcessors() -1;
+        return threads == 0 ? 1 : threads;
+    }
+
     public ProgressBar progressBar(String name, long max, String unitName) {
         return new ProgressBar (
                 name,

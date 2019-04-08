@@ -123,29 +123,4 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 		vertexMap.put(n, i);
     }
 
-	/*
-	private int getVertexCount(Model model) {
-		final String sparql = "SELECT (COUNT(DISTINCT ?vertex) AS ?vertexCount) " +
-				"WHERE" + 
-				"{" + 
-					"{" + 
-						"?vertex ?p [] " + 
-					"}" + 
-					"UNION" +
-					"{ " + 
-						"[] ?p ?vertex " + 
-						"FILTER(!IsLiteral(?vertex))" + 
-					"}" + 
-				"}";
-		Query qry = QueryFactory.create(sparql);
-		try(QueryExecution qe = QueryExecutionFactory.create(qry, model)) {
-			ResultSet rs = qe.execSelect();
-
-			while (rs.hasNext()) {
-				return rs.nextSolution().getLiteral("vertexCount").getInt();
-			}
-		}
-		return -1;
-
-	}*/
 }

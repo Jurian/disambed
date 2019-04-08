@@ -120,7 +120,7 @@ public class PCA {
         assert vectors.length != 0;
         assert vectors.length % dim == 0;
 
-        this.numThreads = Runtime.getRuntime().availableProcessors() - 1;
+        this.numThreads = settings.threads();
 
         this.nCols = dim;
         this.nRows = vectors.length / dim;

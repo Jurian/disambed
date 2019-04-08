@@ -4,6 +4,7 @@ import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.commons.math.util.FastMath;
 import org.uu.nl.embedding.CooccurenceMatrix;
+import org.uu.nl.embedding.Settings;
 import org.uu.nl.embedding.glove.GloveModel;
 
 import java.util.Random;
@@ -27,7 +28,7 @@ public abstract class GloveOptimizer implements Optimizer {
 	protected final double[] W;
 	protected final int[] linesPerThread;
 	private final ExecutorService es;
-
+	private static final Settings settings = Settings.getInstance();
     private static final int PB_UPDATE_INTERVAL = 250;
     private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
 
@@ -38,7 +39,7 @@ public abstract class GloveOptimizer implements Optimizer {
 		this.maxIterations = maxIterations;
 		this.tolerance = tolerance;
 		this.vocabSize = glove.getVocabSize();
-		this.numThreads = Runtime.getRuntime().availableProcessors() - 1;
+		this.numThreads = settings.threads();
 		this.crecCount = crecs.cooccurrenceCount();
 		int dimension = glove.getDimension() + 1;
 
