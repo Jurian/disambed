@@ -5,7 +5,6 @@ import org.uu.nl.embedding.bca.util.BCAJob;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.PaintRegistry;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -46,7 +45,6 @@ public class VanillaBCAJob extends BCAJob {
 			focusNode = nodeQueue.poll();
 			final double wetPaint = wetPaintRegister.get(focusNode);
 
-
             // Keep part of the available paint on this node, distribute the rest
             bcv.add(focusNode, (alpha * wetPaint));
 
@@ -57,28 +55,17 @@ public class VanillaBCAJob extends BCAJob {
             if(reverse) neighbors = vertexIn[focusNode];
             else neighbors = vertexOut[focusNode];
 
-            if(reverse) edges = edgeIn[focusNode];
-            else edges = edgeOut[focusNode];
-
             if(neighbors.length == 0)
                 continue;
 
-            //if(reverse) edgeCache = graph.getInOnlyEdges(focusNode).toIntArray();
-           // else edgeCache = graph.getOutOnlyEdges(focusNode).toIntArray();
+            if(reverse) edges = edgeIn[focusNode];
+            else edges = edgeOut[focusNode];
 
             partialWetPaint = (1 - alpha) * wetPaint / neighbors.length;
 
             // We can already tell that the neighbors will not have enough paint to continue
             if(partialWetPaint < epsilon)
                 continue;
-
-            if(!reverse) {
-                System.out.println(focusNode);
-                System.out.println();
-                for(int e : edgeOut[focusNode])
-                    System.out.println(getEdgeType(e));
-                System.out.println();
-            }
 
             for (int i = 0; i < neighbors.length; i++) {
 
@@ -94,11 +81,6 @@ public class VanillaBCAJob extends BCAJob {
                     nodeQueue.add(neighbor);
                     wetPaintRegister.put(neighbor, partialWetPaint);
                 }
-            }
-            if(!reverse) {
-                System.out.println();
-                System.out.println("-------------------");
-                System.out.println();
             }
 		}
 		return bcv;
