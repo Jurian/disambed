@@ -106,6 +106,7 @@ public class Main {
 
             JenaReader loader = new JenaReader();
             Rdf2GrphConverter converter = new Rdf2GrphConverter(weight_file);
+            logger.info("Converting RDF data into fast graph representation, predicates that are not weighted are ignored");
             Grph graph = converter.convert(loader.load(bca_file));
 
             BCAOptions bcaOptions = new BCAOptions(bca_alg, bca_reverse, bca_alpha, bca_epsilon);
