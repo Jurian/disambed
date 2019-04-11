@@ -57,7 +57,7 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 
 		//logger.info("Converting Jena model with "+vertexCount+" vertices");
 
-		int s_i, o_i, p_i = 0, edgeType;
+		int s_i, o_i, p_i, edgeType;
 		Node s, p, o;
 		Triple t;
 		
@@ -71,7 +71,10 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 				p = t.getPredicate();
 				o = t.getObject();
 
-				if(!weights.containsKey(p.toString())) continue;
+				if(!weights.containsKey(p.toString())) {
+					pb.maxHint(pb.getMax()-1);
+					continue;
+				}
 
 				// Only create a new ID if the subject is not yet present
 				if (!vertexMap.containsKey(s)) addVertex(g, s, vertexMap);
@@ -83,7 +86,7 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 				// Every edge is unique, we always add one to the graph
 				// However there are only a few types of edges (relationships)
 				// So we also store a reference to a unique edge-type id
-				g.addDirectedSimpleEdge(s_i, p_i, o_i);
+				p_i = g.addDirectedSimpleEdge(s_i, o_i);
 				edgeLabel.setValue(p_i, p.toString());
 
 				// If we have not encountered this edge-type before, give it a unique id
@@ -92,7 +95,6 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 				edgeType = edgeMap.get(p);
 
 				edgeTypes.setValue(p_i, edgeType);
-				p_i++;
 				pb.step();
 			}
 		} finally {
@@ -102,40 +104,6 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 		//assert g.getVertices().size() == vertexCount: g.getVertices().size() + "!=" + vertexCount;
 
 		return g;
-	}
-
-	/**
-	 * We get all nodes in the graph here because we need to know in advance how many there are
-	 * @param model
-	 * @param g
-	 * @return
-	 */
-	private Map<Node, Integer> getVertices(Model model, Grph g) {
-
-		final Map<Node, Integer> vertexMap = new HashMap<>();
-		final ExtendedIterator<Triple> triples = model.getGraph().find();
-
-		try {
-			Node s, p, o;
-			Triple t;
-
-			while (triples.hasNext()) {
-				t = triples.next();
-				s = t.getSubject();
-				p = t.getPredicate();
-				o = t.getObject();
-
-				if(!weights.containsKey(p.toString())) continue;
-
-				// Only create a new ID if the subject is not yet present
-				if (!vertexMap.containsKey(s)) addVertex(g, s, vertexMap);
-				if (!vertexMap.containsKey(o)) addVertex(g, o, vertexMap);
-			}
-		} finally {
-			triples.close();
-		}
-
-		return vertexMap;
 	}
 
 	private void addVertex(Grph g, Node n, Map<Node, Integer> vertexMap) {
