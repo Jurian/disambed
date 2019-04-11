@@ -19,7 +19,7 @@ public class WeightsReader implements Reader<Map<String, Double>> {
             while((line = br.readLine()) != null) {
                 map.putIfAbsent(
                         line.substring(0, line.indexOf('=')),
-                        Double.parseDouble(line.substring(line.indexOf('=')))
+                        Double.parseDouble(line.substring(line.indexOf('=')+1))
                 );
             }
         }
