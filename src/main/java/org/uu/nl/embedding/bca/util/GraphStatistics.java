@@ -46,7 +46,7 @@ public class GraphStatistics {
 		int nrOfEdges = graph.getEdges().size();
 
 		Map<Integer, Integer> edgeTypes = new HashMap<>();
-		for(int i = nrOfVertices; i < nrOfVertices + nrOfEdges; i++) {
+		for(int i = 0; i < nrOfEdges; i++) {
 			int type = graph.getEdgeColorProperty().getValueAsInt(i);
 			edgeTypes.putIfAbsent(type, i);
 		}
@@ -78,6 +78,10 @@ public class GraphStatistics {
 			else if(types[i] == NodeInfo.LITERAL) literalNodeCount++;
 		}
 
+		for(int i = 0; i < nrOfEdges; i++) {
+			int type = graph.getEdgeColorProperty().getValueAsInt(i);
+			edgeTypes.putIfAbsent(type, i);
+		}
 
 		for(Map.Entry<Integer, Integer> entry : edgeTypes.entrySet()) {
 
