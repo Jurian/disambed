@@ -12,7 +12,10 @@ import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.log4j.Logger;
 import org.uu.nl.embedding.Settings;
 import org.uu.nl.embedding.convert.util.NodeInfo;
+import org.uu.nl.embedding.util.read.WeightsReader;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,11 +29,18 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 	private static final Logger logger = Logger.getLogger(Rdf2GrphConverter.class);
 	private static final Settings settings = Settings.getInstance();
 
+	private Map<String, Double> weights;
+
 	private static int type2color(Node node) {
 		if(node.isURI()) return NodeInfo.URI;
 		else if (node.isBlank()) return NodeInfo.BLANK;
 		else if (node.isLiteral()) return NodeInfo.LITERAL;
 		else throw new IllegalArgumentException("Node " + node + " is not of type URI, blank or literal");
+	}
+
+
+	public Rdf2GrphConverter(String weightFile) throws IOException {
+		weights = new WeightsReader().load(new File(weightFile));
 	}
 
 	@Override
@@ -41,13 +51,13 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 		final NumericalProperty edgeTypes = g.getEdgeColorProperty();
 		final Property edgeLabel = g.getEdgeLabelProperty();
 		
-		final Map<Node, Integer> vertexMap = getVertices(model, g);
+		final Map<Node, Integer> vertexMap = new HashMap<>();
 		final Map<Node, Integer> edgeMap = new HashMap<>();
-		final int vertexCount = vertexMap.size();
+		//final int vertexCount = vertexMap.size();
 
-		logger.info("Converting Jena model with "+vertexCount+" vertices");
+		//logger.info("Converting Jena model with "+vertexCount+" vertices");
 
-		int s_i, o_i, p_i = vertexCount , edgeType;
+		int s_i, o_i, p_i = 0, edgeType;
 		Node s, p, o;
 		Triple t;
 		
@@ -55,13 +65,17 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 
 		try(ProgressBar pb = settings.progressBar("Converting", model.size(), "triples")) {
 			while (triples.hasNext()) {
+
 				t = triples.next();
 				s = t.getSubject();
 				p = t.getPredicate();
 				o = t.getObject();
 
-				assert vertexMap.containsKey(s);
-				assert vertexMap.containsKey(o);
+				if(!weights.containsKey(p.toString())) continue;
+
+				// Only create a new ID if the subject is not yet present
+				if (!vertexMap.containsKey(s)) addVertex(g, s, vertexMap);
+				if (!vertexMap.containsKey(o)) addVertex(g, o, vertexMap);
 
 				s_i = vertexMap.get(s);
 				o_i = vertexMap.get(o);
@@ -85,24 +99,33 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 			triples.close();
 		}
 
-		assert g.getVertices().size() == vertexCount: g.getVertices().size() + "!=" + vertexCount;
+		//assert g.getVertices().size() == vertexCount: g.getVertices().size() + "!=" + vertexCount;
 
 		return g;
 	}
 
+	/**
+	 * We get all nodes in the graph here because we need to know in advance how many there are
+	 * @param model
+	 * @param g
+	 * @return
+	 */
 	private Map<Node, Integer> getVertices(Model model, Grph g) {
 
 		final Map<Node, Integer> vertexMap = new HashMap<>();
 		final ExtendedIterator<Triple> triples = model.getGraph().find();
 
 		try {
-			Node s, o;
+			Node s, p, o;
 			Triple t;
 
 			while (triples.hasNext()) {
 				t = triples.next();
 				s = t.getSubject();
+				p = t.getPredicate();
 				o = t.getObject();
+
+				if(!weights.containsKey(p.toString())) continue;
 
 				// Only create a new ID if the subject is not yet present
 				if (!vertexMap.containsKey(s)) addVertex(g, s, vertexMap);

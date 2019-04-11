@@ -13,27 +13,29 @@ import java.io.File;
 public class JenaReader implements Reader<Model> {
 
     private final static Logger logger = Logger.getLogger(JenaReader.class);
-    public Model load(File file) {
-        return getDataDump(file);
-    }
 
-    private Model getDataDump(File dumpFile) {
+    public Model load(File file) {
 
         Model model;
 
-        if(dumpFile.isFile()) {
-            logger.info( "Loading " + dumpFile.getName());
+        if(file.isFile()) {
+            logger.info( "Loading " + file.getName());
             model = ModelFactory.createDefaultModel();
-            RDFDataMgr.read(model, dumpFile.getPath()) ;
+            RDFDataMgr.read(model, file.getPath()) ;
 
             logger.info( "Done loading, number of triples: " + model.size());
         } else {
             throw new IllegalArgumentException("Supplied argument is not a file");
-           // System.out.println("Loading in all files in directory " + dumpFile.getPath());
-           // Dataset ds = TDBFactory.createDataset(dumpFile.getPath());
-           // model = ds.getDefaultModel();
+            // System.out.println("Loading in all files in directory " + dumpFile.getPath());
+            // Dataset ds = TDBFactory.createDataset(dumpFile.getPath());
+            // model = ds.getDefaultModel();
         }
 
         return model;
     }
+
+
+
+
+
 }

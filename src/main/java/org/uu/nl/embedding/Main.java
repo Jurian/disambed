@@ -11,6 +11,7 @@ import org.uu.nl.embedding.glove.opt.impl.*;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
 import org.uu.nl.embedding.pca.PCA;
 import org.uu.nl.embedding.util.read.JenaReader;
+import org.uu.nl.embedding.util.read.WeightsReader;
 import org.uu.nl.embedding.util.write.GloveTextWriter;
 import org.uu.nl.embedding.util.write.GloveWriter;
 
@@ -86,6 +87,10 @@ public class Main {
             double glove_tol = Double.parseDouble(prop.getProperty("glove_tolerance", "1e-5"));
             int glove_max_iter = Integer.parseInt(prop.getProperty("glove_max-iter", "1000"));
 
+            String weight_file = prop.getProperty("weight_file");
+
+            if(weight_file == null) throw new ParseException("Weight file not specified");
+
             logger.info("Starting the embedding creation process with following settings:");
             logger.info("BCA File: " + bca_file_str);
             logger.info("BCA Alpha: " + bca_alpha);
@@ -96,9 +101,11 @@ public class Main {
             logger.info("GloVe Dimensions: " + glove_dim);
             logger.info("GloVe Tolerance: " + glove_tol);
             logger.info("GloVe Maximum Iterations: " + glove_max_iter);
+            logger.info("Weight File: " + weight_file);
+
 
             JenaReader loader = new JenaReader();
-            Rdf2GrphConverter converter = new Rdf2GrphConverter();
+            Rdf2GrphConverter converter = new Rdf2GrphConverter(weight_file);
             Grph graph = converter.convert(loader.load(bca_file));
 
             BCAOptions bcaOptions = new BCAOptions(bca_alg, bca_reverse, bca_alpha, bca_epsilon);

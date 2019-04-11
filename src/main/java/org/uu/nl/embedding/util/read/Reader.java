@@ -1,11 +1,12 @@
 package org.uu.nl.embedding.util.read;
 
 import java.io.File;
+import java.io.IOException;
 
 /**
  * @author Jurian Baas
  * @param <T> The type to read
  */
 interface Reader<T> {
-    T load(File file);
+    T load(File file) throws IOException;
 }
