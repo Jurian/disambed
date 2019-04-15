@@ -166,7 +166,7 @@ public class SemanticBCAJob extends BCAJob {
 
                 // Add the predicate to the context, but only the largest value we have for that predicate
                 int edgeIndex = graph.getVertices().size() + edgeType;
-                if(!bcv.containsKey(edgeIndex) && bcv.get(edgeIndex) < partialWetPaint)
+                if(!bcv.containsKey(edgeIndex) || bcv.get(edgeIndex) < partialWetPaint)
                     bcv.add(edgeIndex, partialWetPaint);
 
                 // Remember which node we came from so we don't go back
