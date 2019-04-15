@@ -4,14 +4,14 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
-public class WeightsReader implements Reader<Map<String, Double>> {
+public class WeightsReader implements Reader<Map<String, Integer>> {
 
     @Override
-    public Map<String, Double> load(File file) throws IOException {
+    public Map<String, Integer> load(File file) throws IOException {
 
         if(!file.exists()) throw new FileNotFoundException();
 
-        final Map<String, Double> map = new HashMap<>();
+        final Map<String, Integer> map = new HashMap<>();
 
         try(FileReader fr = new FileReader(file); BufferedReader br = new BufferedReader(fr)) {
 
@@ -19,7 +19,7 @@ public class WeightsReader implements Reader<Map<String, Double>> {
             while((line = br.readLine()) != null) {
                 map.putIfAbsent(
                         line.substring(0, line.indexOf('=')),
-                        Double.parseDouble(line.substring(line.indexOf('=')+1))
+                        Integer.parseInt(line.substring(line.indexOf('=')+1))
                 );
             }
         }

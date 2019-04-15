@@ -14,14 +14,15 @@ import java.util.Queue;
 public class SemanticBCAJob extends BCAJob {
 
 	private static final int SKIP = -1;
-
+	private final int[] weights;
     private final int[][] vertexOut, vertexIn, edgeOut, edgeIn;
 
 	public SemanticBCAJob(
-			Grph graph, int bookmark,
+			Grph graph, int bookmark, int[] weights,
 			boolean reverse, double alpha, double epsilon,
 			int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
 		super(bookmark, reverse, alpha, epsilon, graph);
+		this.weights = weights;
         this.vertexOut = vertexOut;
         this.vertexIn = vertexIn;
         this.edgeOut = edgeOut;
@@ -137,11 +138,12 @@ public class SemanticBCAJob extends BCAJob {
             if(neighborCount == 0)
                 continue;
 
-            partialWetPaint = (1 - alpha) * wetPaint / neighborCount;
+            // Use double to avoid integer division
+            double totalWeight = 0;
+            for (int i = 0; i < neighbors.length; i++) {
+                totalWeight += weights[getEdgeType(edges[i])];
+            }
 
-            // We can already tell that the neighbors will not have enough paint to continue
-            if(partialWetPaint < epsilon)
-                continue;
 
             for (int i = 0; i < neighbors.length; i++) {
 
@@ -151,12 +153,20 @@ public class SemanticBCAJob extends BCAJob {
                 neighbor = neighbors[i];
                 edge = edges[i];
 
+                int edgeType = getEdgeType(edge);
+                int weight = weights[edgeType];
+
                 // Skip the previous node
                 if(neighbor == node.prevNodeID) continue;
 
+                partialWetPaint = (1 - alpha) * wetPaint * (weight / totalWeight);
+
+                // We can already tell that the neighbors will not have enough paint to continue
+                if(partialWetPaint < epsilon)
+                    continue;
 
                 // Add the predicate to the context
-                bcv.add(graph.getVertices().size() + getEdgeType(edge), partialWetPaint);
+                bcv.add(graph.getVertices().size() + edgeType, partialWetPaint);
 
                 // Remember which node we came from so we don't go back
                 // Remember which predicate we used to get here

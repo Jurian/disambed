@@ -40,7 +40,7 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		this.alpha = options.getAlpha();
 		this.epsilon = options.getEpsilon();
 		
-		this.stats = new GraphStatistics(graph);
+		this.stats = new GraphStatistics(graph, options.getWeights());
 		this.types = stats.types;
 		this.dict = stats.dict;
 		this.vocabSize = stats.dict.length;
@@ -70,7 +70,7 @@ public class BookmarkColoring implements CooccurenceMatrix {
 					break;
 				case SEMANTIC:
 					completionService.submit(new SemanticBCAJob(
-							graph, bookmark,
+							graph, bookmark, stats.weights,
 							includeReverse, alpha, epsilon,
 							inVertex, outVertex, inEdge, outEdge));
 					break;

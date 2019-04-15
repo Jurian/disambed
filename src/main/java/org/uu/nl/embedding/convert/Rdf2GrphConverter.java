@@ -29,7 +29,7 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 	private static final Logger logger = Logger.getLogger(Rdf2GrphConverter.class);
 	private static final Settings settings = Settings.getInstance();
 
-	private Map<String, Double> weights;
+	private Map<String, Integer> weights;
 
 	private static int type2color(Node node) {
 		if(node.isURI()) return NodeInfo.URI;
@@ -39,8 +39,8 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 	}
 
 
-	public Rdf2GrphConverter(String weightFile) throws IOException {
-		weights = new WeightsReader().load(new File(weightFile));
+	public Rdf2GrphConverter(Map<String, Integer> weights) {
+		this.weights = weights;
 	}
 
 	@Override
@@ -71,7 +71,10 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 				p = t.getPredicate();
 				o = t.getObject();
 
+				// Ignore unweighted predicates
 				if(!weights.containsKey(p.toString())) {
+					// Adjust the total number of triples we are considering
+					// Maybe we can do pb.step() here instead to make it less confusing
 					pb.maxHint(pb.getMax()-1);
 					continue;
 				}

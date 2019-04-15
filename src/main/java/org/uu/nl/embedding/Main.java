@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -105,11 +106,13 @@ public class Main {
 
 
             JenaReader loader = new JenaReader();
-            Rdf2GrphConverter converter = new Rdf2GrphConverter(weight_file);
+            Map<String, Integer> weights = new WeightsReader().load(new File(weight_file));
+            Rdf2GrphConverter converter = new Rdf2GrphConverter(weights);
+
             logger.info("Converting RDF data into fast graph representation, predicates that are not weighted are ignored");
             Grph graph = converter.convert(loader.load(bca_file));
 
-            BCAOptions bcaOptions = new BCAOptions(bca_alg, bca_reverse, bca_alpha, bca_epsilon);
+            BCAOptions bcaOptions = new BCAOptions(weights, bca_alg, bca_reverse, bca_alpha, bca_epsilon);
 
             BookmarkColoring bca = new BookmarkColoring(graph, bcaOptions);
 

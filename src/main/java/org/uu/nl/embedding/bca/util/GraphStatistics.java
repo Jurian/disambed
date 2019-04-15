@@ -29,35 +29,38 @@ public class GraphStatistics {
 	 * The string representations of all the nodes in the graph
 	 */
 	public final String[] dict;
+
+	public final int[] weights;
 	
 	private int predicateNodeCount;
 	private int uriNodeCount;
 	private int blankNodeCount;
 	private int literalNodeCount;
 	private final int totalNodeCount;
+	private final int nrOfEdgeTypes;
 	
-	public GraphStatistics(Grph graph) {
+	public GraphStatistics(Grph graph, Map<String, Integer> weightMap) {
 		
-		Property labelProperties = graph.getVertexLabelProperty();
-		NumericalProperty typeProperties = graph.getVertexColorProperty();
-		Property edgeLabels = graph.getEdgeLabelProperty();
+		final Property labelProperties = graph.getVertexLabelProperty();
+		final NumericalProperty typeProperties = graph.getVertexColorProperty();
+		final Property edgeLabels = graph.getEdgeLabelProperty();
 
-		int nrOfVertices = graph.getVertices().size();
-		int nrOfEdges = graph.getEdges().size();
+		final int nrOfVertices = graph.getVertices().size();
+		final int nrOfEdges = graph.getEdges().size();
 
-		Map<Integer, Integer> edgeTypes = new HashMap<>();
+		final Map<Integer, Integer> edgeTypes = new HashMap<>();
 		for(int i = 0; i < nrOfEdges; i++) {
 			int type = graph.getEdgeColorProperty().getValueAsInt(i);
 			edgeTypes.putIfAbsent(type, i);
 		}
 
-		int nrOfEdgeTypes = edgeTypes.size();
+		nrOfEdgeTypes = edgeTypes.size();
 
 		/*
 		 * A mapping between nodes and a unique index, used in the bookmark
 		 * coloring algorithm to do look-ups in constant time.
 		 */
-		int[] keys = graph.getVertices().toIntArray();
+		final int[] keys = graph.getVertices().toIntArray();
 		this.types = new byte[nrOfVertices + nrOfEdgeTypes];
 		this.dict = new String[nrOfVertices + nrOfEdgeTypes];
 		this.jobs = new int[nrOfVertices];
@@ -78,17 +81,17 @@ public class GraphStatistics {
 			else if(types[i] == NodeInfo.LITERAL) literalNodeCount++;
 		}
 
-		for(int i = 0; i < nrOfEdges; i++) {
-			int type = graph.getEdgeColorProperty().getValueAsInt(i);
-			edgeTypes.putIfAbsent(type, i);
-		}
-
+		weights = new int[nrOfEdgeTypes];
 		for(Map.Entry<Integer, Integer> entry : edgeTypes.entrySet()) {
 
 			int type = entry.getKey();
 			int edge = entry.getValue();
 
-			dict[type + nrOfVertices] = edgeLabels.getValueAsString(edge);
+			String label = edgeLabels.getValueAsString(edge);
+			if(weightMap.containsKey(label))
+				weights[type] = weightMap.get(label);
+
+			dict[type + nrOfVertices] = label;
 			types[type + nrOfVertices] = NodeInfo.PREDICATE;
 		}
 
@@ -131,5 +134,7 @@ public class GraphStatistics {
 		this.literalNodeCount = literalNodeCount;
 	}
 
-	
+	public int getNrOfEdgeTypes() {
+		return nrOfEdgeTypes;
+	}
 }

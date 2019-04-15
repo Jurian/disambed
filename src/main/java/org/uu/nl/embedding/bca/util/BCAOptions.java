@@ -1,10 +1,16 @@
 package org.uu.nl.embedding.bca.util;
 
+import java.util.Map;
+
 /**
  * @author Jurian Baas
  */
 public class BCAOptions {
-	
+
+	public Map<String, Integer> getWeights() {
+		return this.weights;
+	}
+
 	public enum BCAType {
 		VANILLA, SEMANTIC
 	}
@@ -13,8 +19,10 @@ public class BCAOptions {
 	private final boolean reverse;
 	private final double alpha;
 	private final double epsilon;
+	private final Map<String, Integer> weights;
 	
-	public BCAOptions(BCAType type, boolean reverse, double alpha, double epsilon) {
+	public BCAOptions(Map<String, Integer> weights, BCAType type, boolean reverse, double alpha, double epsilon) {
+		this.weights = weights;
 		this.reverse = reverse;
 		this.alpha = alpha;
 		this.epsilon = epsilon;
