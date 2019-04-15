@@ -71,7 +71,7 @@ public class SemanticBCAJob extends BCAJob {
 		boolean focusIsLiteral;
 		boolean[] skip;
 		int[] neighbors, edges;
-		int focusNode, neighbor, edge, neighborCount, ignoredEdgeCount;
+		int focusNode, neighbor, edge, edgeType, neighborCount, ignoredEdgeCount;
 		double partialWetPaint;
 		SemanticNode node;
 
@@ -153,20 +153,21 @@ public class SemanticBCAJob extends BCAJob {
                 neighbor = neighbors[i];
                 edge = edges[i];
 
-                int edgeType = getEdgeType(edge);
-                int weight = weights[edgeType];
+                edgeType = getEdgeType(edge);
 
                 // Skip the previous node
                 if(neighbor == node.prevNodeID) continue;
 
-                partialWetPaint = (1 - alpha) * wetPaint * (weight / totalWeight);
+                partialWetPaint = (1 - alpha) * wetPaint * (weights[edgeType] / totalWeight);
 
                 // We can already tell that the neighbors will not have enough paint to continue
                 if(partialWetPaint < epsilon)
                     continue;
 
-                // Add the predicate to the context
-                bcv.add(graph.getVertices().size() + edgeType, partialWetPaint);
+                // Add the predicate to the context, but only the largest value we have for that predicate
+                int edgeIndex = graph.getVertices().size() + edgeType;
+                if(!bcv.containsKey(edgeIndex) && bcv.get(edgeIndex) < partialWetPaint)
+                    bcv.add(edgeIndex, partialWetPaint);
 
                 // Remember which node we came from so we don't go back
                 // Remember which predicate we used to get here
