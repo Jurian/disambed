@@ -2,16 +2,15 @@
 http://schema.org/name = 1 # Not really relevant in this case, matching names don't mean anything here
 
 # Plays
-http://schema.org/creator=100 # Linking plays on common creators could be important
+http://schema.org/creator = 10 # Linking plays on common creators could be important
 http://schema.org/headline = 1
-http://schema.org/inLanguage=100 # Plays matching languages is important
-http://schema.org/isBasedOn=1
-http://schema.org/exampleOfWork=1 # This one could be interesting
+http://schema.org/inLanguage = 10 # Plays matching languages is important
+http://schema.org/isBasedOn = 1
+http://schema.org/dateCreated = 1
 
 # Shows
-http://schema.org/startDate=1 # Later on this kind of relationship can also be interesting, if we can measure date distance
-http://schema.org/subEvent=1
+http://schema.org/startDate = 1 # Later on this kind of relationship can also be interesting, if we can measure date distance
+http://schema.org/subEvent = 1 # Links to a blank node
 
 # Blank
-http://schema.org/position=1 # No idea what this does
-http://schema.org/workPerformed=1 # No idea either
+http://schema.org/workPerformed = 1 # Needed to bridge the blank node gap
