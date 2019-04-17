@@ -141,6 +141,11 @@ public class SemanticBCAJob extends BCAJob {
             // Use double to avoid integer division
             double totalWeight = 0;
             for (int i = 0; i < neighbors.length; i++) {
+
+                // Skip any edges we don't want to follow
+                if(focusIsLiteral && skip[i]) continue;
+                // Skip the previous node
+                if(neighbors[i] == node.prevNodeID) continue;
                 totalWeight += weights[getEdgeType(edges[i])];
             }
 
@@ -151,12 +156,11 @@ public class SemanticBCAJob extends BCAJob {
                 if(focusIsLiteral && skip[i]) continue;
 
                 neighbor = neighbors[i];
+                // Skip the previous node
+                if(neighbor == node.prevNodeID) continue;
                 edge = edges[i];
 
                 edgeType = getEdgeType(edge);
-
-                // Skip the previous node
-                if(neighbor == node.prevNodeID) continue;
 
                 partialWetPaint = (1 - alpha) * wetPaint * (weights[edgeType] / totalWeight);
 
@@ -164,10 +168,9 @@ public class SemanticBCAJob extends BCAJob {
                 if(partialWetPaint < epsilon)
                     continue;
 
-                // Add the predicate to the context, but only the largest value we have for that predicate
-                int edgeIndex = graph.getVertices().size() + edgeType;
-                if(!bcv.containsKey(edgeIndex) || bcv.get(edgeIndex) < partialWetPaint)
-                    bcv.add(edgeIndex, partialWetPaint);
+                // Add the predicate to the context
+                //int edgeIndex = graph.getVertices().size() + edgeType;
+                //bcv.add(edgeIndex, partialWetPaint);
 
                 // Remember which node we came from so we don't go back
                 // Remember which predicate we used to get here
