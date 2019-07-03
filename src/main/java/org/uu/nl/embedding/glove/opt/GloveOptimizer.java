@@ -3,9 +3,10 @@ package org.uu.nl.embedding.glove.opt;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.commons.math.util.FastMath;
-import org.uu.nl.embedding.CooccurenceMatrix;
+import org.uu.nl.embedding.CRecMatrix;
 import org.uu.nl.embedding.Settings;
 import org.uu.nl.embedding.glove.GloveModel;
+import org.uu.nl.embedding.glove.util.ThreadLocalSeededRandom;
 
 import java.util.Random;
 import java.util.concurrent.*;
@@ -15,7 +16,7 @@ import java.util.concurrent.*;
  */
 public abstract class GloveOptimizer implements Optimizer {
 
-	protected final CooccurenceMatrix crecs;
+	protected final CRecMatrix crecs;
 	protected final int dimension;
 	protected final int vocabSize;
     private final int maxIterations;
@@ -32,6 +33,12 @@ public abstract class GloveOptimizer implements Optimizer {
     private static final int PB_UPDATE_INTERVAL = 250;
     private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
 
+
+	// Pass returned ThreadLocal object to all threads which need it
+	public static ThreadLocal<Random> threadRandom(final long seed) {
+		return ThreadLocal.withInitial(() -> new Random(seed));
+	}
+
 	protected GloveOptimizer(GloveModel glove, int maxIterations, double tolerance) {
 		this.crecs = glove.getCoMatrix();
 		this.xMax = glove.getxMax();
@@ -40,11 +47,12 @@ public abstract class GloveOptimizer implements Optimizer {
 		this.tolerance = tolerance;
 		this.vocabSize = glove.getVocabSize();
 		this.numThreads = settings.threads();
-		this.crecCount = crecs.cooccurrenceCount();
+		this.crecCount = crecs.coOccurrenceCount();
+		// Plus one to account for the bias term
 		int dimension = glove.getDimension() + 1;
 
 		this.W = new double[2 * vocabSize * dimension];
-        final Random r = new Random();
+        final Random r = threadRandom(1).get();
 
 		for (int i = 0; i < 2 * vocabSize; i++) {
             for (int d = 0; d < dimension; d++)
@@ -72,7 +80,9 @@ public abstract class GloveOptimizer implements Optimizer {
 			double prevCost = 0;
 			double iterDiff;
 			for(int iteration = 0; iteration < maxIterations; iteration++ ) {
-				
+
+				crecs.shuffle();
+
 				for(int id = 0; id < numThreads; id++) 
 					completionService.submit(createJob(id, iteration));
 				
@@ -89,6 +99,7 @@ public abstract class GloveOptimizer implements Optimizer {
 				}
 
 				localCost = (localCost / crecCount);
+				opt.addIntermediaryResult(localCost);
 				iterDiff= FastMath.abs(prevCost - localCost);
 				if(iterDiff <= tolerance) {
 					finalCost = localCost;

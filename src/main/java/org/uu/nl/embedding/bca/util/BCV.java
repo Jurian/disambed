@@ -67,12 +67,4 @@ public class BCV extends HashMap<Integer, Double> {
 			add(entry.getKey(), entry.getValue());
 	}
 	
-	/**
-	 * Used for gathering all the BCV's into a single map for use in GloVe
-	 * @param matrix The final map that contains all BCV's
-	 */
-	public void addTo(Map<OrderedIntegerPair, Double> matrix) {
-		forEach((key, value) -> matrix.put(new OrderedIntegerPair(rootNode, key), value));
-	}
-	
 }

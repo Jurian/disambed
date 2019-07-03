@@ -2,52 +2,60 @@ package org.uu.nl.embedding.bca;
 
 import grph.Grph;
 import me.tongfei.progressbar.ProgressBar;
-import org.uu.nl.embedding.CooccurenceMatrix;
+import org.uu.nl.embedding.CRecMatrix;
+
 import org.uu.nl.embedding.Settings;
-import org.uu.nl.embedding.bca.util.GraphStatistics;
+import org.uu.nl.embedding.bca.jobs.DirectedUnweighted;
+import org.uu.nl.embedding.bca.jobs.DirectedWeighted;
+import org.uu.nl.embedding.bca.jobs.DirectedWeightedLiteral;
+import org.uu.nl.embedding.bca.jobs.UndirectedWeighted;
 import org.uu.nl.embedding.bca.util.BCAOptions;
 import org.uu.nl.embedding.bca.util.BCV;
-import org.uu.nl.embedding.bca.util.OrderedIntegerPair;
+import org.uu.nl.embedding.bca.util.GraphStatistics;
 import org.uu.nl.embedding.convert.util.InEdgeNeighborhoodAlgorithm;
 import org.uu.nl.embedding.convert.util.OutEdgeNeighborhoodAlgorithm;
+import org.uu.nl.embedding.glove.util.ThreadLocalSeededRandom;
 
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.concurrent.*;
 
 /**
  * @author Jurian Baas
  */
-public class BookmarkColoring implements CooccurenceMatrix {
+public class BookmarkColoring implements CRecMatrix {
 
 	private final String[] dict;
 	private final GraphStatistics stats;
 	private final byte[] types;
-	private final int[] cooccurrenceIdx_I;
-	private final int[] cooccurrenceIdx_J;
-	private final double[] cooccurence;
+	private final int[] coOccurrenceIdx_I;
+	private final int[] coOccurrenceIdx_J;
+	private final double[] coOccurrenceValues;
 	private final double alpha, epsilon;
 	private double max;
 	private final int vocabSize;
-	private final int cooccurenceCount;
-	private final boolean includeReverse;
+	private int coOccurrenceCount;
+	private final boolean includeReverse, usePredicates;
+	private int[] permutation;
 
 	private static final Settings settings = Settings.getInstance();
 
 	public BookmarkColoring(Grph graph, BCAOptions options) {
 
 		this.includeReverse = options.isReverse();
+		this.usePredicates = options.includePredicates();
 		this.alpha = options.getAlpha();
 		this.epsilon = options.getEpsilon();
 		
-		this.stats = new GraphStatistics(graph, options.getWeights());
+		this.stats = new GraphStatistics(graph, options.getWeights(), usePredicates);
 		this.types = stats.types;
 		this.dict = stats.dict;
-		this.vocabSize = stats.dict.length;
+		this.vocabSize = usePredicates ? stats.nrOfVertices + stats.nrOfEdgeTypes : stats.nrOfVertices;
 
 		final int numThreads = settings.threads();
 		
-		final Map<OrderedIntegerPair, Double> cooccurrence_map = new ConcurrentHashMap<>(vocabSize);
+		final Map<Integer, BCV> bcVectors = new ConcurrentHashMap<>(vocabSize);
 		final ExecutorService es = Executors.newWorkStealingPool(numThreads);
 
 		final int[][] inVertex = graph.getInNeighborhoods();
@@ -58,20 +66,32 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		try(ProgressBar pb = settings.progressBar("BCA", stats.jobs.length, "nodes")) {
 
 			CompletionService<BCV> completionService = new ExecutorCompletionService<>(es);
-			//System.out.println("Submitting " + stats.jobs.length + " jobs");
+			// Choose a graph neighborhood algorithm
 			for(int bookmark : stats.jobs) {
 				switch(options.getType()) {
 				default:
-				case VANILLA:
-					completionService.submit(new VanillaBCAJob(
+				case DIRECTED_UNWEIGHTED:
+					completionService.submit(new DirectedUnweighted(
 							graph, bookmark,
-							includeReverse, alpha, epsilon,
+							includeReverse, usePredicates, alpha, epsilon,
 							inVertex, outVertex, inEdge, outEdge));
 					break;
-				case SEMANTIC:
-					completionService.submit(new SemanticBCAJob(
+				case DIRECTED_WEIGHTED:
+					completionService.submit(new DirectedWeighted(
 							graph, bookmark, stats.weights,
-							includeReverse, alpha, epsilon,
+							includeReverse, usePredicates, alpha, epsilon,
+							inVertex, outVertex, inEdge, outEdge));
+					break;
+				case DIRECTED_WEIGHTED_LITERAL:
+					completionService.submit(new DirectedWeightedLiteral(
+							graph, bookmark, stats.weights,
+							includeReverse, usePredicates, alpha, epsilon,
+							inVertex, outVertex, inEdge, outEdge));
+					break;
+				case UNDIRECTED_WEIGHTED:
+					completionService.submit(new UndirectedWeighted(
+							graph, bookmark, stats.weights,
+							usePredicates, alpha, epsilon,
 							inVertex, outVertex, inEdge, outEdge));
 					break;
 				}
@@ -88,9 +108,8 @@ public class BookmarkColoring implements CooccurenceMatrix {
 					// in a more efficient lookup friendly way below
 					bcv.normalize();
 
-					bcv.addTo(cooccurrence_map);
-
-					//computedBCV.put(bcv.getRootNode(), bcv);
+					bcVectors.put(bcv.getRootNode(), bcv);
+					coOccurrenceCount += bcv.size();
 
 					// It is possible to use this maximum value in GloVe, although in the
 					// literature they set this value to 100 and leave it at that
@@ -111,39 +130,71 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		} finally {
 			es.shutdown();
 		}
+
+		this.coOccurrenceValues = new double[coOccurrenceCount];
+		this.coOccurrenceIdx_I = new int[coOccurrenceCount];
+		this.coOccurrenceIdx_J = new int[coOccurrenceCount];
 		
-		this.cooccurenceCount = cooccurrence_map.size();
-		this.cooccurence = new double[cooccurenceCount];
-		this.cooccurrenceIdx_I = new int[cooccurenceCount];
-		this.cooccurrenceIdx_J = new int[cooccurenceCount];
-		
-		int i = 0;
-		for(Entry<OrderedIntegerPair, Double> entry : cooccurrence_map.entrySet()) {
-			this.cooccurrenceIdx_I[i] = entry.getKey().getIndex1();
-			this.cooccurrenceIdx_J[i] = entry.getKey().getIndex2();
-			this.cooccurence[i] = entry.getValue();
-			i++;
+		{
+			int i = 0;
+			for(Entry<Integer, BCV> entry : bcVectors.entrySet()) {
+				for (Entry<Integer, Double> bcr : entry.getValue().entrySet()) {
+					this.coOccurrenceIdx_I[i] = entry.getKey();
+					this.coOccurrenceIdx_J[i] = bcr.getKey();
+					this.coOccurrenceValues[i] = bcr.getValue();
+					i++;
+				}
+			}
+		}
+
+		permutation = new int[coOccurrenceCount];
+		for(int i = 0; i < permutation.length; i++)
+			permutation[i] = i;
+	}
+
+	protected int randomAccess(int i) {
+		return permutation[i];
+	}
+
+	@Override
+	public void shuffle() {
+		shuffle(permutation);
+	}
+
+	/**
+	 * Implementing Fisher–Yates shuffle
+	 * @param ar Array to shuffle
+	 */
+	private void shuffle(int[] ar) {
+		// If running on Java 6 or older, use `new Random()` on RHS here
+		Random rnd = ThreadLocalSeededRandom.current(1);
+		for (int i = ar.length - 1; i > 0; i--) {
+			int index = rnd.nextInt(i + 1);
+			// Simple swap
+			int a = ar[index];
+			ar[index] = ar[i];
+			ar[i] = a;
 		}
 	}
 	
 	public int cIdx_I(int i) {
-		return this.cooccurrenceIdx_I[i];
+		return this.coOccurrenceIdx_I[randomAccess(i)];
 	}
 	
 	public int cIdx_J(int j) {
-		return this.cooccurrenceIdx_J[j];
+		return this.coOccurrenceIdx_J[randomAccess(j)];
 	}
 	
 	public double cIdx_C(int i) {
-		return this.cooccurence[i];
+		return this.coOccurrenceValues[randomAccess(i)];
 	}
 	
 	public byte getType(int index) {
 		return this.types[index];
 	}
 	
-	public int cooccurrenceCount() {
-		return this.cooccurenceCount;
+	public int coOccurrenceCount() {
+		return this.coOccurrenceCount;
 	}
 
 	/**
@@ -175,42 +226,14 @@ public class BookmarkColoring implements CooccurenceMatrix {
 		return this.dict[index];
 	}
 	
-	@Override
-	public String[] getKeys() {
-		return this.dict;
-	}
-	
-	@Override
-	public byte[] getTypes() {
-		return this.types;
-	}
-	
 	private void setMax(double newMax) {
 		if(newMax > max) max = newMax;
 	}
 	
 	@Override
-	public int uriNodeCount() {
-		return this.stats.getUriNodeCount();
+	public int getNrOfVertices() {
+		return this.stats.nrOfVertices;
 	}
 
-	@Override
-	public int predicateNodeCount() {
-		return this.stats.getPredicateNodeCount();
-	}
-
-	@Override
-	public int blankNodeCount() {
-		return this.stats.getBlankNodeCount();
-	}
-
-	@Override
-	public int literalNodeCount() {
-		return this.stats.getLiteralNodeCount();
-	}
-
-	public boolean isIncludeReverse() {
-		return includeReverse;
-	}
 
 }

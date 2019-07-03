@@ -20,7 +20,9 @@ import org.uu.nl.embedding.glove.opt.GloveOptimizer;
  * fraction γ similarly to the Momentum term) only on the previous average and
  * the current gradient.
  * </p>
- * 
+ * <p>
+ *     With Adadelta, we do not need to set a default learning rate, as it has been eliminated from the update rule.
+ * </p>
  * @see <a href="https://arxiv.org/pdf/1212.5701.pdf">Adadelta paper</a>
  * @see <a href="http://nlp.stanford.edu/projects/glove/">Stanford GloVe page</a>
  * @author Jurian Baas
@@ -39,7 +41,7 @@ public class AdadeltaOptimizer extends GloveOptimizer {
 	/**
 	 * Decay rate for accumulated gradients and updates
 	 */
-	private final double gamma = 0.01;
+	private final double gamma = 0.9;
 	/**
 	 * Mainly used to prevent division by zero
 	 */
@@ -95,8 +97,10 @@ public class AdadeltaOptimizer extends GloveOptimizer {
 
 				cost += 0.5 * weightedCost * innerCost; // weighted squared error
 
-				/* Adaptive gradient updates */
-				//weightedCost *= learningRate; // for ease in calculating gradient
+				/*---------------------------
+				 * Adaptive gradient updates *
+				 ---------------------------*/
+
 				for (d = 0; d < dimension; d++) {
 					// Compute gradients
 					grad1 = weightedCost * W[d + l2];
@@ -125,6 +129,10 @@ public class AdadeltaOptimizer extends GloveOptimizer {
 					D[d + l1] = accx1;
 					D[d + l2] = accx2;
 				}
+
+				/*---------------------
+				 * Compute for biases *
+				 ---------------------*/
 
 				// Compute RMS of previous accumulated updates
 				RMSx1 = FastMath.sqrt(D[dimension + l1] + epsilon);

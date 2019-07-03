@@ -31,22 +31,23 @@ public class GraphStatistics {
 	public final String[] dict;
 
 	public final int[] weights;
-	
-	private int predicateNodeCount;
+
 	private int uriNodeCount;
 	private int blankNodeCount;
 	private int literalNodeCount;
-	private final int totalNodeCount;
-	private final int nrOfEdgeTypes;
+	public final int nrOfVertices;
+	public final int nrOfEdges;
+	public final int totalNodeCount;
+	public final int nrOfEdgeTypes;
 	
-	public GraphStatistics(Grph graph, Map<String, Integer> weightMap) {
+	public GraphStatistics(Grph graph, Map<String, Integer> weightMap, boolean includePredicates) {
 		
 		final Property labelProperties = graph.getVertexLabelProperty();
 		final NumericalProperty typeProperties = graph.getVertexColorProperty();
 		final Property edgeLabels = graph.getEdgeLabelProperty();
 
-		final int nrOfVertices = graph.getVertices().size();
-		final int nrOfEdges = graph.getEdges().size();
+		nrOfVertices = graph.getVertices().size();
+		nrOfEdges = graph.getEdges().size();
 
 		final Map<Integer, Integer> edgeTypes = new HashMap<>();
 		for(int i = 0; i < nrOfEdges; i++) {
@@ -56,13 +57,15 @@ public class GraphStatistics {
 
 		nrOfEdgeTypes = edgeTypes.size();
 
+		int vocabSize = includePredicates ? nrOfVertices + nrOfEdgeTypes : nrOfVertices;
+
 		/*
 		 * A mapping between nodes and a unique index, used in the bookmark
 		 * coloring algorithm to do look-ups in constant time.
 		 */
 		final int[] keys = graph.getVertices().toIntArray();
-		this.types = new byte[nrOfVertices + nrOfEdgeTypes];
-		this.dict = new String[nrOfVertices + nrOfEdgeTypes];
+		this.types = new byte[vocabSize];
+		this.dict = new String[vocabSize];
 		this.jobs = new int[nrOfVertices];
 		
 		//int job_i = 0;
@@ -70,7 +73,6 @@ public class GraphStatistics {
 			int node = keys[i];
 			types[i] = (byte) typeProperties.getValue(node);
 			dict[i] = labelProperties.getValueAsString(node);
-
 			jobs[i] = node;
 
 			if(types[i] == NodeInfo.BLANK) blankNodeCount++;
@@ -91,50 +93,12 @@ public class GraphStatistics {
 			if(weightMap.containsKey(label))
 				weights[type] = weightMap.get(label);
 
-			dict[type + nrOfVertices] = label;
-			types[type + nrOfVertices] = NodeInfo.PREDICATE;
+			if(includePredicates) {
+				dict[type + nrOfVertices] = label;
+				types[type + nrOfVertices] = NodeInfo.PREDICATE;
+			}
 		}
 
 		this.totalNodeCount = uriNodeCount + blankNodeCount + literalNodeCount;
-	}
-
-	public int getTotalNodeCount() {
-		return totalNodeCount;
-	}
-	
-	public int getPredicateNodeCount() {
-		return predicateNodeCount;
-	}
-
-	public void setPredicateNodeCount(int predicateNodeCount) {
-		this.predicateNodeCount = predicateNodeCount;
-	}
-
-	public int getUriNodeCount() {
-		return uriNodeCount;
-	}
-
-	public void setUriNodeCount(int uriNodeCount) {
-		this.uriNodeCount = uriNodeCount;
-	}
-
-	public int getBlankNodeCount() {
-		return blankNodeCount;
-	}
-
-	public void setBlankNodeCount(int blankNodeCount) {
-		this.blankNodeCount = blankNodeCount;
-	}
-
-	public int getLiteralNodeCount() {
-		return literalNodeCount;
-	}
-
-	public void setLiteralNodeCount(int literalNodeCount) {
-		this.literalNodeCount = literalNodeCount;
-	}
-
-	public int getNrOfEdgeTypes() {
-		return nrOfEdgeTypes;
 	}
 }

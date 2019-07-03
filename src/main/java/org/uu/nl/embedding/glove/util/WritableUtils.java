@@ -4,7 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/* Taken from org.apache.hadoop.commons and modified */
+/** Taken from org.apache.hadoop.commons and modified */
 public final class WritableUtils {
 
   /**

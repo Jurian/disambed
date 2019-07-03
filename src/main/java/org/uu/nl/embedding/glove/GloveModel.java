@@ -1,6 +1,6 @@
 package org.uu.nl.embedding.glove;
 
-import org.uu.nl.embedding.CooccurenceMatrix;
+import org.uu.nl.embedding.CRecMatrix;
 import org.uu.nl.embedding.Embedding;
 
 /**
@@ -12,7 +12,7 @@ public class GloveModel extends Embedding {
 	private final double xMax;
 	private final int vocabSize;
 
-	private GloveModel(int dimension, double xMax, CooccurenceMatrix coMatrix) {
+	private GloveModel(int dimension, double xMax, CRecMatrix coMatrix) {
 		super(dimension, coMatrix);
 		this.vocabSize = coMatrix.vocabSize();
 		// Used for the weight function in GloVe
@@ -20,7 +20,7 @@ public class GloveModel extends Embedding {
 		this.alpha = 0.75;
 	}
 	
-	public GloveModel(int dimension, CooccurenceMatrix coMatrix) {
+	public GloveModel(int dimension, CRecMatrix coMatrix) {
 		this(dimension, coMatrix.max(), coMatrix);
 	}
 

@@ -13,16 +13,17 @@ import java.util.concurrent.Callable;
 public abstract class BCAJob implements Callable<BCV> {
 
 	protected final int bookmark;
-	private final boolean reverse;
+	protected final boolean reverse, predicates;
 	protected final double alpha, epsilon;
 	private final Grph graph;
 
 	protected BCAJob(
-            int bookmark, boolean reverse,
+            int bookmark, boolean reverse, boolean predicates,
             double alpha, double epsilon,
             Grph graph) {
 
 		this.reverse = reverse;
+		this.predicates = predicates;
 		this.bookmark = bookmark;
 		this.alpha = alpha;
 		this.epsilon = epsilon;

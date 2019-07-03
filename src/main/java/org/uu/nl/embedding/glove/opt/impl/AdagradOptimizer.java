@@ -83,15 +83,14 @@ public class AdagradOptimizer extends GloveOptimizer {
 					continue;
 				}
 
-				cost += 0.5 * weightedCost * innerCost; // weighted squared error
-
-				/* Adaptive gradient updates */
-				//weightedCost *= learningRate; // for ease in calculating gradient
+				// weighted squared error
+				cost += 0.5 * weightedCost * innerCost;
 
 				/*---------------------------
-				 * Compute for word vectors *
+				 * Adaptive gradient updates *
 				 ---------------------------*/
 
+				// Compute for word vectors
 				for (d = 0; d < dimension; d++) {
 					// Compute gradients
 					grad1 = weightedCost * W[d + l2];

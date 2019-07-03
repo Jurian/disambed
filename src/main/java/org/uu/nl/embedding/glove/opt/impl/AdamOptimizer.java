@@ -45,7 +45,7 @@ public class AdamOptimizer extends GloveOptimizer {
 	/**
 	 * Mainly used to prevent divisions by zero, in some cases setting this to 0.1 or 1 can help improve stability
 	 */
-	private final double epsilon = 1;
+	private final double epsilon = 1e-8;
 	
 	public AdamOptimizer(GloveModel glove, int maxIterations, double tolerance) {
 		super(glove, maxIterations, tolerance);
@@ -93,7 +93,9 @@ public class AdamOptimizer extends GloveOptimizer {
 
 				cost += 0.5 * weightedCost * innerCost; // weighted squared error
 
-				//weightedCost *= learningRate; // for ease in calculating gradient
+				/*---------------------------
+				 * Adaptive gradient updates *
+				 ---------------------------*/
 
 				// Update the moments for the word vectors
 				for (d = 0; d < dimension; d++) {
@@ -114,6 +116,10 @@ public class AdamOptimizer extends GloveOptimizer {
 					M2[d + l1] = v1;
 					M2[d + l2] = v2;
 				}
+
+				/*---------------------
+				 * Compute for biases *
+				 ---------------------*/
 
 				// Update the first, second moment for the biases
 				m1 = beta1 * M1[dimension + l1] + (1 - beta1) * weightedCost;

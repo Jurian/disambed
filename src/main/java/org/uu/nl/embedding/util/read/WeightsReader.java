@@ -6,6 +6,9 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @author Jurian Baas
+ */
 public class WeightsReader implements Reader<Map<String, Integer>> {
 
     private static final Logger logger = Logger.getLogger(WeightsReader.class);

@@ -65,7 +65,7 @@ public class AMSGradOptimizer extends GloveOptimizer {
 	 * Mainly used to prevent divisions by zero, in some cases setting this to 0.1
 	 * or 1 can help improve stability
 	 */
-	private final double epsilon = 1;
+	private final double epsilon = 0.1;
 
 	public AMSGradOptimizer(GloveModel glove, int maxIterations, double tolerance) {
 		super(glove, maxIterations, tolerance);
@@ -118,9 +118,12 @@ public class AMSGradOptimizer extends GloveOptimizer {
 
 				cost += 0.5 * weightedCost * innerCost; // weighted squared error
 
-				// weightedCost *= learningRate; // for ease in calculating gradient
 
-				// Update the moments for the word vectors
+				/*---------------------------
+				 * Adaptive gradient updates *
+				 ---------------------------*/
+
+				// Compute for word vectors
 				for (d = 0; d < dimension; d++) {
 					// Compute gradients
 					grad_u = weightedCost * W[d + l2];
@@ -132,14 +135,18 @@ public class AMSGradOptimizer extends GloveOptimizer {
 					v2 = FastMath.max(M2[d + l2], beta2 * M2[d + l2] + (1 - beta2) * (grad_v * grad_v));
 
 					// Compute and apply updates
-					W[d + l1] -= learningRate / (Math.sqrt(v1) + epsilon) * m1;
-					W[d + l2] -= learningRate / (Math.sqrt(v2) + epsilon) * m2;
+					W[d + l1] -= learningRate / (FastMath.sqrt(v1) + epsilon) * m1;
+					W[d + l2] -= learningRate / (FastMath.sqrt(v2) + epsilon) * m2;
 					// Store new moments
 					M1[d + l1] = m1;
 					M1[d + l2] = m2;
 					M2[d + l1] = v1;
 					M2[d + l2] = v2;
 				}
+
+				/*---------------------
+				 * Compute for biases *
+				 ---------------------*/
 
 				// Update the first, second moment for the biases
 				m1 = beta1 * M1[dimension + l1] + (1 - beta1) * weightedCost;
@@ -149,8 +156,8 @@ public class AMSGradOptimizer extends GloveOptimizer {
 				v2 = FastMath.max(M2[dimension + l2],
 						beta2 * M2[dimension + l2] + (1 - beta2) * (weightedCost * weightedCost));
 				// Perform updates on bias terms
-				W[dimension + l1] -= learningRate / (Math.sqrt(v1) + epsilon) * m1;
-				W[dimension + l2] -= learningRate / (Math.sqrt(v2) + epsilon) * m2;
+				W[dimension + l1] -= learningRate / (FastMath.sqrt(v1) + epsilon) * m1;
+				W[dimension + l2] -= learningRate / (FastMath.sqrt(v2) + epsilon) * m2;
 				// Store new moments
 				M1[dimension + l1] = m1;
 				M1[dimension + l2] = m2;

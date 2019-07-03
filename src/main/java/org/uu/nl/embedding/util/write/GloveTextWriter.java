@@ -35,7 +35,8 @@ public class GloveTextWriter implements GloveWriter {
 		Files.createDirectories(outputFolder);
 
 		byte type;
-		final int vocabSize = model.getVocabSize();
+		// Take the number of vertices because we don't want to print vectors for predicates
+		final int vocabSize = model.getCoMatrix().getNrOfVertices();
 		final int dimension = model.getDimension();
 		final String[] out = new String[dimension];
 		final double[] result = model.getOptimum().getResult();

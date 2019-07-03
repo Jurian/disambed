@@ -9,10 +9,10 @@ import org.uu.nl.embedding.pca.PCA;
 public abstract class Embedding {
 	
 	protected int dimension;
-	private final CooccurenceMatrix coMatrix;
+	private final CRecMatrix coMatrix;
 	private Optimum optimum;
 	
-	protected Embedding(int dim, CooccurenceMatrix coMatrix) {
+	protected Embedding(int dim, CRecMatrix coMatrix) {
 		this.coMatrix = coMatrix;
 		this.dimension = dim;
 	}
@@ -21,7 +21,7 @@ public abstract class Embedding {
 		return dimension;
 	}
 
-	public CooccurenceMatrix getCoMatrix() {
+	public CRecMatrix getCoMatrix() {
 		return coMatrix;
 	}
 

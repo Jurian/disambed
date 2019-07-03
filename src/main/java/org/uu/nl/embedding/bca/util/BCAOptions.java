@@ -12,17 +12,21 @@ public class BCAOptions {
 	}
 
 	public enum BCAType {
-		VANILLA, SEMANTIC
+		DIRECTED_UNWEIGHTED,
+		DIRECTED_WEIGHTED,
+		DIRECTED_WEIGHTED_LITERAL,
+		UNDIRECTED_WEIGHTED
 	}
 	
 	private final BCAType type;
-	private final boolean reverse;
+	private final boolean reverse, predicates;
 	private final double alpha;
 	private final double epsilon;
 	private final Map<String, Integer> weights;
 	
-	public BCAOptions(Map<String, Integer> weights, BCAType type, boolean reverse, double alpha, double epsilon) {
+	public BCAOptions(Map<String, Integer> weights, BCAType type, boolean reverse, boolean predicates, double alpha, double epsilon) {
 		this.weights = weights;
+		this.predicates = predicates;
 		this.reverse = reverse;
 		this.alpha = alpha;
 		this.epsilon = epsilon;
@@ -45,4 +49,5 @@ public class BCAOptions {
 		return epsilon;
 	}
 
+	public boolean includePredicates() { return predicates; }
 }
