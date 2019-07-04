@@ -104,16 +104,15 @@ public class AMSGradOptimizer extends GloveOptimizer {
 					innerCost += W[d + l1] * W[d + l2]; // dot product of word and context word vector
 				// Add separate bias for
 				innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(crVal);
-				// multiply weighting function (f) with diff
-				weightedCost = (crVal > xMax) ? innerCost : FastMath.pow(crVal / xMax, alpha) * innerCost;
 
 				// Check for NaN and inf() in the diffs.
-				if (Double.isNaN(innerCost) || Double.isNaN(weightedCost) || Double.isInfinite(innerCost)
-						|| Double.isInfinite(weightedCost)) {
+				if (Double.isNaN(innerCost) || Double.isInfinite(innerCost)) {
 					System.err.println("Caught NaN in diff for kdiff for thread. Skipping update");
 					continue;
 				}
 
+				// multiply weighting function (f) with diff
+				weightedCost = (crVal > xMax) ? innerCost : FastMath.pow(crVal / xMax, alpha) * innerCost;
 				cost += 0.5 * weightedCost * innerCost; // weighted squared error
 
 
