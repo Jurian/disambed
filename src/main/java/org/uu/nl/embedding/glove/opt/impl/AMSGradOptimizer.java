@@ -35,7 +35,7 @@ import org.uu.nl.embedding.glove.opt.GloveOptimizer;
  * to update the parameters.
  * </p>
  * 
- * @see <a href="https://openreview.net/pdf?id=ryQu7f-RZ">AMSGrad paper</a>
+ * @see <a href="https://arxiv.org/pdf/1904.09237.pdf">AMSGrad paper</a>
  * @see <a href="http://nlp.stanford.edu/projects/glove/">Stanford GloVe
  *      page</a>
  * @author Jurian Baas
@@ -87,9 +87,7 @@ public class AMSGradOptimizer extends GloveOptimizer {
 			int a, d, l1, l2;
 			double m1, m2, v1, v2, grad_u, grad_v;
 			double cost = 0, innerCost, weightedCost;
-			// From the paper, a slight improvement of efficiency can be obtained this way
-			// final double correction = learningRate * FastMath.sqrt(1 -
-			// FastMath.pow(beta2, iteration+1)) / (1 - FastMath.pow(beta1, iteration+1));
+
 			final int offset = crecCount / numThreads * id;
 
 			for (a = 0; a < linesPerThread[id]; a++) {
