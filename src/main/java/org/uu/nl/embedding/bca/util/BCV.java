@@ -37,7 +37,7 @@ public class BCV extends HashMap<Integer, Double> {
 	 * Removes the diagonal value and changes the other values to sum to 1
 	 */
 	public void normalize() {
-		remove(rootNode);
+		//remove(rootNode);
 		double sum = sum();
 		for(Entry<Integer, Double> entry : entrySet())
 			entry.setValue(entry.getValue() / sum);
