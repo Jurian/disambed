@@ -4,7 +4,7 @@
 # Plays
 http://schema.org/creator = 1 # Linking plays on common creators could be important
 #http://schema.org/headline = 1 # Plays don't really have matching headlines
-http://schema.org/inLanguage = 100 # Plays matching languages is important
+http://schema.org/inLanguage = 1 # Plays matching languages is important
 http://schema.org/isBasedOn = 1 # When a play is a translation of another play
 #http://schema.org/dateCreated = 1
 
