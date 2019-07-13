@@ -72,7 +72,7 @@ public class Main {
 
             double bca_alpha = Double.parseDouble(prop.getProperty("bca_alpha", "1e-2"));
             double bca_epsilon = Double.parseDouble(prop.getProperty("bca_epsilon", "1e-4"));
-            double pca_min_var = Double.parseDouble(prop.getProperty("pca_min_variance", "0.95"));
+            double pca_min_var = Double.parseDouble(prop.getProperty("pca_min_variance", "1"));
 
             BCAOptions.BCAType bca_alg;
             String bca_alg_str = prop.getProperty("bca_algorithm", "vanilla").toLowerCase();
@@ -106,6 +106,7 @@ public class Main {
             logger.info("GloVe Maximum Iterations: " + glove_max_iter);
             logger.info("PCA Minimum Variance: " + pca_min_var);
             logger.info("Weight File: " + weight_file);
+            logger.info("Nr of threads: " + Settings.getInstance().threads());
 
             JenaReader loader = new JenaReader();
             Map<String, Integer> weights = new WeightsReader().load(new File(weight_file));
@@ -140,9 +141,11 @@ public class Main {
             model.setOptimum(optimizer.optimize());
 
             logger.info("GloVe converged with final average cost " + model.getOptimum().getFinalCost());
-            logger.info("Starting PCA...");
-            PCA pca = new PCA(model.getOptimum().getResult(), model.getDimension(), false);
-            model.updateOptimum(pca.project(pca_min_var));
+            if(pca_min_var < 1) {
+                logger.info("Starting PCA...");
+                PCA pca = new PCA(model.getOptimum().getResult(), model.getDimension(), false);
+                model.updateOptimum(pca.project(pca_min_var));
+            }
 
             String bca_fileName = bca_file.getName().toLowerCase();
             if(bca_fileName.contains(".")) {
