@@ -6,7 +6,6 @@ import org.apache.commons.math.util.FastMath;
 import org.uu.nl.embedding.CRecMatrix;
 import org.uu.nl.embedding.Settings;
 import org.uu.nl.embedding.glove.GloveModel;
-import org.uu.nl.embedding.glove.util.ThreadLocalSeededRandom;
 
 import java.util.Random;
 import java.util.concurrent.*;
