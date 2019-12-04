@@ -1,7 +1,9 @@
 package org.uu.nl.embedding.bca.util;
 
+import org.uu.nl.embedding.Settings;
+import org.uu.nl.embedding.util.rnd.ExtendedRandom;
+
 import java.util.HashMap;
-import java.util.Map;
 
 
 /**
@@ -11,6 +13,8 @@ import java.util.Map;
  */
 public class BCV extends HashMap<Integer, Double> {
 
+	protected static final Settings settings = Settings.getInstance();
+	private static final ExtendedRandom random = settings.getThreadLocalRandom();
 	private static final long serialVersionUID = 1L;
 	
 	private final int rootNode;
@@ -65,6 +69,17 @@ public class BCV extends HashMap<Integer, Double> {
 	public void merge(BCV other) {
 		for(Entry<Integer, Double> entry : other.entrySet())
 			add(entry.getKey(), entry.getValue());
+	}
+
+	public void negativeSampling(int vertices, int samples) {
+		for(int i = 0; i < samples; i++) {
+			int v;
+			do {
+				v = random.uniform(vertices);
+			} while (containsKey(v));
+
+			put(v, Double.MIN_VALUE);
+		}
 	}
 	
 }

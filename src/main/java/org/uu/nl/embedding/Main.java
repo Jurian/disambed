@@ -5,10 +5,9 @@ import org.apache.commons.cli.*;
 import org.apache.log4j.Logger;
 import org.uu.nl.embedding.bca.BookmarkColoring;
 import org.uu.nl.embedding.bca.util.BCAOptions;
-import org.uu.nl.embedding.glove.GloveModel;
-import org.uu.nl.embedding.glove.opt.*;
-import org.uu.nl.embedding.glove.opt.prob.*;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
+import org.uu.nl.embedding.glove.GloveModel;
+import org.uu.nl.embedding.glove.opt.Optimizer;
 import org.uu.nl.embedding.pca.PCA;
 import org.uu.nl.embedding.util.read.JenaReader;
 import org.uu.nl.embedding.util.read.WeightsReader;
@@ -41,9 +40,21 @@ public class Main {
     private static final Options options = new Options();
     private static final CommandLineParser parser = new DefaultParser();
     private static final HelpFormatter formatter = new HelpFormatter();
+    private static final Settings settings = Settings.getInstance();
 
     static {
         options.addOption(option_config);
+    }
+
+    enum GloveType{
+        GLOVE("GloVe"),
+        PGLOVE("pGloVe");
+
+        String name;
+
+        GloveType(String name) {
+            this.name = name;
+        }
     }
 
     public static void main(String[] args) {
@@ -88,6 +99,16 @@ public class Main {
             int glove_dim = Integer.parseInt(prop.getProperty("glove_dimensions", "50"));
             double glove_tol = Double.parseDouble(prop.getProperty("glove_tolerance", "1e-5"));
             int glove_max_iter = Integer.parseInt(prop.getProperty("glove_max-iter", "1000"));
+            double pm_minSim = Double.parseDouble(prop.getProperty("partial_match_min_similarity", "1"));
+            int negativeSamples = Integer.parseInt(prop.getProperty("negative_samples", "0"));
+
+            GloveType gloveType;
+            try{
+                String glove_method = prop.getProperty("glove_method","pglove").toLowerCase();
+                gloveType = GloveType.valueOf(glove_method.toUpperCase());
+            } catch(IllegalArgumentException e) {
+                throw new UnsupportedAlgorithmException("Unsupported glove type. Use one of: GloVe, pGloVe");
+            }
 
             String weight_file = prop.getProperty("weight_file");
 
@@ -101,46 +122,96 @@ public class Main {
             logger.info("BCA Reverse: " + bca_reverse);
             logger.info("BCA Include Predicates: " + bca_predicates);
             logger.info("Gradient Descent Algorithm: " + gradient_desc_algorithm);
-            logger.info("GloVe Dimensions: " + glove_dim);
-            logger.info("GloVe Tolerance: " + glove_tol);
-            logger.info("GloVe Maximum Iterations: " + glove_max_iter);
+            logger.info(gloveType.name + " Dimensions: " + glove_dim);
+            logger.info(gloveType.name +" Tolerance: " + glove_tol);
+            logger.info(gloveType.name +" Maximum Iterations: " + glove_max_iter);
             logger.info("PCA Minimum Variance: " + pca_min_var);
             logger.info("Weight File: " + weight_file);
-            logger.info("Nr of threads: " + Settings.getInstance().threads());
+            logger.info("Nr of threads: " + settings.threads());
+
+            if(prop.containsKey("seed")) {
+                long seed = Long.parseLong(prop.getProperty("seed", "1"));
+                settings.setThreadLocalRandom(seed);
+                logger.info("Seed: " + seed);
+            } else {
+                settings.setThreadLocalRandom();
+            }
 
             JenaReader loader = new JenaReader();
-            Map<String, Integer> weights = new WeightsReader().load(new File(weight_file));
-            Rdf2GrphConverter converter = new Rdf2GrphConverter(weights);
+            Map<String, Double> weights = new WeightsReader().load(new File(weight_file));
+            Rdf2GrphConverter converter = new Rdf2GrphConverter(weights, pm_minSim);
 
             logger.info("Converting RDF data into fast graph representation, predicates that are not weighted are ignored");
             Grph graph = converter.convert(loader.load(bca_file));
 
-            BCAOptions bcaOptions = new BCAOptions(weights, bca_alg, bca_reverse, bca_predicates, bca_alpha, bca_epsilon);
+            BCAOptions bcaOptions = new BCAOptions(weights, bca_alg, bca_reverse, bca_predicates, bca_alpha, bca_epsilon, negativeSamples);
 
             BookmarkColoring bca = new BookmarkColoring(graph, bcaOptions);
 
             GloveModel model = new GloveModel(glove_dim, bca);
 
-            final Optimizer optimizer;
-            switch(gradient_desc_algorithm) {
-                default:
-                    throw new UnsupportedAlgorithmException("Unsupported optimization algorithm. Use one of: adagrad, adam, adadelta, amsgrad");
-                case "adagrad":
-                    optimizer = new AdagradOptimizer(model, glove_max_iter, glove_tol);
-                    break;
-                case "adam":
-                    optimizer = new AdamOptimizer(model, glove_max_iter, glove_tol);
-                    break;
-                case "adadelta":
-                    optimizer = new AdadeltaOptimizer(model, glove_max_iter, glove_tol);
-                    break;
-                case "amsgrad":
-                    optimizer = new AMSGradOptimizer(model, glove_max_iter, glove_tol);
-                    break;
-            }
-            model.setOptimum(optimizer.optimize());
+            Optimizer optimizer;
+            //double[] costs = new double[100];
+            //long[] times = new long[100];
 
-            logger.info("GloVe converged with final average cost " + model.getOptimum().getFinalCost());
+            //for(int i = 0; i < 100; i++) {
+
+                switch (gloveType) {
+                    case GLOVE:
+                        switch(gradient_desc_algorithm) {
+                            default:
+                                throw new UnsupportedAlgorithmException("Unsupported optimization algorithm. Use one of: adagrad, adam, adadelta, amsgrad");
+                            case "adagrad":
+                                optimizer = new org.uu.nl.embedding.glove.opt.impl.AdagradOptimizer(model, glove_max_iter, glove_tol);
+                                break;
+                            case "adam":
+                                optimizer = new org.uu.nl.embedding.glove.opt.impl.AdamOptimizer(model, glove_max_iter, glove_tol);
+                                break;
+                            case "adadelta":
+                                optimizer = new org.uu.nl.embedding.glove.opt.impl.AdadeltaOptimizer(model, glove_max_iter, glove_tol);
+                                break;
+                            case "amsgrad":
+                                optimizer = new org.uu.nl.embedding.glove.opt.impl.AMSGradOptimizer(model, glove_max_iter, glove_tol);
+                                break;
+                        }
+                        break;
+                    default:
+                    case PGLOVE:
+                        switch(gradient_desc_algorithm) {
+                            default:
+                                throw new UnsupportedAlgorithmException("Unsupported optimization algorithm. Use one of: adagrad, adam, adadelta, amsgrad");
+                            case "adagrad":
+                                optimizer = new org.uu.nl.embedding.glove.opt.prob.AdagradOptimizer(model, glove_max_iter, glove_tol);
+                                break;
+                            case "adam":
+                                optimizer = new org.uu.nl.embedding.glove.opt.prob.AdamOptimizer(model, glove_max_iter, glove_tol);
+                                break;
+                            case "adadelta":
+                                optimizer = new org.uu.nl.embedding.glove.opt.prob.AdadeltaOptimizer(model, glove_max_iter, glove_tol);
+                                break;
+                            case "amsgrad":
+                                optimizer = new org.uu.nl.embedding.glove.opt.prob.AMSGradOptimizer(model, glove_max_iter, glove_tol);
+                                break;
+                        }
+                        break;
+                }
+                //long start = System.currentTimeMillis();
+                model.setOptimum(optimizer.optimize());
+                //model.getOptimum().printCostHistory();
+                //times[i] = System.currentTimeMillis() - start;
+                //costs[i] = model.getOptimum().getFinalCost();
+               // logger.info("GloVe converged with final average cost " + model.getOptimum().getFinalCost());
+            //}
+            /*
+            for(int i = 0; i < 100; i++) {
+                System.out.println(costs[i]);
+            }
+            System.out.println();
+            for(int i = 0; i < 100; i++) {
+                System.out.println(times[i]);
+            }
+            */
+
             if(pca_min_var < 1) {
                 logger.info("Starting PCA...");
                 PCA pca = new PCA(model.getOptimum().getResult(), model.getDimension(), false);
@@ -152,6 +223,7 @@ public class Main {
                 int idx = bca_fileName.lastIndexOf(".");
                 bca_fileName = bca_fileName.substring(0, idx);
             }
+            bca_fileName += "." + gloveType.name.toLowerCase();
             if(bca_reverse){
                 bca_fileName += ".reverse";
             }

@@ -1,7 +1,9 @@
 package org.uu.nl.embedding.bca.jobs;
 
 import grph.Grph;
-import org.uu.nl.embedding.bca.util.*;
+import org.uu.nl.embedding.bca.util.BCAJob;
+import org.uu.nl.embedding.bca.util.BCV;
+import org.uu.nl.embedding.bca.util.PaintedNode;
 
 import java.util.TreeMap;
 
@@ -12,10 +14,10 @@ import java.util.TreeMap;
 public class UndirectedWeighted extends BCAJob {
 
 	private final int[][] vertexOut, vertexIn, edgeOut, edgeIn;
-	private final int[] weights;
+	private final double[] weights;
 
 	public UndirectedWeighted(Grph graph,
-							  int bookmark, int[] weights, boolean predicates, double alpha, double epsilon,
+							  int bookmark, double[] weights, boolean predicates, double alpha, double epsilon,
 							  int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
 		super(bookmark, false, predicates, alpha, epsilon, graph);
 		this.weights = weights;

@@ -9,17 +9,17 @@ import java.util.Map;
 /**
  * @author Jurian Baas
  */
-public class WeightsReader implements Reader<Map<String, Integer>> {
+public class WeightsReader implements Reader<Map<String, Double>> {
 
     private static final Logger logger = Logger.getLogger(WeightsReader.class);
 
     @Override
-    public Map<String, Integer> load(File file) throws IOException {
+    public Map<String, Double> load(File file) throws IOException {
 
         if(!file.exists()) throw new FileNotFoundException();
 
-        final Map<String, Integer> map = new HashMap<>();
-
+        final Map<String, Double> map = new HashMap<>();
+        double sum = 0;
         try(FileReader fr = new FileReader(file); BufferedReader br = new BufferedReader(fr)) {
 
             String line;
@@ -41,9 +41,11 @@ public class WeightsReader implements Reader<Map<String, Integer>> {
                     final String value = line.substring(equals + 1);
 
                     try {
-                        map.putIfAbsent(key, Integer.parseInt(value));
+                        double d = Double.parseDouble(value);
+                        map.putIfAbsent(key, d);
+                        sum += d;
                     } catch (NumberFormatException e) {
-                        logger.error("Unable to parse integer " + value);
+                        logger.error("Unable to parse value " + value);
                     }
                 } catch (IndexOutOfBoundsException e) {
                     logger.error("Unable to parse line " + line);
@@ -51,6 +53,10 @@ public class WeightsReader implements Reader<Map<String, Integer>> {
             }
         }
 
+        // normalize the values
+        //for(Map.Entry<String, Double> entry : map.entrySet()) {
+        //    map.put(entry.getKey(), entry.getValue() / sum);
+        //}
 
         return map;
     }

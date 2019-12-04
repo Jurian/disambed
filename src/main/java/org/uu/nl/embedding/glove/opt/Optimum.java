@@ -1,7 +1,6 @@
 package org.uu.nl.embedding.glove.opt;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**

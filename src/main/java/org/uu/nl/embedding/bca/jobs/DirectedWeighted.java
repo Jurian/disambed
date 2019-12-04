@@ -1,7 +1,10 @@
 package org.uu.nl.embedding.bca.jobs;
 
 import grph.Grph;
-import org.uu.nl.embedding.bca.util.*;
+import grph.properties.NumericalProperty;
+import org.uu.nl.embedding.bca.util.BCAJob;
+import org.uu.nl.embedding.bca.util.BCV;
+import org.uu.nl.embedding.bca.util.PaintedNode;
 
 import java.util.TreeMap;
 
@@ -11,11 +14,11 @@ import java.util.TreeMap;
 public class DirectedWeighted extends BCAJob {
 
 
-	private final int[] weights;
+	private final double[] weights;
     private final int[][] vertexOut, vertexIn, edgeOut, edgeIn;
 
 	public DirectedWeighted(
-			Grph graph, int bookmark, int[] weights,
+			Grph graph, int bookmark, double[] weights,
 			boolean reverse, boolean predicates, double alpha, double epsilon,
 			int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
 		super(bookmark, reverse, predicates, alpha, epsilon, graph);
@@ -29,6 +32,7 @@ public class DirectedWeighted extends BCAJob {
     @Override
 	protected BCV doWork(Grph graph, boolean reverse) {
 
+        final NumericalProperty nodeSimilarity = graph.getEdgeWidthProperty();
         final TreeMap<Integer, PaintedNode> nodeTree = new TreeMap<>();
         final BCV bcv = new BCV(bookmark);
 
@@ -68,9 +72,15 @@ public class DirectedWeighted extends BCAJob {
             for (int i = 0; i < neighbors.length; i++) {
 
                 // Skip any edges we don't want to follow
-                // Note that skip[] is only set properly when focusIsLiteral is true
                 if(neighbors[i] == node.prevNodeID) continue;
-                totalWeight += weights[getEdgeType(edges[i])];
+
+                if(nodeSimilarity.isSetted(edges[i])) {
+                    int similarity = nodeSimilarity.getValueAsInt(edges[i]);
+                    totalWeight += similarity / 100d;
+                } else {
+                    totalWeight += weights[getEdgeType(edges[i])];
+                }
+
             }
             // We ended up skipping all neighbors
             if(totalWeight == 0) continue;
@@ -80,9 +90,15 @@ public class DirectedWeighted extends BCAJob {
                 // Skip any edges we don't want to follow
                 if(neighbors[i] == node.prevNodeID) continue;
 
-                edgeType = getEdgeType(edges[i]);
-
-                partialWetPaint = (1 - alpha) * wetPaint * (weights[edgeType] / totalWeight);
+                // We found an edge between two literal nodes
+                if(nodeSimilarity.isSetted(edges[i])) {
+                    int similarity = nodeSimilarity.getValueAsInt(edges[i]);
+                    edgeType = PaintedNode.SKIP;
+                    partialWetPaint = (1 - alpha) * wetPaint * (similarity / 100d / totalWeight);
+                } else {
+                    edgeType = getEdgeType(edges[i]);
+                    partialWetPaint = (1 - alpha) * wetPaint * (weights[edgeType] / totalWeight);
+                }
 
                 // We can already tell that the neighbor will not have enough paint to continue
                 if(partialWetPaint < epsilon)

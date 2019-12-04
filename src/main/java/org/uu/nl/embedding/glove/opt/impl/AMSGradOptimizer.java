@@ -65,7 +65,7 @@ public class AMSGradOptimizer extends GloveOptimizer {
 	 * Mainly used to prevent divisions by zero, in some cases setting this to 0.1
 	 * or 1 can help improve stability
 	 */
-	private final double epsilon = 0.1;
+	private final double epsilon = 1e-8;
 
 	public AMSGradOptimizer(GloveModel glove, int maxIterations, double tolerance) {
 		super(glove, maxIterations, tolerance);
@@ -78,7 +78,7 @@ public class AMSGradOptimizer extends GloveOptimizer {
 	
 	@Override
 	public String getName() {
-		return "AMSGrad";
+		return "GloVe-AMSGrad";
 	}
 
 	@Override
@@ -90,31 +90,32 @@ public class AMSGradOptimizer extends GloveOptimizer {
 
 			final int offset = crecCount / numThreads * id;
 
+
 			for (a = 0; a < linesPerThread[id]; a++) {
-				int crWord1 = crecs.cIdx_I(a + offset);
-				int crWord2 = crecs.cIdx_J(a + offset);
-				double crVal = crecs.cIdx_C(a + offset);
+
+				int crWord1, crWord2;
+				double crVal;
+
+				crWord1 = crecs.cIdx_I(a + offset);
+				crWord2 = crecs.cIdx_J(a + offset);
+				crVal = crecs.cIdx_C(a + offset);
+
 
 				l1 = crWord1 * (dimension + 1);
 				l2 = (crWord2 + vocabSize) * (dimension + 1);
 
 				/* Calculate cost, save diff for gradients */
 				innerCost = 0;
+
+				if(crVal == 0) continue;
 				for (d = 0; d < dimension; d++)
 					innerCost += W[d + l1] * W[d + l2]; // dot product of word and context word vector
 				// Add separate bias for
 				innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(crVal);
 
-				// Check for NaN and inf() in the diffs.
-				if (Double.isNaN(innerCost) || Double.isInfinite(innerCost)) {
-					System.err.println("Caught NaN in diff for kdiff for thread. Skipping update");
-					continue;
-				}
-
 				// multiply weighting function (f) with diff
 				weightedCost = (crVal > xMax) ? innerCost : FastMath.pow(crVal / xMax, alpha) * innerCost;
 				cost += 0.5 * weightedCost * innerCost; // weighted squared error
-
 
 				/*---------------------------
 				 * Adaptive gradient updates *

@@ -7,7 +7,7 @@ import java.util.Map;
  */
 public class BCAOptions {
 
-	public Map<String, Integer> getWeights() {
+	public Map<String, Double> getWeights() {
 		return this.weights;
 	}
 
@@ -19,18 +19,20 @@ public class BCAOptions {
 	}
 	
 	private final BCAType type;
+	private final int negativeSamples;
 	private final boolean reverse, predicates;
 	private final double alpha;
 	private final double epsilon;
-	private final Map<String, Integer> weights;
+	private final Map<String, Double> weights;
 	
-	public BCAOptions(Map<String, Integer> weights, BCAType type, boolean reverse, boolean predicates, double alpha, double epsilon) {
+	public BCAOptions(Map<String, Double> weights, BCAType type, boolean reverse, boolean predicates, double alpha, double epsilon, int negativeSamples) {
 		this.weights = weights;
 		this.predicates = predicates;
 		this.reverse = reverse;
 		this.alpha = alpha;
 		this.epsilon = epsilon;
 		this.type = type;
+		this.negativeSamples = negativeSamples;
 	}
 
 	public BCAType getType() {
@@ -50,4 +52,6 @@ public class BCAOptions {
 	}
 
 	public boolean includePredicates() { return predicates; }
+
+	public int getNegativeSamples() { return negativeSamples; }
 }

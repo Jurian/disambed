@@ -3,7 +3,6 @@ package org.uu.nl.embedding.bca;
 import grph.Grph;
 import me.tongfei.progressbar.ProgressBar;
 import org.uu.nl.embedding.CRecMatrix;
-
 import org.uu.nl.embedding.Settings;
 import org.uu.nl.embedding.bca.jobs.DirectedUnweighted;
 import org.uu.nl.embedding.bca.jobs.DirectedWeighted;
@@ -14,11 +13,10 @@ import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.GraphStatistics;
 import org.uu.nl.embedding.convert.util.InEdgeNeighborhoodAlgorithm;
 import org.uu.nl.embedding.convert.util.OutEdgeNeighborhoodAlgorithm;
-import org.uu.nl.embedding.glove.util.ThreadLocalSeededRandom;
+import org.uu.nl.embedding.util.rnd.Permutation;
 
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.concurrent.*;
 
 /**
@@ -37,7 +35,7 @@ public class BookmarkColoring implements CRecMatrix {
 	private final int vocabSize;
 	private int coOccurrenceCount;
 	private final boolean includeReverse, usePredicates;
-	private int[] permutation;
+	private Permutation permutation;
 
 	private static final Settings settings = Settings.getInstance();
 
@@ -106,7 +104,10 @@ public class BookmarkColoring implements CRecMatrix {
 					BCV bcv = completionService.take().get();
 					// We have to collect all the BCV's first before we can store them
 					// in a more efficient lookup friendly way below
+
 					bcv.normalize();
+
+					bcv.negativeSampling(stats.nrOfVertices, options.getNegativeSamples());
 
 					bcVectors.put(bcv.getRootNode(), bcv);
 					coOccurrenceCount += bcv.size();
@@ -147,46 +148,25 @@ public class BookmarkColoring implements CRecMatrix {
 			}
 		}
 
-		permutation = new int[coOccurrenceCount];
-		for(int i = 0; i < permutation.length; i++)
-			permutation[i] = i;
-	}
-
-	protected int randomAccess(int i) {
-		return permutation[i];
+		permutation = new Permutation(coOccurrenceCount);
 	}
 
 	@Override
 	public void shuffle() {
-		shuffle(permutation);
+		permutation.shuffle();
 	}
 
-	/**
-	 * Implementing Fisher–Yates shuffle
-	 * @param ar Array to shuffle
-	 */
-	private void shuffle(int[] ar) {
-		// If running on Java 6 or older, use `new Random()` on RHS here
-		Random rnd = ThreadLocalSeededRandom.current(1);
-		for (int i = ar.length - 1; i > 0; i--) {
-			int index = rnd.nextInt(i + 1);
-			// Simple swap
-			int a = ar[index];
-			ar[index] = ar[i];
-			ar[i] = a;
-		}
-	}
 	
 	public int cIdx_I(int i) {
-		return this.coOccurrenceIdx_I[randomAccess(i)];
+		return this.coOccurrenceIdx_I[permutation.randomAccess(i)];
 	}
 	
 	public int cIdx_J(int j) {
-		return this.coOccurrenceIdx_J[randomAccess(j)];
+		return this.coOccurrenceIdx_J[permutation.randomAccess(j)];
 	}
 	
 	public double cIdx_C(int i) {
-		return this.coOccurrenceValues[randomAccess(i)];
+		return this.coOccurrenceValues[permutation.randomAccess(i)];
 	}
 	
 	public byte getType(int index) {

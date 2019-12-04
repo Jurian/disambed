@@ -7,7 +7,8 @@ import org.netlib.util.intW;
 import org.uu.nl.embedding.Settings;
 
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;

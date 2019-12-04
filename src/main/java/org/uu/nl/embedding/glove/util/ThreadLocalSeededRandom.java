@@ -1,8 +1,9 @@
 package org.uu.nl.embedding.glove.util;
 
-import java.util.Random;
+import org.uu.nl.embedding.util.rnd.ExtendedRandom;
 
-public class ThreadLocalSeededRandom extends ThreadLocal<Random> {
+
+public class ThreadLocalSeededRandom extends ThreadLocal<ExtendedRandom> {
 
     private final long seed;
 
@@ -11,11 +12,12 @@ public class ThreadLocalSeededRandom extends ThreadLocal<Random> {
     }
 
     @Override
-    protected Random initialValue() {
-        return new Random(seed);
+    protected ExtendedRandom initialValue() {
+        return new ExtendedRandom(seed);
     }
 
-    public static Random current(long seed) {
+    public static ExtendedRandom current(long seed) {
         return new ThreadLocalSeededRandom(seed).get();
     }
+
 }

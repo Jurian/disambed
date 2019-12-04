@@ -4,6 +4,7 @@ import me.tongfei.progressbar.ProgressBar;
 import org.uu.nl.embedding.Settings;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.glove.GloveModel;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;

@@ -6,8 +6,8 @@ import org.apache.commons.math.util.FastMath;
 import org.uu.nl.embedding.CRecMatrix;
 import org.uu.nl.embedding.Settings;
 import org.uu.nl.embedding.glove.GloveModel;
+import org.uu.nl.embedding.util.rnd.ExtendedRandom;
 
-import java.util.Random;
 import java.util.concurrent.*;
 
 /**
@@ -28,15 +28,10 @@ public abstract class GloveOptimizer implements Optimizer {
 	protected final double[] W;
 	protected final int[] linesPerThread;
 	private final ExecutorService es;
-	private static final Settings settings = Settings.getInstance();
+	protected static final Settings settings = Settings.getInstance();
     private static final int PB_UPDATE_INTERVAL = 250;
     private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
-
-
-	// Pass returned ThreadLocal object to all threads which need it
-	public static ThreadLocal<Random> threadRandom(final long seed) {
-		return ThreadLocal.withInitial(() -> new Random(seed));
-	}
+	private static final ExtendedRandom random = settings.getThreadLocalRandom();
 
 	protected GloveOptimizer(GloveModel glove, int maxIterations, double tolerance) {
 		this.crecs = glove.getCoMatrix();
@@ -51,11 +46,10 @@ public abstract class GloveOptimizer implements Optimizer {
 		int dimension = glove.getDimension() + 1;
 
 		this.W = new double[2 * vocabSize * dimension];
-        final Random r = threadRandom(1).get();
 
 		for (int i = 0; i < 2 * vocabSize; i++) {
             for (int d = 0; d < dimension; d++)
-				W[i * dimension + d] = (r.nextDouble() - 0.5) / dimension;
+				W[i * dimension + d] = (random.nextDouble() - 0.5) / dimension;
 		}
 
 		this.linesPerThread = new int[numThreads];
@@ -75,7 +69,7 @@ public abstract class GloveOptimizer implements Optimizer {
 		CompletionService<Double> completionService = new ExecutorCompletionService<>(es);
 
 		double finalCost = 0;
-		try(ProgressBar pb = new ProgressBar("GloVe-"+getName(), maxIterations, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " iterations", 1, true )) {
+		try(ProgressBar pb = new ProgressBar(getName(), maxIterations, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " iterations", 1, true )) {
 			double prevCost = 0;
 			double iterDiff;
 			for(int iteration = 0; iteration < maxIterations; iteration++ ) {

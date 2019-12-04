@@ -30,7 +30,7 @@ public class GraphStatistics {
 	 */
 	public final String[] dict;
 
-	public final int[] weights;
+	public final double[] weights;
 
 	private int uriNodeCount;
 	private int blankNodeCount;
@@ -40,7 +40,7 @@ public class GraphStatistics {
 	public final int totalNodeCount;
 	public final int nrOfEdgeTypes;
 	
-	public GraphStatistics(Grph graph, Map<String, Integer> weightMap, boolean includePredicates) {
+	public GraphStatistics(Grph graph, Map<String, Double> weightMap, boolean includePredicates) {
 		
 		final Property labelProperties = graph.getVertexLabelProperty();
 		final NumericalProperty typeProperties = graph.getVertexColorProperty();
@@ -83,7 +83,7 @@ public class GraphStatistics {
 			else if(types[i] == NodeInfo.LITERAL) literalNodeCount++;
 		}
 
-		weights = new int[nrOfEdgeTypes];
+		weights = new double[nrOfEdgeTypes];
 		for(Map.Entry<Integer, Integer> entry : edgeTypes.entrySet()) {
 
 			int type = entry.getKey();

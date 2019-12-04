@@ -47,7 +47,7 @@ public class AdagradOptimizer extends GloveOptimizer {
 	
 	@Override
 	public String getName() {
-		return "Adagrad";
+		return "pGloVe-Adagrad";
 	}
 	
 	@Override
@@ -59,29 +59,26 @@ public class AdagradOptimizer extends GloveOptimizer {
 			final int offset = crecCount / numThreads * id;
 
 			for (a = 0; a < linesPerThread[id]; a++) {
-				int crWord1 = crecs.cIdx_I(a + offset);
-				int crWord2 = crecs.cIdx_J(a + offset);
-				double crVal = crecs.cIdx_C(a + offset);
 
-				assert crVal > 0 && crVal < 1: "Co-occurrence is not between 0 and 1";
+				int node1 = crecs.cIdx_I(a + offset);
+				int node2 = crecs.cIdx_J(a + offset);
+				double Xij = crecs.cIdx_C(a + offset);
 
-				l1 = crWord1 * (dimension + 1);
-				l2 = (crWord2 + vocabSize) * (dimension + 1);
+				assert Xij >= 0 && Xij <= 1: "Co-occurrence is not between 0 and 1: " + Xij;
+
+				l1 = node1 * (dimension + 1);
+				l2 = (node2 + vocabSize) * (dimension + 1);
 
 				/* Calculate cost, save diff for gradients */
 				innerCost = 0;
+
+				if(Xij == 0 || Xij == 1) continue;
 				for (d = 0; d < dimension; d++)
 					innerCost += W[d + l1] * W[d + l2]; // dot product of node and context node vector
 				// Add separate bias for each node
-				innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(crVal/(1-crVal));
+				innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(Xij/(1-Xij));
 
-				// Check for NaN and inf() in the diffs.
-				if (Double.isNaN(innerCost)  || Double.isInfinite(innerCost)) {
-					System.err.println("Caught NaN in diff for kdiff for thread. Skipping update");
-					continue;
-				}
-
-				weightedCost = crVal * innerCost;
+				weightedCost = Xij * innerCost;
 				cost += 0.5 * weightedCost * innerCost; // weighted squared error
 
 				/*---------------------------

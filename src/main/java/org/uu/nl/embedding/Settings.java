@@ -2,10 +2,10 @@ package org.uu.nl.embedding;
 
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
+import org.uu.nl.embedding.glove.util.ThreadLocalSeededRandom;
+import org.uu.nl.embedding.util.rnd.ExtendedRandom;
 
 /**
- * Mainly used for consistency of the look and feel among the application parts
- *
  * @author Jurian Baas
  */
 public class Settings {
@@ -17,6 +17,20 @@ public class Settings {
     public int threads() {
         int threads = Runtime.getRuntime().availableProcessors() -1;
         return threads == 0 ? 1 : threads;
+    }
+
+    private ThreadLocalSeededRandom threadLocalRandom;
+
+    public void setThreadLocalRandom() {
+        this.threadLocalRandom = new ThreadLocalSeededRandom(System.currentTimeMillis());
+    }
+
+    public void setThreadLocalRandom(long seed) {
+        this.threadLocalRandom = new ThreadLocalSeededRandom(seed);
+    }
+
+    public ExtendedRandom getThreadLocalRandom() {
+        return this.threadLocalRandom.get();
     }
 
     public ProgressBar progressBar(String name, long max, String unitName) {

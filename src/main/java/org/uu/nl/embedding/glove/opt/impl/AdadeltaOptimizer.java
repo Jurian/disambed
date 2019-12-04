@@ -58,7 +58,7 @@ public class AdadeltaOptimizer extends GloveOptimizer {
 	
 	@Override
 	public String getName() {
-		return "Adadelta";
+		return "GloVe-Adadelta";
 	}
 	
 	@Override
@@ -80,17 +80,12 @@ public class AdadeltaOptimizer extends GloveOptimizer {
 
 				/* Calculate cost, save diff for gradients */
 				innerCost = 0;
-				// dot product of word and context word vector
-				for (d = 0; d < dimension; d++)
-					innerCost += W[d + l1] * W[d + l2];
-				// add separate bias for each word
-				innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(crVal);
 
-				// Check for NaN and inf() in the diffs.
-				if (Double.isNaN(innerCost) || Double.isInfinite(innerCost)) {
-					System.err.println("Caught NaN in diff for kdiff for thread. Skipping update");
-					continue;
-				}
+				if(crVal == 0) continue;
+				for (d = 0; d < dimension; d++)
+					innerCost += W[d + l1] * W[d + l2]; // dot product of word and context word vector
+				// Add separate bias for
+				innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(crVal);
 
 				// multiply weighting function (f) with diff
 				weightedCost = (crVal > xMax) ? innerCost : FastMath.pow(crVal / xMax, alpha) * innerCost;
