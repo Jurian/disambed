@@ -15,6 +15,7 @@ import org.uu.nl.embedding.convert.util.InEdgeNeighborhoodAlgorithm;
 import org.uu.nl.embedding.convert.util.OutEdgeNeighborhoodAlgorithm;
 import org.uu.nl.embedding.util.rnd.Permutation;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
@@ -27,9 +28,9 @@ public class BookmarkColoring implements CRecMatrix {
 	private final String[] dict;
 	private final GraphStatistics stats;
 	private final byte[] types;
-	private final int[] coOccurrenceIdx_I;
-	private final int[] coOccurrenceIdx_J;
-	private final double[] coOccurrenceValues;
+	private final ArrayList<Integer> coOccurrenceIdx_I;
+	private final ArrayList<Integer> coOccurrenceIdx_J;
+	private final ArrayList<Double> coOccurrenceValues;
 	private final double alpha, epsilon;
 	private double max;
 	private final int vocabSize;
@@ -51,9 +52,12 @@ public class BookmarkColoring implements CRecMatrix {
 		this.dict = stats.dict;
 		this.vocabSize = usePredicates ? stats.nrOfVertices + stats.nrOfEdgeTypes : stats.nrOfVertices;
 
+		this.coOccurrenceIdx_I = new ArrayList<>(stats.nrOfVertices * stats.nrOfEdgeTypes);
+		this.coOccurrenceIdx_J = new ArrayList<>(stats.nrOfVertices * stats.nrOfEdgeTypes);
+		this.coOccurrenceValues = new ArrayList<>(stats.nrOfVertices * stats.nrOfEdgeTypes);
+
 		final int numThreads = settings.threads();
-		
-		final Map<Integer, BCV> bcVectors = new ConcurrentHashMap<>(vocabSize);
+
 		final ExecutorService es = Executors.newWorkStealingPool(numThreads);
 
 		final int[][] inVertex = graph.getInNeighborhoods();
@@ -109,12 +113,18 @@ public class BookmarkColoring implements CRecMatrix {
 
 					bcv.negativeSampling(stats.nrOfVertices, options.getNegativeSamples());
 
-					bcVectors.put(bcv.getRootNode(), bcv);
-					coOccurrenceCount += bcv.size();
-
 					// It is possible to use this maximum value in GloVe, although in the
 					// literature they set this value to 100 and leave it at that
 					setMax(bcv.max());
+
+
+					for (Entry<Integer, Double> bcr : bcv.entrySet()) {
+						coOccurrenceIdx_I.add(bcv.getRootNode());
+						coOccurrenceIdx_J.add(bcr.getKey());
+						coOccurrenceValues.add(bcr.getValue());
+					}
+
+					coOccurrenceCount += bcv.size();
 
 				} catch (InterruptedException | ExecutionException e) {
 					e.printStackTrace();
@@ -132,22 +142,6 @@ public class BookmarkColoring implements CRecMatrix {
 			es.shutdown();
 		}
 
-		this.coOccurrenceValues = new double[coOccurrenceCount];
-		this.coOccurrenceIdx_I = new int[coOccurrenceCount];
-		this.coOccurrenceIdx_J = new int[coOccurrenceCount];
-		
-		{
-			int i = 0;
-			for(Entry<Integer, BCV> entry : bcVectors.entrySet()) {
-				for (Entry<Integer, Double> bcr : entry.getValue().entrySet()) {
-					this.coOccurrenceIdx_I[i] = entry.getKey();
-					this.coOccurrenceIdx_J[i] = bcr.getKey();
-					this.coOccurrenceValues[i] = bcr.getValue();
-					i++;
-				}
-			}
-		}
-
 		permutation = new Permutation(coOccurrenceCount);
 	}
 
@@ -158,15 +152,15 @@ public class BookmarkColoring implements CRecMatrix {
 
 	
 	public int cIdx_I(int i) {
-		return this.coOccurrenceIdx_I[permutation.randomAccess(i)];
+		return this.coOccurrenceIdx_I.get(permutation.randomAccess(i));
 	}
 	
 	public int cIdx_J(int j) {
-		return this.coOccurrenceIdx_J[permutation.randomAccess(j)];
+		return this.coOccurrenceIdx_J.get(permutation.randomAccess(j));
 	}
 	
 	public double cIdx_C(int i) {
-		return this.coOccurrenceValues[permutation.randomAccess(i)];
+		return this.coOccurrenceValues.get(permutation.randomAccess(i));
 	}
 	
 	public byte getType(int index) {
