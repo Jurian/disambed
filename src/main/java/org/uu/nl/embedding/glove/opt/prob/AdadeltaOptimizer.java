@@ -84,7 +84,6 @@ public class AdadeltaOptimizer extends GloveOptimizer {
 				/* Calculate cost, save diff for gradients */
 				innerCost = 0;
 
-				if(Xij == 0 || Xij == 1) continue;
 				for (d = 0; d < dimension; d++)
 					innerCost += W[d + l1] * W[d + l2]; // dot product of node and context node vector
 				// Add separate bias for each node
