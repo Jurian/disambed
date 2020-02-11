@@ -5,6 +5,7 @@ import grph.in_memory.InMemoryGrph;
 import grph.properties.NumericalProperty;
 import grph.properties.Property;
 import me.tongfei.progressbar.ProgressBar;
+import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
@@ -197,7 +198,8 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 					continue;
 				}
 
-				boolean processLiteralLater = o.isLiteral() && !vertexMap.containsKey(o) && p.toString().endsWith("name");
+				boolean processLiteralLater = o.isLiteral() && o.getLiteralDatatype().getJavaClass() == String.class && !vertexMap.containsKey(o);
+
 				if(processLiteralLater) {
 					similarityMetric.preprocess(o.getLiteralValue().toString());
 					nrOfLiterals++;
