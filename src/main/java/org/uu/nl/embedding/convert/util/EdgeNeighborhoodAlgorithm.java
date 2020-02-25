@@ -4,7 +4,7 @@ package org.uu.nl.embedding.convert.util;
 import grph.Grph;
 import grph.algo.VertexAdjacencyAlgorithm;
 import me.tongfei.progressbar.ProgressBar;
-import org.uu.nl.embedding.Settings;
+import org.uu.nl.embedding.util.config.Configuration;
 import toools.collections.primitive.LucIntSet;
 
 import java.util.concurrent.*;
@@ -19,8 +19,6 @@ import java.util.concurrent.*;
  */
 public abstract class EdgeNeighborhoodAlgorithm extends VertexAdjacencyAlgorithm {
 
-    private static final Settings settings = Settings.getInstance();
-
     static int getEdge(Grph graph, int source, int destination, LucIntSet out, LucIntSet in) {
 
         if (out.size() == 0 || in.size() == 0) return -1;
@@ -34,6 +32,12 @@ public abstract class EdgeNeighborhoodAlgorithm extends VertexAdjacencyAlgorithm
         return -1;
     }
 
+    protected final Configuration config;
+
+    public EdgeNeighborhoodAlgorithm(Configuration config) {
+        this.config = config;
+    }
+
     @Override
     public int[][] compute(Grph g) {
 
@@ -41,7 +45,7 @@ public abstract class EdgeNeighborhoodAlgorithm extends VertexAdjacencyAlgorithm
 
         if (vertices.length == 0) return new int[0][];
 
-        final int numThreads = settings.threads();
+        final int numThreads = config.getThreads();
         final int numVertices = vertices.length;
         final int[][] v = new int[numVertices][];
         final int[] verticesPerThread = new int[numThreads];
@@ -50,7 +54,7 @@ public abstract class EdgeNeighborhoodAlgorithm extends VertexAdjacencyAlgorithm
         final ExecutorService es = Executors.newWorkStealingPool(numThreads);
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
-        try(ProgressBar pb = settings.progressBar("Edge " + this.getDirection(), numVertices, "nodes")) {
+        try(ProgressBar pb = config.progressBar("Edge " + this.getDirection(), numVertices, "nodes")) {
 
             for(int t = 0; t < numThreads; t++) {
                 cs.submit(getEdgesAlgorithm(pb, g, t, numThreads, vertices, verticesPerThread, v), null);
@@ -76,7 +80,7 @@ public abstract class EdgeNeighborhoodAlgorithm extends VertexAdjacencyAlgorithm
 
     public abstract Grph.DIRECTION getDirection();
 
-    abstract class FindEdges implements Runnable {
+    abstract static class FindEdges implements Runnable {
 
         final ProgressBar pb;
         final Grph g;

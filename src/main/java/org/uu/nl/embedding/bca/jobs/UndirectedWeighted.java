@@ -101,7 +101,7 @@ public class UndirectedWeighted extends BCAJob {
 				if(predicates) {
 					// Add the predicate to the context
 					int edgeIndex = graph.getVertices().size() + edgeType;
-					bcv.add(edgeIndex, epsilon);
+					bcv.add(edgeIndex, partialWetPaint);
 				}
 
 				// Log(n) time lookup

@@ -2,6 +2,7 @@ package org.uu.nl.embedding.convert.util;
 
 import grph.Grph;
 import me.tongfei.progressbar.ProgressBar;
+import org.uu.nl.embedding.util.config.Configuration;
 import toools.collections.primitive.LucIntSet;
 
 /**
@@ -13,6 +14,10 @@ import toools.collections.primitive.LucIntSet;
  * @author Jurian Baas
  */
 public class InEdgeNeighborhoodAlgorithm extends EdgeNeighborhoodAlgorithm {
+
+    public InEdgeNeighborhoodAlgorithm(Configuration config) {
+        super(config);
+    }
 
     @Override
     FindEdges getEdgesAlgorithm(ProgressBar pb, Grph g, int threadId, int numThreads, int[] vertices, int[] verticesPerThread, int[][] v) {

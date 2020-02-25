@@ -2,21 +2,17 @@ package org.uu.nl.embedding.bca;
 
 import grph.Grph;
 import me.tongfei.progressbar.ProgressBar;
-import org.uu.nl.embedding.CRecMatrix;
-import org.uu.nl.embedding.Settings;
-import org.uu.nl.embedding.bca.jobs.DirectedUnweighted;
+import org.uu.nl.embedding.util.CRecMatrix;
 import org.uu.nl.embedding.bca.jobs.DirectedWeighted;
-import org.uu.nl.embedding.bca.jobs.DirectedWeightedLiteral;
 import org.uu.nl.embedding.bca.jobs.UndirectedWeighted;
-import org.uu.nl.embedding.bca.util.BCAOptions;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.GraphStatistics;
 import org.uu.nl.embedding.convert.util.InEdgeNeighborhoodAlgorithm;
 import org.uu.nl.embedding.convert.util.OutEdgeNeighborhoodAlgorithm;
+import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.Permutation;
 
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
 
@@ -30,7 +26,7 @@ public class BookmarkColoring implements CRecMatrix {
 	private final byte[] types;
 	private final ArrayList<Integer> coOccurrenceIdx_I;
 	private final ArrayList<Integer> coOccurrenceIdx_J;
-	private final ArrayList<Double> coOccurrenceValues;
+	private final ArrayList<Float> coOccurrenceValues;
 	private final double alpha, epsilon;
 	private double max;
 	private final int vocabSize;
@@ -38,16 +34,14 @@ public class BookmarkColoring implements CRecMatrix {
 	private final boolean includeReverse, usePredicates;
 	private Permutation permutation;
 
-	private static final Settings settings = Settings.getInstance();
+	public BookmarkColoring(Grph graph, Configuration config) {
 
-	public BookmarkColoring(Grph graph, BCAOptions options) {
-
-		this.includeReverse = options.isReverse();
-		this.usePredicates = options.includePredicates();
-		this.alpha = options.getAlpha();
-		this.epsilon = options.getEpsilon();
+		this.includeReverse = config.getBca().isReverse();
+		this.usePredicates = config.getBca().isPredicates();
+		this.alpha = config.getBca().getAlpha();
+		this.epsilon = config.getBca().getEpsilon();
 		
-		this.stats = new GraphStatistics(graph, options.getWeights(), usePredicates);
+		this.stats = new GraphStatistics(graph, config);
 		this.types = stats.types;
 		this.dict = stats.dict;
 		this.vocabSize = usePredicates ? stats.nrOfVertices + stats.nrOfEdgeTypes : stats.nrOfVertices;
@@ -56,46 +50,31 @@ public class BookmarkColoring implements CRecMatrix {
 		this.coOccurrenceIdx_J = new ArrayList<>(stats.nrOfVertices * stats.nrOfEdgeTypes);
 		this.coOccurrenceValues = new ArrayList<>(stats.nrOfVertices * stats.nrOfEdgeTypes);
 
-		final int numThreads = settings.threads();
+		final int numThreads = config.getThreads();
 
 		final ExecutorService es = Executors.newWorkStealingPool(numThreads);
 
 		final int[][] inVertex = graph.getInNeighborhoods();
 		final int[][] outVertex = graph.getOutNeighborhoods();
-		final int[][] inEdge = new InEdgeNeighborhoodAlgorithm().compute(graph);
-		final int[][] outEdge = new OutEdgeNeighborhoodAlgorithm().compute(graph);
+		final int[][] inEdge = new InEdgeNeighborhoodAlgorithm(config).compute(graph);
+		final int[][] outEdge = new OutEdgeNeighborhoodAlgorithm(config).compute(graph);
 
-		try(ProgressBar pb = settings.progressBar("BCA", stats.jobs.length, "nodes")) {
+		try(ProgressBar pb = config.progressBar("BCA", stats.jobs.length, "nodes")) {
 
 			CompletionService<BCV> completionService = new ExecutorCompletionService<>(es);
 			// Choose a graph neighborhood algorithm
 			for(int bookmark : stats.jobs) {
-				switch(options.getType()) {
-				default:
-				case DIRECTED_UNWEIGHTED:
-					completionService.submit(new DirectedUnweighted(
-							graph, bookmark,
-							includeReverse, usePredicates, alpha, epsilon,
-							inVertex, outVertex, inEdge, outEdge));
-					break;
-				case DIRECTED_WEIGHTED:
+
+				if(config.getBca().isDirected()) {
 					completionService.submit(new DirectedWeighted(
 							graph, bookmark, stats.weights,
 							includeReverse, usePredicates, alpha, epsilon,
 							inVertex, outVertex, inEdge, outEdge));
-					break;
-				case DIRECTED_WEIGHTED_LITERAL:
-					completionService.submit(new DirectedWeightedLiteral(
-							graph, bookmark, stats.weights,
-							includeReverse, usePredicates, alpha, epsilon,
-							inVertex, outVertex, inEdge, outEdge));
-					break;
-				case UNDIRECTED_WEIGHTED:
+				} else {
 					completionService.submit(new UndirectedWeighted(
 							graph, bookmark, stats.weights,
 							usePredicates, alpha, epsilon,
 							inVertex, outVertex, inEdge, outEdge));
-					break;
 				}
 			}
 			
@@ -111,14 +90,14 @@ public class BookmarkColoring implements CRecMatrix {
 
 					bcv.normalize();
 
-					bcv.negativeSampling(stats.nrOfVertices, options.getNegativeSamples());
+					//bcv.negativeSampling(stats.nrOfVertices, options.getNegativeSamples());
 
 					// It is possible to use this maximum value in GloVe, although in the
 					// literature they set this value to 100 and leave it at that
 					setMax(bcv.max());
 
 
-					for (Entry<Integer, Double> bcr : bcv.entrySet()) {
+					for (Entry<Integer, Float> bcr : bcv.entrySet()) {
 						coOccurrenceIdx_I.add(bcv.getRootNode());
 						coOccurrenceIdx_J.add(bcr.getKey());
 						coOccurrenceValues.add(bcr.getValue());
@@ -135,8 +114,6 @@ public class BookmarkColoring implements CRecMatrix {
 					pb.step();
 				}
 			}
-
-			pb.setExtraMessage("Processed " + stats.jobs.length + " jobs");
 
 		} finally {
 			es.shutdown();
@@ -159,7 +136,7 @@ public class BookmarkColoring implements CRecMatrix {
 		return this.coOccurrenceIdx_J.get(permutation.randomAccess(j));
 	}
 	
-	public double cIdx_C(int i) {
+	public float cIdx_C(int i) {
 		return this.coOccurrenceValues.get(permutation.randomAccess(i));
 	}
 	

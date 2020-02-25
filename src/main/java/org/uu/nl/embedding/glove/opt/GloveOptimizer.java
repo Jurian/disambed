@@ -1,13 +1,13 @@
 package org.uu.nl.embedding.glove.opt;
 
 import me.tongfei.progressbar.ProgressBar;
-import me.tongfei.progressbar.ProgressBarStyle;
 import org.apache.commons.math.util.FastMath;
-import org.uu.nl.embedding.CRecMatrix;
-import org.uu.nl.embedding.Settings;
+import org.uu.nl.embedding.util.CRecMatrix;
 import org.uu.nl.embedding.glove.GloveModel;
+import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.ExtendedRandom;
 
+import java.math.BigDecimal;
 import java.util.concurrent.*;
 
 /**
@@ -15,50 +15,54 @@ import java.util.concurrent.*;
  */
 public abstract class GloveOptimizer implements Optimizer {
 
+	private final Configuration config;
 	protected final CRecMatrix crecs;
 	protected final int dimension;
 	protected final int vocabSize;
-    private final int maxIterations;
 	protected final int numThreads;
 	protected final int crecCount;
-	private final double  tolerance;
 	protected final double xMax;
 	protected final double alpha;
 	protected final double learningRate = 0.05;
-	protected final double[] W;
+	protected final float[] focus, context;
 	protected final int[] linesPerThread;
 	private final ExecutorService es;
-	protected static final Settings settings = Settings.getInstance();
-    private static final int PB_UPDATE_INTERVAL = 250;
-    private static final ProgressBarStyle PB_STYLE = ProgressBarStyle.COLORFUL_UNICODE_BLOCK;
-	private static final ExtendedRandom random = settings.getThreadLocalRandom();
+	private final int maxIterations;
+	private final double tolerance;
+	private final ExtendedRandom random;
 
-	protected GloveOptimizer(GloveModel glove, int maxIterations, double tolerance) {
+	protected GloveOptimizer(GloveModel glove, Configuration config) {
+		this.config = config;
+		this.random = config.getThreadLocalRandom();
 		this.crecs = glove.getCoMatrix();
 		this.xMax = glove.getxMax();
 		this.alpha = glove.getAlpha();
-		this.maxIterations = maxIterations;
-		this.tolerance = tolerance;
+		this.maxIterations = config.getOpt().getMaxiter();
+		this.tolerance = config.getOpt().getTolerance();
 		this.vocabSize = glove.getVocabSize();
-		this.numThreads = settings.threads();
+		this.numThreads = config.getThreads();
 		this.crecCount = crecs.coOccurrenceCount();
-		// Plus one to account for the bias term
+
+		// Make room for the bias terms
 		int dimension = glove.getDimension() + 1;
 
-		this.W = new double[2 * vocabSize * dimension];
+		this.focus = new float[vocabSize * dimension];
+		this.context = new float[vocabSize * dimension];
 
-		for (int i = 0; i < 2 * vocabSize; i++) {
-            for (int d = 0; d < dimension; d++)
-				W[i * dimension + d] = (random.nextDouble() - 0.5) / dimension;
+		for (int i = 0; i < vocabSize; i++) {
+			for (int d = 0; d < dimension; d++) {
+				focus[i * dimension + d] = (float) (random.nextFloat() - 0.5) / dimension;
+				context[i * dimension + d] = (float) (random.nextFloat() - 0.5) / dimension;
+			}
 		}
 
 		this.linesPerThread = new int[numThreads];
-		for(int i = 0; i < numThreads-1; i++) {
+		for (int i = 0; i < numThreads - 1; i++) {
 			linesPerThread[i] = crecCount / numThreads;
 		}
-		linesPerThread[numThreads-1] =  crecCount / numThreads + crecCount % numThreads;
-		
-		this.dimension = dimension-1;
+		linesPerThread[numThreads - 1] = crecCount / numThreads + crecCount % numThreads;
+
+		this.dimension = glove.getDimension();
 		this.es = Executors.newWorkStealingPool(numThreads);
 	}
 	
@@ -66,17 +70,17 @@ public abstract class GloveOptimizer implements Optimizer {
 	public Optimum optimize() {
 
 		Optimum opt = new Optimum();
-		CompletionService<Double> completionService = new ExecutorCompletionService<>(es);
+		CompletionService<Float> completionService = new ExecutorCompletionService<>(es);
 
 		double finalCost = 0;
-		try(ProgressBar pb = new ProgressBar(getName(), maxIterations, PB_UPDATE_INTERVAL, System.out, PB_STYLE, " iterations", 1, true )) {
+		try(ProgressBar pb = config.progressBar(getName(), maxIterations, "epochs")) {
 			double prevCost = 0;
 			double iterDiff;
-			for(int iteration = 0; iteration < maxIterations; iteration++ ) {
+			for (int iteration = 0; iteration < maxIterations; iteration++) {
 
 				crecs.shuffle();
 
-				for(int id = 0; id < numThreads; id++) 
+				for (int id = 0; id < numThreads; id++)
 					completionService.submit(createJob(id, iteration));
 				
 				int received = 0;
@@ -117,7 +121,7 @@ public abstract class GloveOptimizer implements Optimizer {
 	}
 
 	private String formatMessage(double iterDiff) {
-		return String.format("%.8f", iterDiff) + "/" + String.format("%.5f", tolerance);
+		return new BigDecimal(iterDiff).stripTrailingZeros().toPlainString() + "/" + new BigDecimal(tolerance).stripTrailingZeros().toPlainString();
 	}
 
 	/**
@@ -126,20 +130,20 @@ public abstract class GloveOptimizer implements Optimizer {
 	 */
 	private double[] extractResult() {
 		double[] U = new double[vocabSize * dimension];
-		int l1, l2, l3;
+		int l1, l2;
 		for (int a = 0; a < vocabSize; a++) {
-			l1 = a * (dimension + 1); // Index for focus node
-			l2 = (a + vocabSize) * (dimension + 1); // Index for context node
-			l3 = (a * dimension); // Index for output node
-			for(int d = 0; d < dimension; d++)  {
+			// Take into account that we included the bias term
+			l1 = a * (dimension + 1); // Index for focus and context nodes
+			l2 = (a * dimension); // Index for output node
+			for (int d = 0; d < dimension; d++) {
 				// For each node, take the average between the focus and context value
-				U[d + l3] = (W[d + l1] + W[d + l2]) / 2;
+				U[d + l2] = (focus[d + l1] + context[d + l1]) / 2;
 			}
 		}
 
 		return U;
 	}
-	
+
 	protected abstract GloveJob createJob(int id, int iteration);
 
 }

@@ -1,9 +1,9 @@
 package org.uu.nl.embedding.util.write;
 
 import me.tongfei.progressbar.ProgressBar;
-import org.uu.nl.embedding.Settings;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.glove.GloveModel;
+import org.uu.nl.embedding.util.config.Configuration;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -21,14 +21,20 @@ public class GloveTextWriter implements GloveWriter {
 
 	private final String VECTORS_FILE;
 	private final String DICT_FILE;
+	private final boolean[] writeNodeTypes;
+	private final Configuration config;
 
-	public GloveTextWriter(String fileName) {
+	public GloveTextWriter(String fileName, Configuration config) {
 		String FILETYPE = ".tsv";
 		this.VECTORS_FILE = fileName + "." + "vectors" + FILETYPE;
 		this.DICT_FILE = fileName + "." + "dict" + FILETYPE;
+		this.config = config;
+		this.writeNodeTypes = new boolean[4];
+		this.writeNodeTypes[NodeInfo.URI.id] = config.getOutput().outputUriNodes();
+		this.writeNodeTypes[NodeInfo.BLANK.id] = config.getOutput().outputBlankNodes();
+		this.writeNodeTypes[NodeInfo.LITERAL.id] = config.getOutput().outputLiteralNodes();
+		this.writeNodeTypes[NodeInfo.PREDICATE.id] = config.getOutput().outputPredicates();
 	}
-
-	private static final Settings settings = Settings.getInstance();
 
 	@Override
 	public void write(GloveModel model, Path outputFolder) throws IOException {
@@ -37,7 +43,7 @@ public class GloveTextWriter implements GloveWriter {
 
 		byte type;
 		// Take the number of vertices because we don't want to print vectors for predicates
-		final int vocabSize = model.getCoMatrix().getNrOfVertices();
+		final int vocabSize = model.getCoMatrix().vocabSize();
 		final int dimension = model.getDimension();
 		final String[] out = new String[dimension];
 		final double[] result = model.getOptimum().getResult();
@@ -46,18 +52,46 @@ public class GloveTextWriter implements GloveWriter {
 		final String delimiter = "\t";
 		final String newLine = "\n";
 
-		try (ProgressBar pb = settings.progressBar("Writing to file", vocabSize, "vectors");
+		try (ProgressBar pb = config.progressBar("Writing to file", vocabSize, "vectors");
 			 Writer dict = new BufferedWriter(new FileWriter(outputFolder.resolve(DICT_FILE).toFile()));
 			 Writer vect = new BufferedWriter(new FileWriter(outputFolder.resolve(VECTORS_FILE).toFile()))) {
 
 			dict.write("key" + delimiter + "type" + newLine);
 
+			Configuration.Output output = config.getOutput();
+
 			for (int i = 0; i < vocabSize; i++) {
 
 				type = model.getCoMatrix().getType(i);
 
-				// Do not write blank nodes
-				if(type == NodeInfo.BLANK) {
+				if(!writeNodeTypes[type]) {
+					pb.step();
+					continue;
+				}
+
+				final String key = model.getCoMatrix().getKey(i);
+
+				boolean skip = false;
+				switch (type) {
+					case 0:
+						if(output.getUri().isEmpty()) skip = false;
+						else skip = output.getUri().stream().noneMatch(key::startsWith);
+						break;
+					case 1:
+						if(output.getBlank().isEmpty()) skip = false;
+						else skip = output.getBlank().stream().noneMatch(key::startsWith);
+						break;
+					case 2:
+						if(output.getLiteral().isEmpty()) skip = false;
+						else skip = output.getLiteral().stream().noneMatch(key::startsWith);
+						break;
+					case 3:
+						if(output.getPredicate().isEmpty()) skip = false;
+						else skip = output.getPredicate().stream().noneMatch(key::startsWith);
+						break;
+				}
+
+				if(skip)  {
 					pb.step();
 					continue;
 				}
@@ -66,13 +100,13 @@ public class GloveTextWriter implements GloveWriter {
 					out[d] = String.format("%11.6E", result[d + i * dimension]);
 
 				vect.write(String.join(delimiter, out) + newLine);
-				dict.write(model.getCoMatrix().getKey(i)
+				dict.write(key
 						// Remove newlines and tabs
 						.replace("\n", "")
 						.replace("\r", "")
 						.replace(delimiter, "")
 						+ delimiter
-						+ type
+						+ NodeInfo.fromByte(type).name()
 						+ newLine
 				);
 				pb.step();

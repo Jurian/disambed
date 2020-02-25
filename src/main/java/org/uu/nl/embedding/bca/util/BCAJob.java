@@ -42,7 +42,7 @@ public abstract class BCAJob implements Callable<BCV> {
 	protected abstract BCV doWork(Grph graph, boolean reverse);
 
 	protected boolean isLiteral(int n) {
-		return graph.getVertexColorProperty().getValue(n) ==  NodeInfo.LITERAL;
+		return graph.getVertexColorProperty().getValue(n) ==  NodeInfo.LITERAL.id;
 	}
 
 	protected String nodeLabel(int n) {

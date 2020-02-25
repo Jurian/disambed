@@ -1,4 +1,4 @@
-package org.uu.nl.embedding;
+package org.uu.nl.embedding.util;
 
 /**
  * @author Jurian Baas
@@ -12,7 +12,7 @@ public interface CRecMatrix {
 	byte getType(int index);
 	int cIdx_I(int i);
 	int cIdx_J(int j);
-	double cIdx_C(int i);
+	float cIdx_C(int i);
 	int coOccurrenceCount();
 	int getNrOfVertices();
 	void shuffle();

@@ -1,7 +1,8 @@
 package org.uu.nl.embedding.glove;
 
-import org.uu.nl.embedding.CRecMatrix;
-import org.uu.nl.embedding.Embedding;
+import org.uu.nl.embedding.util.CRecMatrix;
+import org.uu.nl.embedding.util.Embedding;
+import org.uu.nl.embedding.util.config.Configuration;
 
 /**
  * @author Jurian Baas
@@ -19,12 +20,12 @@ public class GloveModel extends Embedding {
 		this.xMax = xMax;
 		this.alpha = 0.75;
 	}
-	
-	public GloveModel(int dimension, CRecMatrix coMatrix) {
-		this(dimension, coMatrix.max(), coMatrix);
-	}
 
-	public double getAlpha() {
+    public GloveModel(CRecMatrix coMatrix, Configuration config) {
+        this(config.getDim(), coMatrix.max(), coMatrix);
+    }
+
+    public double getAlpha() {
 		return alpha;
 	}
 

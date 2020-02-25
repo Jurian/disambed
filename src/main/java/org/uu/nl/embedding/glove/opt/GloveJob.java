@@ -5,4 +5,4 @@ import java.util.concurrent.Callable;
 /**
  * @author Jurian Baas
  */
-public interface GloveJob extends Callable<Double> { }
+public interface GloveJob extends Callable<Float> { }

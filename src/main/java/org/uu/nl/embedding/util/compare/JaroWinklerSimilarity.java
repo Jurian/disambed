@@ -2,7 +2,7 @@ package org.uu.nl.embedding.util.compare;
 
 public class JaroWinklerSimilarity implements Similarity<String> {
 
-    public void preprocess(String item) {}
+    public void preProcess(String item) { }
 
     @Override
     public double calculate(String s1, String s2) {
@@ -34,7 +34,7 @@ public class JaroWinklerSimilarity implements Similarity<String> {
                 matches++;
                 continue;
             }
-            // check fro transposed matches
+            // check for transposed matches
             for (int j = Math.max(i - maxMatchDistance, 0); j < Math.min(i + maxMatchDistance, longer.length()); j++) {
                 if (i == j) {
                     // case already covered

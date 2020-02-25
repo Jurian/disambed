@@ -4,6 +4,7 @@ import grph.Grph;
 import grph.properties.NumericalProperty;
 import grph.properties.Property;
 import org.uu.nl.embedding.convert.util.NodeInfo;
+import org.uu.nl.embedding.util.config.Configuration;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,7 +41,7 @@ public class GraphStatistics {
 	public final int totalNodeCount;
 	public final int nrOfEdgeTypes;
 	
-	public GraphStatistics(Grph graph, Map<String, Double> weightMap, boolean includePredicates) {
+	public GraphStatistics(Grph graph, Configuration config) {
 		
 		final Property labelProperties = graph.getVertexLabelProperty();
 		final NumericalProperty typeProperties = graph.getVertexColorProperty();
@@ -51,13 +52,15 @@ public class GraphStatistics {
 
 		final Map<Integer, Integer> edgeTypes = new HashMap<>();
 		for(int i = 0; i < nrOfEdges; i++) {
-			int type = graph.getEdgeColorProperty().getValueAsInt(i);
-			edgeTypes.putIfAbsent(type, i);
+			if(graph.getEdgeColorProperty().isSetted(i)) {
+				int type = graph.getEdgeColorProperty().getValueAsInt(i);
+				edgeTypes.putIfAbsent(type, i);
+			}
 		}
 
 		nrOfEdgeTypes = edgeTypes.size();
 
-		int vocabSize = includePredicates ? nrOfVertices + nrOfEdgeTypes : nrOfVertices;
+		int vocabSize = config.getBca().isPredicates() ? nrOfVertices + nrOfEdgeTypes : nrOfVertices;
 
 		/*
 		 * A mapping between nodes and a unique index, used in the bookmark
@@ -75,12 +78,11 @@ public class GraphStatistics {
 			dict[i] = labelProperties.getValueAsString(node);
 			jobs[i] = node;
 
-			if(types[i] == NodeInfo.BLANK) blankNodeCount++;
-			else if(types[i] == NodeInfo.URI) {
+			if(types[i] == NodeInfo.BLANK.id) blankNodeCount++;
+			else if(types[i] == NodeInfo.URI.id) {
 				uriNodeCount++;
-				//jobs[job_i++] = node;
 			}
-			else if(types[i] == NodeInfo.LITERAL) literalNodeCount++;
+			else if(types[i] == NodeInfo.LITERAL.id) literalNodeCount++;
 		}
 
 		weights = new double[nrOfEdgeTypes];
@@ -90,12 +92,15 @@ public class GraphStatistics {
 			int edge = entry.getValue();
 
 			String label = edgeLabels.getValueAsString(edge);
-			if(weightMap.containsKey(label))
-				weights[type] = weightMap.get(label);
 
-			if(includePredicates) {
+			if(!config.usingWeights())
+				weights[type] = 1;
+			else if(config.usingWeights() && config.getWeights().containsKey(label))
+				weights[type] = config.getWeights().get(label);
+
+			if(config.getBca().isPredicates()) {
 				dict[type + nrOfVertices] = label;
-				types[type + nrOfVertices] = NodeInfo.PREDICATE;
+				types[type + nrOfVertices] = NodeInfo.PREDICATE.id;
 			}
 		}
 

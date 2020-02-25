@@ -1,6 +1,7 @@
 package org.uu.nl.embedding.bca.util;
 
-import org.uu.nl.embedding.Settings;
+import org.apache.commons.math.util.FastMath;
+import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.ExtendedRandom;
 
 import java.util.HashMap;
@@ -11,10 +12,9 @@ import java.util.HashMap;
  * @author Jurian Baas
  *
  */
-public class BCV extends HashMap<Integer, Double> {
+public class BCV extends HashMap<Integer, Float> {
 
-	protected static final Settings settings = Settings.getInstance();
-	private static final ExtendedRandom random = settings.getThreadLocalRandom();
+	private static final ExtendedRandom random = Configuration.getThreadLocalRandom();
 	private static final long serialVersionUID = 1L;
 	
 	private final int rootNode;
@@ -33,16 +33,26 @@ public class BCV extends HashMap<Integer, Double> {
 	 * @param key key with which the specified value is to be associated
 	 * @param value value to be associated with the specified key
 	 */
-	public void add(Integer key, Double value) {
-		super.put(key, getOrDefault(key, 0d) + value);
+	public void add(int key, float value) {
+		super.put(key, getOrDefault(key, 0f) + value);
+	}
+
+	/**
+	 * Add the value to a key, or create a new
+	 * record if the key was not present before
+	 * @param key key with which the specified value is to be associated
+	 * @param value value to be associated with the specified key
+	 */
+	public void add(int key, double value) {
+		super.put(key, getOrDefault(key, 0f) + (float)value);
 	}
 
 	/**
 	 * Removes the diagonal value and changes the other values to sum to 1
 	 */
 	public void normalize() {
-		double sum = sum();
-		for(Entry<Integer, Double> entry : entrySet())
+		float sum = sum();
+		for(Entry<Integer, Float> entry : entrySet())
 			entry.setValue(entry.getValue() / sum);
 		remove(rootNode);
 	}
@@ -50,15 +60,21 @@ public class BCV extends HashMap<Integer, Double> {
 	/**
 	 * @return The maximum value for this BCV
 	 */
-	public double max() {
-		return values().stream().mapToDouble(d->d).max().orElse(0d);
+	public float max() {
+		float max = 0f;
+		for(Float value : values())
+			max = FastMath.max(max,value);
+		return max;
 	}
 	
 	/**
 	 * @return The total sum of all values in this BCV
 	 */
-    private double sum() {
-		return values().stream().mapToDouble(d->d).sum();
+    private float sum() {
+    	float sum = 0f;
+		for(Float value : values())
+			sum += value;
+		return sum;
 	}
 	
 	/**
@@ -67,7 +83,7 @@ public class BCV extends HashMap<Integer, Double> {
 	 * @param other The other BCV
 	 */
 	public void merge(BCV other) {
-		for(Entry<Integer, Double> entry : other.entrySet())
+		for(Entry<Integer, Float> entry : other.entrySet())
 			add(entry.getKey(), entry.getValue());
 	}
 
@@ -78,7 +94,7 @@ public class BCV extends HashMap<Integer, Double> {
 				v = random.uniform(vertices);
 			} while (containsKey(v));
 
-			put(v, Double.MIN_VALUE);
+			put(v, Float.MIN_VALUE);
 		}
 	}
 	

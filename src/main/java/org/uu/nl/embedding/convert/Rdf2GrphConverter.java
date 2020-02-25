@@ -5,19 +5,20 @@ import grph.in_memory.InMemoryGrph;
 import grph.properties.NumericalProperty;
 import grph.properties.Property;
 import me.tongfei.progressbar.ProgressBar;
-import org.apache.jena.datatypes.RDFDatatype;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.log4j.Logger;
-import org.uu.nl.embedding.Settings;
 import org.uu.nl.embedding.convert.util.NodeInfo;
-import org.uu.nl.embedding.util.compare.JaccardSimilarity;
-import org.uu.nl.embedding.util.compare.Similarity;
+import org.uu.nl.embedding.util.compare.*;
+import org.uu.nl.embedding.util.config.Configuration;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.*;
 
 /**
  * Converts an RDF graph to the Grph form
@@ -27,160 +28,53 @@ import java.util.Map;
 public class Rdf2GrphConverter implements Converter<Model, Grph> {
 
 	private static final Logger logger = Logger.getLogger(Rdf2GrphConverter.class);
-	private static final Settings settings = Settings.getInstance();
 
-	private final double minSimilarity;
 	private final Map<String, Double> weights;
+	private final Map<String, SimilarityGroup<String>> similarityGroups;
+	private final Configuration config;
 
-	private static int type2color(Node node) {
-		if(node.isURI()) return NodeInfo.URI;
-		else if (node.isBlank()) return NodeInfo.BLANK;
-		else if (node.isLiteral()) return NodeInfo.LITERAL;
-		else throw new IllegalArgumentException("Node " + node + " is not of type URI, blank or literal");
+	public Rdf2GrphConverter(Configuration config) {
+
+		this.config = config;
+		this.weights = config.getWeights();
+		this.similarityGroups = new HashMap<>();
+		config.getSimilarity().forEach(
+				sim -> similarityGroups.put(
+						sim.getPredicate(), new SimilarityGroup<>(createSimilarityMetric(sim), sim.getThreshold())));
 	}
 
-	public Rdf2GrphConverter(Map<String, Double> weights, double minSimilarity) {
-		this.weights = weights;
-		this.minSimilarity = minSimilarity;
+	private static int type2color(Node node) {
+		if(node.isURI()) return NodeInfo.URI.id;
+		else if (node.isBlank()) return NodeInfo.BLANK.id;
+		else if (node.isLiteral()) return NodeInfo.LITERAL.id;
+		else throw new IllegalArgumentException("Node " + node + " is not of type URI, blank or literal");
 	}
 
 	@Override
 	public Grph convert(Model model) {
-		
+
+		logger.info("Converting RDF data into fast graph representation");
+
 		final Grph g = new InMemoryGrph();
 
 		final Property vertexLabels = g.getVertexLabelProperty();
-		final NumericalProperty vertexIsLiteral = g.getVertexShapeProperty();
 		final NumericalProperty edgeTypes = g.getEdgeColorProperty();
 		final NumericalProperty nodeSimilarity = g.getEdgeWidthProperty();
 		
 		final Map<Node, Integer> vertexMap = new HashMap<>();
 		final Map<Node, Integer> edgeMap = new HashMap<>();
 
-		final Similarity<String> similarityMetric = new JaccardSimilarity(3);
-
-        /*
-        final String personURI = "http://goldenagents.org/uva/SAA/ontology/Person";
-        final String fullNameURI = "http://goldenagents.org/uva/SAA/ontology/full_name";
-		final String altNameURI = "http://goldenagents.org/uva/SAA/ontology/alt_name";
-		final String personPartialMatchURI = "http://goldenagents.org/uva/SAA/ontology/Person/partialMatch";
-
-		final List<Resource> personList = new ArrayList<>();
-
-		final Property personProperty = model.createProperty(personURI);
-		final Property fullNameProperty = model.createProperty(fullNameURI);
-		final Property altNameProperty = model.createProperty(altNameURI);
-		final ResIterator personIterator = model.listResourcesWithProperty(RDF.type, personProperty);
-		try {
-			while(personIterator.hasNext()) {
-
-				Resource person = personIterator.nextResource();
-				personList.add(person);
-
-				Statement fullName = person.getProperty(fullNameProperty);
-				if(fullName == null || !fullName.getObject().isLiteral()) continue;
-
-				similarityMetric.preprocess(fullName.getLiteral().toString());
-
-			}
-		} finally {
-			personIterator.close();
-		}
-		final Map<String, Double> personSimilarityMap = new HashMap<>(personList.size()*personList.size());
-		try(ProgressBar pb = settings.progressBar("Comparing", personList.size()*personList.size()/2 - personList.size()/2, "comparisons")) {
-			for (int i = 0; i < personList.size(); i++) {
-
-				final Resource r1 = personList.get(i);
-				Statement fullName1 = r1.getProperty(fullNameProperty);
-				Statement altName1 = r1.getProperty(altNameProperty);
-
-				if (fullName1 == null) continue;
-
-				for (int j = i + 1; j < personList.size(); j++) {
-					pb.step();
-					final Resource r2 = personList.get(j);
-
-					Statement fullName2 = r2.getProperty(fullNameProperty);
-					Statement altName2 = r2.getProperty(altNameProperty);
-					if (fullName2 == null) continue;
-
-					//TODO check for logical inconsistencies such as birthDate > deathDate
-
-					final String f1 = fullName1.getLiteral().getString();
-					final String f2 = fullName2.getLiteral().getString();
-
-					Property p1 = model.createProperty(
-							personPartialMatchURI + "/" + DigestUtils.md5Hex(r1.getURI() + r2.getURI()));
-					Property p2 = model.createProperty(
-							personPartialMatchURI + "/" + DigestUtils.md5Hex(r2.getURI() + r1.getURI()));
-
-					double similarity = similarityMetric.calculate(f1, f2);
-					if (similarity >= minSimilarity) {
-						r1.addProperty(p1, r2);
-						r2.addProperty(p2, r1);
-
-						personSimilarityMap.put(p1.toString(), similarity);
-						personSimilarityMap.put(p2.toString(), similarity);
-
-						continue;
-					}
-
-					if(altName2 != null) {
-						final String a2 = altName2.getLiteral().getString();
-						similarity = similarityMetric.calculate(f1, a2);
-						if (similarity >= minSimilarity) {
-							r1.addProperty(p1, r2);
-							r2.addProperty(p2, r1);
-
-							personSimilarityMap.put(p1.toString(), similarity);
-							personSimilarityMap.put(p2.toString(), similarity);
-
-							continue;
-						}
-					}
-
-					if(altName1 != null) {
-						final String a1 = altName1.getLiteral().getString();
-						similarity = similarityMetric.calculate(f2, a1);
-						if (similarity >= minSimilarity) {
-
-							r1.addProperty(p1, r2);
-							r2.addProperty(p2, r1);
-
-							personSimilarityMap.put(p1.toString(), similarity);
-							personSimilarityMap.put(p2.toString(), similarity);
-
-							continue;
-						}
-					}
-
-					if(altName1 != null && altName2 != null) {
-						final String a1 = altName1.getLiteral().getString();
-						final String a2 = altName2.getLiteral().getString();
-						similarity = similarityMetric.calculate(a1, a2);
-						if (similarity >= minSimilarity) {
-
-							r1.addProperty(p1, r2);
-							r2.addProperty(p2, r1);
-
-							personSimilarityMap.put(p1.toString(), similarity);
-							personSimilarityMap.put(p2.toString(), similarity);
-
-						}
-					}
-				}
-			}
-
-		}*/
-		int nrOfLiterals = 0;
+		long skippedTriples = 0;
 		int s_i, o_i, p_i, edgeType;
+		final boolean doSimilarityMatching = !similarityGroups.isEmpty();
 		String predicateString;
 		Node s, p, o;
 		Triple t   ;
 
 		final ExtendedIterator<Triple> triples = model.getGraph().find();
 
-		try(ProgressBar pb = settings.progressBar("Converting", model.size(), "triples")) {
+		//HashSet<String> predSet = new HashSet<>();
+		try(ProgressBar pb = config.progressBar("Converting", model.size(), "triples")) {
 			while (triples.hasNext()) {
 
 				t = triples.next();
@@ -189,20 +83,14 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 				o = t.getObject();
 
 				predicateString = p.toString();
-
+				//predSet.add(predicateString);
 				// Ignore unweighted predicates
 				if(!weights.containsKey(predicateString)) {
 					// Adjust the total number of triples we are considering
 					// Maybe we can do pb.step() here instead to make it less confusing
-					pb.maxHint(pb.getMax() - 1);
+					pb.step();
+					skippedTriples++;
 					continue;
-				}
-
-				boolean processLiteralLater = o.isLiteral() && o.getLiteralDatatype().getJavaClass() == String.class && !vertexMap.containsKey(o);
-
-				if(processLiteralLater) {
-					similarityMetric.preprocess(o.getLiteralValue().toString());
-					nrOfLiterals++;
 				}
 
 				// Only create a new ID if the subject is not yet present
@@ -212,8 +100,11 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 				s_i = vertexMap.get(s);
 				o_i = vertexMap.get(o);
 
-				if(processLiteralLater) {
-					vertexIsLiteral.setValue(o_i, 1);
+				if(doSimilarityMatching && o.isLiteral()) {
+
+					if(similarityGroups.containsKey(predicateString))
+						similarityGroups.get(predicateString).preprocess(o.getLiteralValue().toString(), o_i);
+
 					vertexLabels.setValue(o_i, o.getLiteralValue().toString());
 				}
 
@@ -235,46 +126,82 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 			}
 		} finally {
 			triples.close();
+			if(skippedTriples > 0) logger.info("Skipped " + skippedTriples +
+					" unweighted triples (" + String.format("%.2f", (skippedTriples/(double)model.size()*100)) + " %)");
 		}
 
-		int[] vertices = g.getVertices().toIntArray();
-		int edgesAdded = 0;
-		try(ProgressBar pb = settings.progressBar("Comparing literals", nrOfLiterals*nrOfLiterals/2 - nrOfLiterals/2, "comparisons")) {
-			for (int i = 0; i < vertices.length; i++) {
+		if(doSimilarityMatching) {
+			for(Map.Entry<String, SimilarityGroup<String>> entry : similarityGroups.entrySet()) {
 
-				final int vert = vertices[i];
-				if (!vertexIsLiteral.isSetted(vert)) continue;
+				final ExecutorService es = Executors.newWorkStealingPool(config.getThreads());
+				final CompletionService<CompareResult> completionService = new ExecutorCompletionService<>(es);
 
-				for (int j = i + 1; j < vertices.length; j++) {
-					final int otherVert = vertices[j];
-					if (!vertexIsLiteral.isSetted(otherVert)) continue;
+				final SimilarityGroup<String> similarityGroup = entry.getValue();
+				final int groupSize = similarityGroup.nodes.size();
+				final Similarity<String> metric = similarityGroup.similarity;
+				final int[] nodes = similarityGroup.nodes.stream().mapToInt(i -> i).toArray();
 
-					final String s1 = vertexLabels.getValueAsString(vert);
-					final String s2 = vertexLabels.getValueAsString(otherVert);
+				logger.info("Processing similarities for predicate " + entry.getKey());
 
-					final double similarity = similarityMetric.calculate(s1, s2);
-
-					if (similarity >= minSimilarity) {
-
-						byte b = (byte) (similarity * 100);
-
-						int e1 = g.addDirectedSimpleEdge(vert, otherVert);
-						int e2 = g.addDirectedSimpleEdge(otherVert, vert);
-
-						nodeSimilarity.setValue(e1, b);
-						nodeSimilarity.setValue(e2, b);
-
-						edgesAdded += 2;
-					}
-					pb.step();
+				for (int i = 0; i < groupSize; i++) {
+					completionService.submit(new CompareJob(i, nodes, similarityGroup.threshold, metric, vertexLabels));
 				}
-				pb.step();
-			}
-		}
 
-		logger.info("Added " + edgesAdded + " new edges for " + nrOfLiterals + " literals");
+				int received = 0;
+				int edgesAdded = 0;
+				try(ProgressBar pb = config.progressBar("Comparing", groupSize, "literals")) {
+					pb.setExtraMessage(Integer.toString(edgesAdded));
+					while (received < groupSize) {
+						try {
+
+							final CompareResult result = completionService.take().get();
+							final int vert = result.vert;
+							final int size = result.otherVerts.size();
+							for (int i = 0; i < size; i++) {
+
+								final int otherVert = result.otherVerts.get(i);
+								final byte similarity = result.similarities.get(i);
+								final int e1 = g.addDirectedSimpleEdge(vert, otherVert);
+								final int e2 = g.addDirectedSimpleEdge(otherVert, vert);
+
+								nodeSimilarity.setValue(e1, similarity);
+								nodeSimilarity.setValue(e2, similarity);
+
+								edgesAdded++;
+								pb.setExtraMessage(Integer.toString(edgesAdded));
+							}
+
+						} catch (InterruptedException | ExecutionException e) {
+							e.printStackTrace();
+						} finally {
+							received++;
+							pb.step();
+						}
+					}
+				} finally {
+					es.shutdown();
+				}
+				logger.info("Created links for " +edgesAdded+ " literal pairs");
+			}
+		} else {
+			logger.info("Partial matching is disabled, no edges between similar literals are added");
+		}
 
 		return g;
+	}
+
+	private Similarity<String> createSimilarityMetric(Configuration.SimilarityGroup sim ) {
+
+		switch (sim.getMethodEnum()) {
+			case TOKEN:
+				return new TokenSimilarity();
+			case NGRAM:
+				if(sim.getNgram() == 0) return new NGramSimilarity();
+				else return new NGramSimilarity(sim.getNgram());
+			case JAROWINKLER:
+				return new JaroWinklerSimilarity();
+		}
+		return null;
 	}
 
 	private void addVertex(Grph g, Node n, Map<Node, Integer> vertexMap) {
@@ -289,4 +216,74 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 	    return s.replace("\"","");
     }
 
+	private static class SimilarityGroup<T> {
+
+		public final Similarity<T> similarity;
+		public final HashSet<Integer> nodes;
+		public final double threshold;
+
+		private SimilarityGroup(Similarity<T> similarity, double threshold) {
+			this.similarity = similarity;
+			this.nodes = new HashSet<>();
+			this.threshold = threshold;
+		}
+
+		public void preprocess(T a, int i){
+			this.similarity.preProcess(a);
+			this.nodes.add(i);
+		}
+	}
+
+	private static class CompareResult {
+
+		public final int vert;
+		public final ArrayList<Integer> otherVerts;
+		public final ArrayList<Byte> similarities;
+
+		public CompareResult(int vert) {
+			this.vert = vert;
+			this.otherVerts = new ArrayList<>();
+			this.similarities = new ArrayList<>();
+		}
+	}
+
+	private static class CompareJob implements Callable<CompareResult> {
+
+		private final int index;
+		private final int[] nodes;
+		private final double threshold;
+		private final Similarity<String> metric;
+		private final Property vertexLabels;
+
+		public CompareJob(int index, int[] nodes, double threshold, Similarity<String> metric, Property vertexLabels) {
+			this.index = index;
+			this.nodes = nodes;
+			this.threshold = threshold;
+			this.metric = metric;
+			this.vertexLabels = vertexLabels;
+		}
+
+		@Override
+		public CompareResult call() {
+
+			final int vert = nodes[index];
+			final CompareResult result = new CompareResult(vert);
+
+			for (int j = index + 1; j < nodes.length; j++) {
+
+				final int otherVert = nodes[j];
+				final String s1 = vertexLabels.getValueAsString(vert);
+				final String s2 = vertexLabels.getValueAsString(otherVert);
+				final double similarity = metric.calculate(s1, s2);
+
+				if (similarity >= threshold) {
+
+					final byte b = (byte) (similarity * 100);
+					result.otherVerts.add(otherVert);
+					result.similarities.add(b);
+				}
+			}
+			return result;
+		}
+	}
 }

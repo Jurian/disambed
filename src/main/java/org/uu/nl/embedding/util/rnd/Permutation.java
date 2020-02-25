@@ -1,11 +1,10 @@
 package org.uu.nl.embedding.util.rnd;
 
-import org.uu.nl.embedding.Settings;
+import org.uu.nl.embedding.util.config.Configuration;
 
 public class Permutation {
 
-    private static final Settings settings = Settings.getInstance();
-    private static final ExtendedRandom random = settings.getThreadLocalRandom();
+    private static final ExtendedRandom random = Configuration.getThreadLocalRandom();
 
     private final int[] permutation;
 

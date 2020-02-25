@@ -4,6 +4,7 @@ import org.apache.commons.math.util.FastMath;
 import org.uu.nl.embedding.glove.GloveModel;
 import org.uu.nl.embedding.glove.opt.GloveJob;
 import org.uu.nl.embedding.glove.opt.GloveOptimizer;
+import org.uu.nl.embedding.util.config.Configuration;
 
 
 /**
@@ -31,17 +32,21 @@ public class AdagradOptimizer extends GloveOptimizer {
 	/**
 	 * Contains the sum of the squares of the past gradients w.r.t. to all parameters
 	 */
-	private final double[] gradsq;
+	private final float[] gradSqFocus, gradSqContext;
 
-	public AdagradOptimizer(GloveModel glove, int maxIterations, double tolerance) {
-		super(glove, maxIterations, tolerance);
+	public AdagradOptimizer(GloveModel glove, Configuration config) {
+		super(glove, config);
 
 		// Increase dimension to make room for bias terms
 		int dimension = this.dimension + 1;
-		this.gradsq = new double[2 * vocabSize * dimension];
-		for (int i = 0; i < 2 * vocabSize; i++) {
-			for (int d = 0; d < dimension; d++)
-				gradsq[i * dimension + d] = 1; // So initial value of eta is equal to initial learning rate
+		this.gradSqFocus = new float[vocabSize * dimension];
+		this.gradSqContext = new float[vocabSize * dimension];
+		for (int i = 0; i < vocabSize; i++) {
+			for (int d = 0; d < dimension; d++) {
+				// So initial value of eta is equal to initial learning rate
+				gradSqFocus[i * dimension + d] = gradSqContext[i * dimension + d] = 1;
+			}
+
 		}
 	}
 	
@@ -49,34 +54,36 @@ public class AdagradOptimizer extends GloveOptimizer {
 	public String getName() {
 		return "GloVe-Adagrad";
 	}
-	
+
 	@Override
 	public GloveJob createJob(int id, int iteration) {
 		return () -> {
 			int a, d, l1, l2;
-			double cost = 0, innerCost, weightedCost, grad1, grad2;
+			float cost = 0, innerCost, weightedCost, grad1, grad2;
 
 			final int offset = crecCount / numThreads * id;
 
 			for (a = 0; a < linesPerThread[id]; a++) {
-				int crWord1 = crecs.cIdx_I(a + offset);
-				int crWord2 = crecs.cIdx_J(a + offset);
-				double crVal = crecs.cIdx_C(a + offset);
 
-				l1 = crWord1 * (dimension + 1);
-				l2 = (crWord2 + vocabSize) * (dimension + 1);
+				int node1 = crecs.cIdx_I(a + offset);
+				int node2 = crecs.cIdx_J(a + offset);
+				float Xij = crecs.cIdx_C(a + offset);
+
+				assert Xij >= 0 && Xij <= 1 : "Co-occurrence is not between 0 and 1: " + Xij;
+
+				l1 = node1 * (dimension + 1);
+				l2 = node2 * (dimension + 1);
 
 				/* Calculate cost, save diff for gradients */
 				innerCost = 0;
 
-				if(crVal == 0) continue;
 				for (d = 0; d < dimension; d++)
-					innerCost += W[d + l1] * W[d + l2]; // dot product of word and context word vector
-				// Add separate bias for
-				innerCost += W[dimension + l1] + W[dimension + l2] - FastMath.log(crVal);
+					innerCost += focus[d + l1] * context[d + l2]; // dot product of node and context node vector
+				// Add separate bias for each node
+				innerCost += focus[dimension + l1] + context[dimension + l2] - FastMath.log(Xij);
 
 				// multiply weighting function (f) with diff
-				weightedCost = (crVal > xMax) ? innerCost : FastMath.pow(crVal / xMax, alpha) * innerCost;
+				weightedCost = (Xij > xMax) ? innerCost : (float) FastMath.pow(Xij / xMax, alpha) * innerCost;
 				cost += 0.5 * weightedCost * innerCost; // weighted squared error
 
 				/*---------------------------
@@ -86,14 +93,14 @@ public class AdagradOptimizer extends GloveOptimizer {
 				// Compute for word vectors
 				for (d = 0; d < dimension; d++) {
 					// Compute gradients
-					grad1 = weightedCost * W[d + l2];
-					grad2 = weightedCost * W[d + l1];
+					grad1 = weightedCost * context[d + l2];
+					grad2 = weightedCost * focus[d + l1];
 					// Compute and apply updates
-					W[d + l1] -= grad1 / FastMath.sqrt(gradsq[d + l1]) * learningRate;
-					W[d + l2] -= grad2 / FastMath.sqrt(gradsq[d + l2]) * learningRate;
+					focus[d + l1] -= grad1 / FastMath.sqrt(gradSqFocus[d + l1]) * learningRate;
+					context[d + l2] -= grad2 / FastMath.sqrt(gradSqContext[d + l2]) * learningRate;
 					// Store squared gradients
-					gradsq[d + l1] += grad1 * grad1;
-					gradsq[d + l2] += grad2 * grad2;
+					gradSqFocus[d + l1] += grad1 * grad1;
+					gradSqContext[d + l2] += grad2 * grad2;
 				}
 
 				/*---------------------
@@ -101,12 +108,12 @@ public class AdagradOptimizer extends GloveOptimizer {
 				 ---------------------*/
 
 				// Compute updates (gradient of bias is the weighted cost)
-				W[dimension + l1] -= weightedCost / FastMath.sqrt(gradsq[dimension + l1]);
-				W[dimension + l2] -= weightedCost / FastMath.sqrt(gradsq[dimension + l2]);
+				focus[dimension + l1] -= weightedCost / FastMath.sqrt(gradSqFocus[dimension + l1]);
+				context[dimension + l2] -= weightedCost / FastMath.sqrt(gradSqContext[dimension + l2]);
 				weightedCost *= weightedCost;
 				// Store squared gradients
-				gradsq[dimension + l1] += weightedCost;
-				gradsq[dimension + l2] += weightedCost;
+				gradSqFocus[dimension + l1] += weightedCost;
+				gradSqContext[dimension + l2] += weightedCost;
 
 			}
 			return cost;

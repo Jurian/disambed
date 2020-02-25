@@ -7,6 +7,6 @@ import java.io.IOException;
  * @author Jurian Baas
  * @param <T> The type to read
  */
-interface Reader<T> {
+public interface Reader<T> {
     T load(File file) throws IOException;
 }

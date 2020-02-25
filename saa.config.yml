@@ -1,0 +1,55 @@
+graph: data/SAA/saa.trig
+method: pglove
+dim: 300
+#threads: 3
+weights:
+  # SAA Person
+  #http://goldenagents.org/uva/SAA/ontology/first_name: 1
+  http://goldenagents.org/uva/SAA/ontology/full_name: 1
+  #http://goldenagents.org/uva/SAA/ontology/family_name: 1
+  #http://goldenagents.org/uva/SAA/ontology/registration_date: 1
+  # Ecartico Person, also has full and family name
+  #http://goldenagents.org/uva/SAA/ontology/alt_name: 1
+  #http://goldenagents.org/uva/SAA/ontology/death_date_approx: 1
+  #http://goldenagents.org/uva/SAA/ontology/birth_date_approx: 1
+  # SAA Marriage Record
+  http://goldenagents.org/uva/SAA/ontology/mentionsGroom: 1
+  http://goldenagents.org/uva/SAA/ontology/mentionsBride: 1
+  http://goldenagents.org/uva/SAA/ontology/mentionsPreviousHusband: 1
+  http://goldenagents.org/uva/SAA/ontology/mentionsPreviousWife: 1
+  # SAA Baptism Record
+  http://goldenagents.org/uva/SAA/ontology/religion: 1
+  http://goldenagents.org/uva/SAA/ontology/church: 1
+  http://goldenagents.org/uva/SAA/ontology/mentionsMother: 1
+  http://goldenagents.org/uva/SAA/ontology/mentionsFather: 1
+  # SAA Burial Record
+  #http://goldenagents.org/uva/SAA/ontology/burial_date: 1
+  #http://goldenagents.org/uva/SAA/ontology/relation_info: 1
+  http://goldenagents.org/uva/SAA/ontology/mentionsRegistred_1: 1
+  http://goldenagents.org/uva/SAA/ontology/mentionsRegistred_2: 1
+  # Ecartico Marriage Record
+  #http://goldenagents.org/uva/SAA/ontology/marriage_date_approx: 1
+  http://goldenagents.org/uva/SAA/ontology/has_bride: 1
+  http://goldenagents.org/uva/SAA/ontology/has_groom: 1
+similarity:
+  - predicate: http://goldenagents.org/uva/SAA/ontology/full_name
+    method: jarowinkler
+    threshold: 0.95
+bca:
+  alpha: 1e-1
+  epsilon: 1e-3
+  reverse: true
+  directed: true
+  predicates: true
+opt:
+  method: adagrad
+  tolerance: 1e-4
+  maxiter: 1000
+pca:
+  variance: 0.95
+output:
+  uri: [ http://goldenagents.org/uva/SAA/person/ ]
+  #predicate: []
+  #blank: []
+  #literal: []
+
