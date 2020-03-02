@@ -21,7 +21,7 @@ public class Configuration {
     }
 
     public enum SimilarityMethod {
-        NGRAM, TOKEN, JAROWINKLER
+        NGRAM, TOKEN, JAROWINKLER, NUMERIC
     }
 
     private String graph;
@@ -183,6 +183,7 @@ public class Configuration {
             switch (getMethodEnum()) {
                 case NGRAM: return predicate + ": " + method + ", threshold: " + threshold + ", ngram: " + ngram;
                 case TOKEN:
+                case NUMERIC:
                 case JAROWINKLER: return predicate + ": " + method + ", threshold: " + threshold;
             }
             return null;
