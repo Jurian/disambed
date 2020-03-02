@@ -177,13 +177,14 @@ public class Configuration {
         private String method;
         private double threshold;
         private int ngram;
+        private double alpha;
 
         @Override
         public String toString() {
             switch (getMethodEnum()) {
                 case NGRAM: return predicate + ": " + method + ", threshold: " + threshold + ", ngram: " + ngram;
+                case NUMERIC: return predicate + ": " + method + ", threshold: " + threshold + ", alpha: " + alpha;
                 case TOKEN:
-                case NUMERIC:
                 case JAROWINKLER: return predicate + ": " + method + ", threshold: " + threshold;
             }
             return null;
@@ -224,6 +225,10 @@ public class Configuration {
         public void setNgram(int ngram) {
             this.ngram = ngram;
         }
+
+        public double getAlpha() {return alpha == 0 ? 1 : alpha;}
+
+        public void setAlpha(double alpha) {this.alpha = alpha;}
     }
 
     public static class BCA {

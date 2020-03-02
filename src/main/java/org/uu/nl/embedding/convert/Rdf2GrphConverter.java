@@ -194,7 +194,7 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 
 		switch (sim.getMethodEnum()) {
 			case NUMERIC:
-				return new NumericSimilarity();
+				return new NumericSimilarity(sim.getAlpha());
 			case TOKEN:
 				return new TokenSimilarity();
 			case NGRAM:
