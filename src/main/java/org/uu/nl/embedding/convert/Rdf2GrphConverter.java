@@ -193,6 +193,8 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 	private Similarity<String> createSimilarityMetric(Configuration.SimilarityGroup sim ) {
 
 		switch (sim.getMethodEnum()) {
+			case NUMERIC:
+				return new NumericSimilarity();
 			case TOKEN:
 				return new TokenSimilarity();
 			case NGRAM:
