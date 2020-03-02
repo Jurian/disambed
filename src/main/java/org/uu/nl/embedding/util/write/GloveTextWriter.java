@@ -60,12 +60,16 @@ public class GloveTextWriter implements GloveWriter {
 
 			Configuration.Output output = config.getOutput();
 
+			long skipped = 0;
+
 			for (int i = 0; i < vocabSize; i++) {
 
 				type = model.getCoMatrix().getType(i);
 
 				if(!writeNodeTypes[type]) {
-					pb.step();
+					pb.maxHint(pb.getMax()-1);
+					skipped++;
+					pb.setExtraMessage("Skipped " + skipped);
 					continue;
 				}
 
@@ -92,7 +96,9 @@ public class GloveTextWriter implements GloveWriter {
 				}
 
 				if(skip)  {
-					pb.step();
+					pb.maxHint(pb.getMax()-1);
+					skipped++;
+					pb.setExtraMessage("Skipped " + skipped);
 					continue;
 				}
 
