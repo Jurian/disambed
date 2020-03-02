@@ -32,7 +32,8 @@ public class Main {
         logger.info("Threads: " + config.getThreads());
         logger.info("BCA Alpha: " + config.getBca().getAlpha());
         logger.info("BCA Epsilon: " + config.getBca().getEpsilon());
-        logger.info("BCA Reverse: " + config.getBca().isReverse());
+        logger.info("BCA Directed: " + config.getBca().isDirected());
+        logger.info("BCA Reverse: " + config.getBca().isReverse() + " (ignored if directed = false)");
         logger.info("BCA Include Predicates: " + config.getBca().isPredicates());
         logger.info("Gradient Descent Algorithm: " + config.getOpt().getMethod());
         logger.info(config.getMethod() + " Tolerance: " + config.getOpt().getTolerance());
