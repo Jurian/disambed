@@ -14,6 +14,9 @@ public abstract class JaccardSimilarity implements Similarity<String> {
     }
 
     @Override
+    public boolean needsPreproces() { return true; }
+
+    @Override
     public void preProcess(String s) {
         preProcessNormalized(normalize(s));
     }

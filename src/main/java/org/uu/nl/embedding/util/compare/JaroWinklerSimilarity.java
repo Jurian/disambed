@@ -2,6 +2,11 @@ package org.uu.nl.embedding.util.compare;
 
 public class JaroWinklerSimilarity implements Similarity<String> {
 
+    @Override
+    public boolean needsPreproces() {
+        return false;
+    }
+
     public void preProcess(String item) { }
 
     @Override

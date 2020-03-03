@@ -9,6 +9,9 @@ public class NumericSimilarity implements Similarity<String> {
     }
 
     @Override
+    public boolean needsPreproces() { return false; }
+
+    @Override
     public void preProcess(String a) { }
 
     @Override
