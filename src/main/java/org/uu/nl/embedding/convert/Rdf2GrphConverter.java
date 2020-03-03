@@ -106,63 +106,64 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 					" unweighted triples (" + String.format("%.2f", (skippedTriples/(double)model.size()*100)) + " %)");
 		}
 
-		if(doSimilarityMatching) {
-			for(Map.Entry<String, SimilarityGroup<String>> entry : similarityGroups.entrySet()) {
 
-				final ExecutorService es = Executors.newWorkStealingPool(config.getThreads());
-				final CompletionService<CompareResult> completionService = new ExecutorCompletionService<>(es);
-
-				final SimilarityGroup<String> similarityGroup = entry.getValue();
-				final int groupSize = similarityGroup.nodes.size();
-				final Similarity<String> metric = similarityGroup.similarity;
-				final int[] nodes = similarityGroup.nodes.stream().mapToInt(i -> i).toArray();
-
-				logger.info("Processing similarities for predicate " + entry.getKey());
-
-				for (int i = 0; i < groupSize; i++) {
-					completionService.submit(new CompareJob(i, nodes, similarityGroup.threshold, metric, g.getVertexLabelProperty()));
-				}
-
-				int received = 0;
-				int edgesAdded = 0;
-				try(ProgressBar pb = config.progressBar("Comparing", groupSize, "literals")) {
-					pb.setExtraMessage(Integer.toString(edgesAdded));
-					while (received < groupSize) {
-						try {
-
-							final CompareResult result = completionService.take().get();
-							final int vert = result.vert;
-							final int size = result.otherVerts.size();
-							for (int i = 0; i < size; i++) {
-
-								final int otherVert = result.otherVerts.get(i);
-								final byte similarity = result.similarities.get(i);
-								final int e1 = g.addDirectedSimpleEdge(vert, otherVert);
-								final int e2 = g.addDirectedSimpleEdge(otherVert, vert);
-
-								// Similarities between vertices are stored as edge width property, which is limited to
-								// a few bits so we store the similarity as a byte (a number between 0 and 100)
-								g.getEdgeWidthProperty().setValue(e1, similarity);
-								g.getEdgeWidthProperty().setValue(e2, similarity);
-
-								edgesAdded++;
-								pb.setExtraMessage(Integer.toString(edgesAdded));
-							}
-
-						} catch (InterruptedException | ExecutionException e) {
-							e.printStackTrace();
-						} finally {
-							received++;
-							pb.step();
-						}
-					}
-				} finally {
-					es.shutdown();
-				}
-				logger.info("Created links for " +edgesAdded+ " literal pairs");
-			}
-		} else {
+		if(!doSimilarityMatching) {
 			logger.info("Partial matching is disabled, no edges between similar literals are added");
+			return g;
+		}
+
+		for(Map.Entry<String, SimilarityGroup<String>> entry : similarityGroups.entrySet()) {
+
+			final ExecutorService es = Executors.newWorkStealingPool(config.getThreads());
+			final CompletionService<CompareResult> completionService = new ExecutorCompletionService<>(es);
+			final SimilarityGroup<String> similarityGroup = entry.getValue();
+			final int groupSize = similarityGroup.nodes.size();
+			final Similarity<String> metric = similarityGroup.similarity;
+			final int[] nodes = similarityGroup.nodes.stream().mapToInt(i -> i).toArray();
+
+			logger.info("Processing similarities for predicate " + entry.getKey());
+
+			for (int i = 0; i < groupSize; i++) {
+				completionService.submit(new CompareJob(i, nodes, similarityGroup.threshold, metric, g.getVertexLabelProperty()));
+			}
+
+			int received = 0;
+			int edgesAdded = 0;
+			try(ProgressBar pb = config.progressBar("Comparing", groupSize, "literals")) {
+				pb.setExtraMessage(Integer.toString(edgesAdded));
+				while (received < groupSize) {
+					try {
+
+						final CompareResult result = completionService.take().get();
+						final int vert = result.vert;
+						final int size = result.otherVerts.size();
+						for (int i = 0; i < size; i++) {
+
+							final int otherVert = result.otherVerts.get(i);
+							final byte similarity = result.similarities.get(i);
+							final int e1 = g.addDirectedSimpleEdge(vert, otherVert);
+							final int e2 = g.addDirectedSimpleEdge(otherVert, vert);
+
+							// Similarities between vertices are stored as edge width property, which is limited to
+							// a few bits so we store the similarity as a byte (a number between 0 and 100)
+							g.getEdgeWidthProperty().setValue(e1, similarity);
+							g.getEdgeWidthProperty().setValue(e2, similarity);
+
+							edgesAdded++;
+							pb.setExtraMessage(Integer.toString(edgesAdded));
+						}
+
+					} catch (InterruptedException | ExecutionException e) {
+						e.printStackTrace();
+					} finally {
+						received++;
+						pb.step();
+					}
+				}
+			} finally {
+				es.shutdown();
+			}
+			logger.info("Created links for " +edgesAdded+ " literal pairs");
 		}
 
 		return g;
