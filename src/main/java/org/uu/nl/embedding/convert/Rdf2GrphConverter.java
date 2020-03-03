@@ -57,10 +57,6 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 
 		final Grph g = new InMemoryGrph();
 
-		final Property vertexLabels = g.getVertexLabelProperty();
-		final NumericalProperty edgeTypes = g.getEdgeColorProperty();
-		final NumericalProperty nodeSimilarity = g.getEdgeWidthProperty();
-		
 		final Map<Node, Integer> vertexMap = new HashMap<>();
 		final Map<Node, Integer> edgeMap = new HashMap<>();
 
@@ -73,7 +69,6 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 
 		final ExtendedIterator<Triple> triples = model.getGraph().find();
 
-		//HashSet<String> predSet = new HashSet<>();
 		try(ProgressBar pb = config.progressBar("Converting", model.size(), "triples")) {
 			while (triples.hasNext()) {
 
@@ -83,7 +78,7 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 				o = t.getObject();
 
 				predicateString = p.toString();
-				//predSet.add(predicateString);
+
 				// Ignore unweighted predicates
 				if(!weights.containsKey(predicateString)) {
 					// Adjust the total number of triples we are considering
@@ -100,12 +95,8 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 				s_i = vertexMap.get(s);
 				o_i = vertexMap.get(o);
 
-				if(doSimilarityMatching && o.isLiteral()) {
-
-					if(similarityGroups.containsKey(predicateString))
-						similarityGroups.get(predicateString).preprocess(o.getLiteralValue().toString(), o_i);
-
-					vertexLabels.setValue(o_i, o.getLiteralValue().toString());
+				if(doSimilarityMatching && similarityGroups.containsKey(predicateString)) {
+					similarityGroups.get(predicateString).preprocess(o.getLiteralValue().toString(), o_i);
 				}
 
 				// Every edge is unique, we always add one to the graph
@@ -120,7 +111,7 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 				// Store the edge-type value for this new edge
 				edgeType = edgeMap.get(p);
 
-				edgeTypes.setValue(p_i, edgeType);
+				g.getEdgeColorProperty().setValue(p_i, edgeType);
 
 				pb.step();
 			}
@@ -144,7 +135,7 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 				logger.info("Processing similarities for predicate " + entry.getKey());
 
 				for (int i = 0; i < groupSize; i++) {
-					completionService.submit(new CompareJob(i, nodes, similarityGroup.threshold, metric, vertexLabels));
+					completionService.submit(new CompareJob(i, nodes, similarityGroup.threshold, metric, g.getVertexLabelProperty()));
 				}
 
 				int received = 0;
@@ -164,8 +155,8 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 								final int e1 = g.addDirectedSimpleEdge(vert, otherVert);
 								final int e2 = g.addDirectedSimpleEdge(otherVert, vert);
 
-								nodeSimilarity.setValue(e1, similarity);
-								nodeSimilarity.setValue(e2, similarity);
+								g.getEdgeWidthProperty().setValue(e1, similarity);
+								g.getEdgeWidthProperty().setValue(e2, similarity);
 
 								edgesAdded++;
 								pb.setExtraMessage(Integer.toString(edgesAdded));
@@ -210,12 +201,8 @@ public class Rdf2GrphConverter implements Converter<Model, Grph> {
 		final int i = vertexMap.size();
 		g.addVertex(i);
 		g.getVertexColorProperty().setValue(i, type2color(n));
-		g.getVertexLabelProperty().setValue(i, clean(n.toString()));
+		g.getVertexLabelProperty().setValue(i, n.toString(false));
 		vertexMap.put(n, i);
-    }
-
-    private String clean(String s) {
-	    return s.replace("\"","");
     }
 
 	private static class SimilarityGroup<T> {
