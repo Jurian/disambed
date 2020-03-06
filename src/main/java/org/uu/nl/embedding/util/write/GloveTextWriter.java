@@ -31,7 +31,7 @@ public class GloveTextWriter implements GloveWriter {
 		this.config = config;
 		this.writeNodeTypes = new boolean[4];
 		this.writeNodeTypes[NodeInfo.URI.id] = config.getOutput().outputUriNodes();
-		this.writeNodeTypes[NodeInfo.BLANK.id] = config.getOutput().outputBlankNodes();
+		this.writeNodeTypes[NodeInfo.BLANK.id]  = config.getOutput().outputBlankNodes();
 		this.writeNodeTypes[NodeInfo.LITERAL.id] = config.getOutput().outputLiteralNodes();
 		this.writeNodeTypes[NodeInfo.PREDICATE.id] = config.getOutput().outputPredicates();
 	}
@@ -77,19 +77,19 @@ public class GloveTextWriter implements GloveWriter {
 
 				boolean skip = false;
 				switch (type) {
-					case 0:
+					case 1:
 						if(output.getUri().isEmpty()) skip = false;
 						else skip = output.getUri().stream().noneMatch(key::startsWith);
 						break;
-					case 1:
+					case 2:
 						if(output.getBlank().isEmpty()) skip = false;
 						else skip = output.getBlank().stream().noneMatch(key::startsWith);
 						break;
-					case 2:
+					case 3:
 						if(output.getLiteral().isEmpty()) skip = false;
 						else skip = output.getLiteral().stream().noneMatch(key::startsWith);
 						break;
-					case 3:
+					case 4:
 						if(output.getPredicate().isEmpty()) skip = false;
 						else skip = output.getPredicate().stream().noneMatch(key::startsWith);
 						break;

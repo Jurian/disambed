@@ -44,6 +44,12 @@
 			<version>1.25</version>
 		</dependency>
 
+		<!-- For string similarity -->
+		<dependency>
+			<groupId>info.debatty</groupId>
+			<artifactId>java-string-similarity</artifactId>
+			<version>RELEASE</version>
+		</dependency>
 		<!-- For very large arrays
 		<dependency>
 			<groupId>it.unimi.dsi</groupId>

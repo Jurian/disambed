@@ -7,6 +7,7 @@ import org.uu.nl.embedding.convert.Rdf2GrphConverter;
 import org.uu.nl.embedding.glove.GloveModel;
 import org.uu.nl.embedding.glove.opt.Optimizer;
 import org.uu.nl.embedding.pca.PCA;
+import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.read.ConfigReader;
 import org.uu.nl.embedding.util.read.JenaReader;
@@ -34,7 +35,6 @@ public class Main {
         logger.info("BCA Epsilon: " + config.getBca().getEpsilon());
         logger.info("BCA Directed: " + config.getBca().isDirected());
         logger.info("BCA Reverse: " + config.getBca().isReverse() + " (ignored if directed = false)");
-        logger.info("BCA Include Predicates: " + config.getBca().isPredicates());
         logger.info("Gradient Descent Algorithm: " + config.getOpt().getMethod());
         logger.info(config.getMethod() + " Tolerance: " + config.getOpt().getTolerance());
         logger.info(config.getMethod() + " Maximum Iterations: " + config.getOpt().getMaxiter());
@@ -58,7 +58,7 @@ public class Main {
 
         Rdf2GrphConverter converter = new Rdf2GrphConverter(config);
 
-        Grph graph = converter.convert(loader.load(config.getGraphFile()));
+        InMemoryRdfGraph graph = converter.convert(loader.load(config.getGraphFile()));
 
         BookmarkColoring bca = new BookmarkColoring(graph, config);
 

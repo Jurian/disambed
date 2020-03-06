@@ -9,6 +9,7 @@ import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.GraphStatistics;
 import org.uu.nl.embedding.convert.util.InEdgeNeighborhoodAlgorithm;
 import org.uu.nl.embedding.convert.util.OutEdgeNeighborhoodAlgorithm;
+import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.Permutation;
 
@@ -31,24 +32,23 @@ public class BookmarkColoring implements CRecMatrix {
 	private double max;
 	private final int vocabSize;
 	private int coOccurrenceCount;
-	private final boolean includeReverse, usePredicates;
+	private final boolean includeReverse;
 	private Permutation permutation;
 
-	public BookmarkColoring(Grph graph, Configuration config) {
+	public BookmarkColoring(InMemoryRdfGraph graph, Configuration config) {
 
 		this.includeReverse = config.getBca().isReverse();
-		this.usePredicates = config.getBca().isPredicates();
 		this.alpha = config.getBca().getAlpha();
 		this.epsilon = config.getBca().getEpsilon();
 		
 		this.stats = new GraphStatistics(graph, config);
 		this.types = stats.types;
 		this.dict = stats.dict;
-		this.vocabSize = usePredicates ? stats.nrOfVertices + stats.nrOfEdgeTypes : stats.nrOfVertices;
+		this.vocabSize = stats.nrOfVertices;
 
-		this.coOccurrenceIdx_I = new ArrayList<>(stats.nrOfVertices * stats.nrOfEdgeTypes);
-		this.coOccurrenceIdx_J = new ArrayList<>(stats.nrOfVertices * stats.nrOfEdgeTypes);
-		this.coOccurrenceValues = new ArrayList<>(stats.nrOfVertices * stats.nrOfEdgeTypes);
+		this.coOccurrenceIdx_I = new ArrayList<>(stats.nrOfVertices);
+		this.coOccurrenceIdx_J = new ArrayList<>(stats.nrOfVertices);
+		this.coOccurrenceValues = new ArrayList<>(stats.nrOfVertices);
 
 		final int numThreads = config.getThreads();
 
@@ -67,13 +67,13 @@ public class BookmarkColoring implements CRecMatrix {
 
 				if(config.getBca().isDirected()) {
 					completionService.submit(new DirectedWeighted(
-							graph, bookmark, stats.weights,
-							includeReverse, usePredicates, alpha, epsilon,
+							graph, bookmark,
+							includeReverse, alpha, epsilon,
 							inVertex, outVertex, inEdge, outEdge));
 				} else {
 					completionService.submit(new UndirectedWeighted(
-							graph, bookmark, stats.weights,
-							usePredicates, alpha, epsilon,
+							graph, bookmark,
+							alpha, epsilon,
 							inVertex, outVertex, inEdge, outEdge));
 				}
 			}

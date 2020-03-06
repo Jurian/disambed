@@ -1,9 +1,11 @@
 package org.uu.nl.embedding.bca.jobs;
 
 import grph.Grph;
+import grph.properties.NumericalProperty;
 import org.uu.nl.embedding.bca.util.BCAJob;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.PaintedNode;
+import org.uu.nl.embedding.util.InMemoryRdfGraph;
 
 import java.util.TreeMap;
 
@@ -14,13 +16,11 @@ import java.util.TreeMap;
 public class UndirectedWeighted extends BCAJob {
 
 	private final int[][] vertexOut, vertexIn, edgeOut, edgeIn;
-	private final double[] weights;
 
-	public UndirectedWeighted(Grph graph,
-							  int bookmark, double[] weights, boolean predicates, double alpha, double epsilon,
+	public UndirectedWeighted(InMemoryRdfGraph graph, int bookmark,
+							  double alpha, double epsilon,
 							  int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
-		super(bookmark, false, predicates, alpha, epsilon, graph);
-		this.weights = weights;
+		super(bookmark, false, alpha, epsilon, graph);
 		this.vertexOut = vertexOut;
 		this.vertexIn = vertexIn;
 		this.edgeOut = edgeOut;
@@ -28,10 +28,12 @@ public class UndirectedWeighted extends BCAJob {
 	}
 
 	@Override
-	protected BCV doWork(Grph graph, boolean reverse) {
+	protected BCV doWork(InMemoryRdfGraph graph, boolean reverse) {
 
 		if(reverse) throw new UnsupportedOperationException("No reverse mode in undirected version");
 
+		final NumericalProperty edgeWeights = graph.getEdgeWeightProperty();
+		final NumericalProperty edgeTypes = graph.getEdgeTypeProperty();
 		final TreeMap<Integer, PaintedNode> nodeTree = new TreeMap<>();
 		final BCV bcv = new BCV(bookmark);
 
@@ -65,11 +67,13 @@ public class UndirectedWeighted extends BCAJob {
 				if(i < vertexIn[focusNode].length) {
 					// Skip any edges we don't want to follow
 					if(vertexIn[focusNode][i] == node.prevNodeID) continue;
-					totalWeight += weights[getEdgeType(edgeIn[focusNode][i])];
+					totalWeight += edgeWeights.getValueAsFloat(edgeIn[focusNode][i]);
+					//totalWeight += weights[getEdgeType(edgeIn[focusNode][i])];
 				} else {
 					// Skip any edges we don't want to follow
 					if(vertexOut[focusNode][i - inDegree] == node.prevNodeID) continue;
-					totalWeight += weights[getEdgeType(edgeOut[focusNode][i - inDegree])];
+					totalWeight += edgeWeights.getValueAsFloat(edgeOut[focusNode][i - inDegree]);
+					//totalWeight += weights[getEdgeType(edgeOut[focusNode][i - inDegree])];
 				}
 
 			}
@@ -78,31 +82,28 @@ public class UndirectedWeighted extends BCAJob {
 
             for (int i = 0; i < degree; i++) {
 
+            	float weight;
 				if(i < vertexIn[focusNode].length) {
 					// Skip any edges we don't want to follow
 					if(vertexIn[focusNode][i] == node.prevNodeID) continue;
 
 					neighbor = vertexIn[focusNode][i];
-					edgeType = getEdgeType(edgeIn[focusNode][i]);
+					weight = edgeWeights.getValueAsFloat(edgeIn[focusNode][i]);
+					edgeType = edgeTypes.getValueAsInt(edgeIn[focusNode][i]);
 				} else {
 					// Skip any edges we don't want to follow
 					if(vertexOut[focusNode][i - inDegree] == node.prevNodeID) continue;
 
 					neighbor = vertexOut[focusNode][i - inDegree];
-					edgeType = getEdgeType(edgeOut[focusNode][i - inDegree]);
+					weight = edgeWeights.getValueAsFloat(edgeOut[focusNode][i - inDegree]);
+					edgeType = edgeTypes.getValueAsInt(edgeOut[focusNode][i - inDegree]);
 				}
 
-				partialWetPaint = (1 - alpha) * wetPaint * (weights[edgeType] / totalWeight);
+				partialWetPaint = (1 - alpha) * wetPaint * (weight / totalWeight);
 
 				// We can already tell that the neighbor will not have enough paint to continue
 				if(partialWetPaint < epsilon)
 					continue;
-
-				if(predicates) {
-					// Add the predicate to the context
-					int edgeIndex = graph.getVertices().size() + edgeType;
-					bcv.add(edgeIndex, partialWetPaint);
-				}
 
 				// Log(n) time lookup
 				if (nodeTree.containsKey(neighbor)) {

@@ -13,15 +13,15 @@ import java.util.Map;
 public class Configuration {
 
     public enum EmbeddingMethod {
-        GLOVE, PGLOVE;
+        GLOVE, PGLOVE
     }
 
     public enum OptimizationMethod {
-        ADAGRAD, AMSGRAD, ADAM;
+        ADAGRAD, AMSGRAD, ADAM
     }
 
     public enum SimilarityMethod {
-        NGRAM, TOKEN, JAROWINKLER, NUMERIC
+        TOKEN, COSINE, JACCARD, JAROWINKLER, LEVENSHTEIN, NUMERIC
     }
 
     private String graph;
@@ -72,17 +72,17 @@ public class Configuration {
         return EmbeddingMethod.valueOf(this.method.toUpperCase());
     }
 
-    private Map<String, Double> weights;
+    private Map<String, Float> weights;
 
     public boolean usingWeights() {
         return weights != null && !weights.isEmpty();
     }
 
-    public Map<String, Double> getWeights() {
+    public Map<String, Float> getWeights() {
         return weights;
     }
 
-    public void setWeights(Map<String, Double> weights) {
+    public void setWeights(Map<String, Float> weights) {
         this.weights = weights;
     }
 
@@ -182,9 +182,11 @@ public class Configuration {
         @Override
         public String toString() {
             switch (getMethodEnum()) {
-                case NGRAM: return predicate + ": " + method + ", threshold: " + threshold + ", ngram: " + ngram;
+                case COSINE:
+                case JACCARD: return predicate + ": " + method + ", threshold: " + threshold + ", ngram: " + ngram;
                 case NUMERIC: return predicate + ": " + method + ", threshold: " + threshold + ", alpha: " + alpha;
                 case TOKEN:
+                case LEVENSHTEIN:
                 case JAROWINKLER: return predicate + ": " + method + ", threshold: " + threshold;
             }
             return null;
@@ -237,7 +239,6 @@ public class Configuration {
         private double epsilon;
         private boolean reverse;
         private boolean directed;
-        private boolean predicates;
 
         public double getAlpha() {
             return alpha;
@@ -271,13 +272,6 @@ public class Configuration {
             this.directed = directed;
         }
 
-        public boolean isPredicates() {
-            return predicates;
-        }
-
-        public void setPredicates(boolean predicates) {
-            this.predicates = predicates;
-        }
     }
 
     public static class Opt {

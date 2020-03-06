@@ -2,6 +2,7 @@ package org.uu.nl.embedding.bca.util;
 
 import grph.Grph;
 import org.uu.nl.embedding.convert.util.NodeInfo;
+import org.uu.nl.embedding.util.InMemoryRdfGraph;
 
 import java.util.concurrent.Callable;
 
@@ -13,17 +14,16 @@ import java.util.concurrent.Callable;
 public abstract class BCAJob implements Callable<BCV> {
 
 	protected final int bookmark;
-	protected final boolean reverse, predicates;
+	protected final boolean reverse;
 	protected final double alpha, epsilon;
-	private final Grph graph;
+	private final InMemoryRdfGraph graph;
 
 	protected BCAJob(
-            int bookmark, boolean reverse, boolean predicates,
+            int bookmark, boolean reverse,
             double alpha, double epsilon,
-            Grph graph) {
+			InMemoryRdfGraph graph) {
 
 		this.reverse = reverse;
-		this.predicates = predicates;
 		this.bookmark = bookmark;
 		this.alpha = alpha;
 		this.epsilon = epsilon;
@@ -39,7 +39,7 @@ public abstract class BCAJob implements Callable<BCV> {
 		return bcv;
 	}
 
-	protected abstract BCV doWork(Grph graph, boolean reverse);
+	protected abstract BCV doWork(InMemoryRdfGraph graph, boolean reverse);
 
 	protected boolean isLiteral(int n) {
 		return graph.getVertexColorProperty().getValue(n) ==  NodeInfo.LITERAL.id;

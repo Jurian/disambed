@@ -51,10 +51,17 @@ public class BCV extends HashMap<Integer, Float> {
 	 * Removes the diagonal value and changes the other values to sum to 1
 	 */
 	public void normalize() {
-		float sum = sum();
-		for(Entry<Integer, Float> entry : entrySet())
-			entry.setValue(entry.getValue() / sum);
 		remove(rootNode);
+		final int size = size();
+		if(size == 1) {
+			// Prevent Xij == 1
+			for(Entry<Integer, Float> entry : entrySet())
+				entry.setValue(1 - 1e-7f);
+		} else if( size > 1){
+			final float sum = sum();
+			for(Entry<Integer, Float> entry : entrySet())
+				entry.setValue(entry.getValue() / sum);
+		}
 	}
 	
 	/**

@@ -33,7 +33,7 @@ public abstract class GloveOptimizer implements Optimizer {
 
 	protected GloveOptimizer(GloveModel glove, Configuration config) {
 		this.config = config;
-		this.random = config.getThreadLocalRandom();
+		this.random = Configuration.getThreadLocalRandom();
 		this.crecs = glove.getCoMatrix();
 		this.xMax = glove.getxMax();
 		this.alpha = glove.getAlpha();
