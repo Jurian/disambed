@@ -109,6 +109,13 @@ public class Main {
             bca_fileName = bca_fileName.substring(0, idx);
         }
         bca_fileName += "_" + config.getMethod().toLowerCase();
+
+        if(config.getSimilarity() != null && !config.getSimilarity().isEmpty()) {
+            bca_fileName += "_partial";
+        } else {
+            bca_fileName += "_exact";
+        }
+
         if(config.getBca().isReverse()){
             bca_fileName += "_reverse";
         }
