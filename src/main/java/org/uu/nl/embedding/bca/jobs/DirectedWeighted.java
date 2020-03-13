@@ -1,7 +1,6 @@
 package org.uu.nl.embedding.bca.jobs;
 
 import grph.properties.NumericalProperty;
-import org.jetbrains.annotations.NotNull;
 import org.uu.nl.embedding.bca.util.BCAJob;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.PaintedNode;
