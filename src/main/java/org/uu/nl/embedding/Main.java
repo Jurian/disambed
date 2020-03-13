@@ -103,30 +103,31 @@ public class Main {
             model.updateOptimum(pca.project(config.getPca().getVariance()));
         }
 
-        String bca_fileName = config.getGraphFile().getName().toLowerCase();
-        if(bca_fileName.contains(".")) {
-            bca_fileName = bca_fileName.substring(0, bca_fileName.lastIndexOf("."));
+        String outFileName = config.getGraphFile().getName().toLowerCase();
+        if(outFileName.contains(".")) {
+            outFileName = outFileName.substring(0, outFileName.lastIndexOf("."));
         }
-        bca_fileName += "_" + config.getMethod().toLowerCase();
-
+        outFileName += "_" + config.getMethod().toLowerCase();
 
         if(config.getSimilarity() != null && !config.getSimilarity().isEmpty()) {
-            bca_fileName += "_partial";
+            outFileName += "_partial";
         } else {
-            bca_fileName += "_exact";
+            outFileName += "_exact";
         }
 
         if(config.getBca().isDirected()){
-            bca_fileName += "_directed";
-            if(config.getBca().isReverse()) bca_fileName += "_reverse";
+            outFileName += "_directed";
+            if(config.getBca().isReverse()) outFileName += "_reverse";
         } else {
-            bca_fileName += "_undirected";
+            outFileName += "_undirected";
         }
-        bca_fileName += "_" + config.getBca().getAlpha() + "_" + config.getBca().getEpsilon();
-        bca_fileName += "_" + config.getOpt().getMethod();
-        if(config.usingPca()) bca_fileName += "_pca_" + model.getDimension();
-        else bca_fileName += "_" + model.getDimension();
-        GloveWriter writer = new GloveTextWriter(bca_fileName, config);
+
+        outFileName += "_" + config.getBca().getAlpha() + "_" + config.getBca().getEpsilon();
+        outFileName += "_" + config.getOpt().getMethod();
+        if(config.usingPca()) outFileName += "_pca_" + model.getDimension();
+        else outFileName += "_" + model.getDimension();
+
+        GloveWriter writer = new GloveTextWriter(outFileName, config);
         writer.write(model, Paths.get("").toAbsolutePath().resolve("out"));
     }
 
