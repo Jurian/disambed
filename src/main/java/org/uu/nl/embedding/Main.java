@@ -54,47 +54,19 @@ public class Main {
 
         Configuration.setThreadLocalRandom();
 
-        JenaReader loader = new JenaReader();
+        final JenaReader loader = new JenaReader();
 
-        Rdf2GrphConverter converter = new Rdf2GrphConverter(config);
+        final Rdf2GrphConverter converter = new Rdf2GrphConverter(config);
 
-        InMemoryRdfGraph graph = converter.convert(loader.load(config.getGraphFile()));
+        final InMemoryRdfGraph graph = converter.convert(loader.load(config.getGraphFile()));
 
-        BookmarkColoring bca = new BookmarkColoring(graph, config);
+        final BookmarkColoring bca = new BookmarkColoring(graph, config);
 
-        GloveModel model = new GloveModel(bca, config);
+        final GloveModel model = new GloveModel(bca, config);
 
-        Optimizer optimizer = null;
+        final Optimizer optimizer = createOptimizer(config, model);
 
-        switch (config.getMethodEnum()) {
-            case GLOVE:
-                switch(config.getOpt().getMethodEnum()) {
-                    case ADAGRAD:
-                        optimizer = new org.uu.nl.embedding.glove.opt.impl.AdagradOptimizer(model, config);
-                        break;
-                    case ADAM:
-                        optimizer = new org.uu.nl.embedding.glove.opt.impl.AdamOptimizer(model, config);
-                        break;
-                    case AMSGRAD:
-                        optimizer = new org.uu.nl.embedding.glove.opt.impl.AMSGradOptimizer(model, config);
-                        break;
-                }
-                break;
-            case PGLOVE:
-                switch(config.getOpt().getMethodEnum()) {
-                    case ADAGRAD:
-                        optimizer = new org.uu.nl.embedding.glove.opt.prob.AdagradOptimizer(model, config);
-                        break;
-                    case ADAM:
-                        optimizer = new org.uu.nl.embedding.glove.opt.prob.AdamOptimizer(model, config);
-                        break;
-                    case AMSGRAD:
-                        optimizer = new org.uu.nl.embedding.glove.opt.prob.AMSGradOptimizer(model, config);
-                        break;
-                }
-                break;
-        }
-
+        assert optimizer != null;
         model.setOptimum(optimizer.optimize());
 
         if(config.usingPca()) {
@@ -129,6 +101,30 @@ public class Main {
 
         GloveWriter writer = new GloveTextWriter(outFileName, config);
         writer.write(model, Paths.get("").toAbsolutePath().resolve("out"));
+    }
+
+    private static Optimizer createOptimizer(final Configuration config, final GloveModel model) {
+        switch (config.getMethodEnum()) {
+            case GLOVE:
+                switch(config.getOpt().getMethodEnum()) {
+                    case ADAGRAD:
+                        return new org.uu.nl.embedding.glove.opt.impl.AdagradOptimizer(model, config);
+                    case ADAM:
+                        return new org.uu.nl.embedding.glove.opt.impl.AdamOptimizer(model, config);
+                    case AMSGRAD:
+                        return new org.uu.nl.embedding.glove.opt.impl.AMSGradOptimizer(model, config);
+                }
+            case PGLOVE:
+                switch(config.getOpt().getMethodEnum()) {
+                    case ADAGRAD:
+                        return new org.uu.nl.embedding.glove.opt.prob.AdagradOptimizer(model, config);
+                    case ADAM:
+                        return new org.uu.nl.embedding.glove.opt.prob.AdamOptimizer(model, config);
+                    case AMSGRAD:
+                        return new org.uu.nl.embedding.glove.opt.prob.AMSGradOptimizer(model, config);
+                }
+        }
+        return null;
     }
 
     public static void main(String[] args) {
