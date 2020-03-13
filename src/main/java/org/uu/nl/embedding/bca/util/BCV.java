@@ -90,8 +90,9 @@ public class BCV extends HashMap<Integer, Float> {
 	 * @param other The other BCV
 	 */
 	public void merge(BCV other) {
-		for(Entry<Integer, Float> entry : other.entrySet())
-			add(entry.getKey(), entry.getValue());
+		other.forEach((key, value2) -> {
+			merge(key, value2, (v1, v2) -> (v1 + v2) / 2);
+		});
 	}
 
 	public void negativeSampling(int vertices, int samples) {
