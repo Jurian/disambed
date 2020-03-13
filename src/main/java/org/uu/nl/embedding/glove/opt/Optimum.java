@@ -10,7 +10,7 @@ public class Optimum {
 
 	private double finalCost;
 	private double[] result;
-	private List<Double> costHistory = new ArrayList<>();
+	private final List<Double> costHistory = new ArrayList<>();
 
 	public void addIntermediaryResult(double result) {
 		costHistory.add(result);

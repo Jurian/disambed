@@ -1,14 +1,12 @@
 package org.uu.nl.embedding.bca;
 
-import grph.Grph;
 import me.tongfei.progressbar.ProgressBar;
-import org.uu.nl.embedding.util.CRecMatrix;
 import org.uu.nl.embedding.bca.jobs.DirectedWeighted;
 import org.uu.nl.embedding.bca.jobs.UndirectedWeighted;
 import org.uu.nl.embedding.bca.util.BCV;
-import org.uu.nl.embedding.bca.util.GraphStatistics;
 import org.uu.nl.embedding.convert.util.InEdgeNeighborhoodAlgorithm;
 import org.uu.nl.embedding.convert.util.OutEdgeNeighborhoodAlgorithm;
+import org.uu.nl.embedding.util.CRecMatrix;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.Permutation;
@@ -22,33 +20,28 @@ import java.util.concurrent.*;
  */
 public class BookmarkColoring implements CRecMatrix {
 
-	private final String[] dict;
-	private final GraphStatistics stats;
-	private final byte[] types;
 	private final ArrayList<Integer> coOccurrenceIdx_I;
 	private final ArrayList<Integer> coOccurrenceIdx_J;
 	private final ArrayList<Float> coOccurrenceValues;
-	private final double alpha, epsilon;
 	private double max;
 	private final int vocabSize;
 	private int coOccurrenceCount;
-	private final boolean includeReverse;
 	private Permutation permutation;
+	private final InMemoryRdfGraph graph;
 
-	public BookmarkColoring(InMemoryRdfGraph graph, Configuration config) {
+	public BookmarkColoring(final InMemoryRdfGraph graph, final Configuration config) {
 
-		this.includeReverse = config.getBca().isReverse();
-		this.alpha = config.getBca().getAlpha();
-		this.epsilon = config.getBca().getEpsilon();
-		
-		this.stats = new GraphStatistics(graph, config);
-		this.types = stats.types;
-		this.dict = stats.dict;
-		this.vocabSize = stats.nrOfVertices;
+		final boolean includeReverse = config.getBca().isReverse();
+		final double alpha = config.getBca().getAlpha();
+		final double epsilon = config.getBca().getEpsilon();
+		final int[] jobs = graph.getVertices().toIntArray();
 
-		this.coOccurrenceIdx_I = new ArrayList<>(stats.nrOfVertices);
-		this.coOccurrenceIdx_J = new ArrayList<>(stats.nrOfVertices);
-		this.coOccurrenceValues = new ArrayList<>(stats.nrOfVertices);
+		this.graph = graph;
+		this.vocabSize = jobs.length;
+
+		this.coOccurrenceIdx_I = new ArrayList<>(vocabSize);
+		this.coOccurrenceIdx_J = new ArrayList<>(vocabSize);
+		this.coOccurrenceValues = new ArrayList<>(vocabSize);
 
 		final int numThreads = config.getThreads();
 
@@ -59,11 +52,11 @@ public class BookmarkColoring implements CRecMatrix {
 		final int[][] inEdge = new InEdgeNeighborhoodAlgorithm(config).compute(graph);
 		final int[][] outEdge = new OutEdgeNeighborhoodAlgorithm(config).compute(graph);
 
-		try(ProgressBar pb = config.progressBar("BCA", stats.jobs.length, "nodes")) {
+		try(ProgressBar pb = Configuration.progressBar("BCA", jobs.length, "nodes")) {
 
 			CompletionService<BCV> completionService = new ExecutorCompletionService<>(es);
 			// Choose a graph neighborhood algorithm
-			for(int bookmark : stats.jobs) {
+			for(int bookmark : jobs) {
 
 				if(config.getBca().isDirected()) {
 					completionService.submit(new DirectedWeighted(
@@ -81,7 +74,7 @@ public class BookmarkColoring implements CRecMatrix {
 			//now retrieve the futures after computation (auto wait for it)
 			int received = 0;
 
-			while(received < stats.jobs.length) {
+			while(received < jobs.length) {
 
 				try {
 					BCV bcv = completionService.take().get();
@@ -96,7 +89,6 @@ public class BookmarkColoring implements CRecMatrix {
 					// literature they set this value to 100 and leave it at that
 					setMax(bcv.max());
 
-
 					for (Entry<Integer, Float> bcr : bcv.entrySet()) {
 						coOccurrenceIdx_I.add(bcv.getRootNode());
 						coOccurrenceIdx_J.add(bcr.getKey());
@@ -107,9 +99,7 @@ public class BookmarkColoring implements CRecMatrix {
 
 				} catch (InterruptedException | ExecutionException e) {
 					e.printStackTrace();
-
 				} finally {
-
 					received ++;
 					pb.step();
 				}
@@ -126,7 +116,6 @@ public class BookmarkColoring implements CRecMatrix {
 	public void shuffle() {
 		permutation.shuffle();
 	}
-
 	
 	public int cIdx_I(int i) {
 		return this.coOccurrenceIdx_I.get(permutation.randomAccess(i));
@@ -141,25 +130,11 @@ public class BookmarkColoring implements CRecMatrix {
 	}
 	
 	public byte getType(int index) {
-		return this.types[index];
+		return (byte) this.graph.getVertexTypeProperty().getValueAsInt(index);
 	}
 	
 	public int coOccurrenceCount() {
 		return this.coOccurrenceCount;
-	}
-
-	/**
-	 * Retention coefficient
-	 */
-	public double getAlpha() {
-		return alpha;
-	}
-
-	/**
-	 * Tolerance threshold
-	 */
-	public double getEpsilon() {
-		return epsilon;
 	}
 	
 	@Override
@@ -174,17 +149,11 @@ public class BookmarkColoring implements CRecMatrix {
 	
 	@Override
 	public String getKey(int index) {
-		return this.dict[index];
+		return this.graph.getVertexLabelProperty().getValueAsString(index);
 	}
 	
 	private void setMax(double newMax) {
-		if(newMax > max) max = newMax;
+		this.max = Math.max(max, newMax);
 	}
-	
-	@Override
-	public int getNrOfVertices() {
-		return this.stats.nrOfVertices;
-	}
-
 
 }

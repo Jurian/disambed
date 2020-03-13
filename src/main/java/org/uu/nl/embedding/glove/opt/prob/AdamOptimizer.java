@@ -72,13 +72,13 @@ public class AdamOptimizer extends GloveOptimizer {
 			float cost = 0, innerCost, weightedCost;
 			// From the paper, a slight improvement of efficiency can be obtained this way
 			final double correction = learningRate * FastMath.sqrt(1 - FastMath.pow(beta2, iteration + 1)) / (1 - FastMath.pow(beta1, iteration + 1));
-			final int offset = crecCount / numThreads * id;
+			final int offset = coCount / numThreads * id;
 
 			for (a = 0; a < linesPerThread[id]; a++) {
 
-				int node1 = crecs.cIdx_I(a + offset);
-				int node2 = crecs.cIdx_J(a + offset);
-				float Xij = crecs.cIdx_C(a + offset);
+				int node1 = coMatrix.cIdx_I(a + offset);
+				int node2 = coMatrix.cIdx_J(a + offset);
+				float Xij = coMatrix.cIdx_C(a + offset);
 
 				assert Xij >= 0 && Xij <= 1 : "Co-occurrence is not between 0 and 1: " + Xij;
 

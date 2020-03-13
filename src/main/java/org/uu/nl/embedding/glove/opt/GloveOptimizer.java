@@ -2,8 +2,8 @@ package org.uu.nl.embedding.glove.opt;
 
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.commons.math.util.FastMath;
-import org.uu.nl.embedding.util.CRecMatrix;
 import org.uu.nl.embedding.glove.GloveModel;
+import org.uu.nl.embedding.util.CRecMatrix;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.ExtendedRandom;
 
@@ -15,12 +15,13 @@ import java.util.concurrent.*;
  */
 public abstract class GloveOptimizer implements Optimizer {
 
-	private final Configuration config;
-	protected final CRecMatrix crecs;
+	private static final ExtendedRandom random = Configuration.getThreadLocalRandom();
+
+	protected final CRecMatrix coMatrix;
 	protected final int dimension;
 	protected final int vocabSize;
 	protected final int numThreads;
-	protected final int crecCount;
+	protected final int coCount;
 	protected final double xMax;
 	protected final double alpha;
 	protected final double learningRate = 0.05;
@@ -29,19 +30,17 @@ public abstract class GloveOptimizer implements Optimizer {
 	private final ExecutorService es;
 	private final int maxIterations;
 	private final double tolerance;
-	private final ExtendedRandom random;
 
 	protected GloveOptimizer(GloveModel glove, Configuration config) {
-		this.config = config;
-		this.random = Configuration.getThreadLocalRandom();
-		this.crecs = glove.getCoMatrix();
+
+		this.coMatrix = glove.getCoMatrix();
 		this.xMax = glove.getxMax();
 		this.alpha = glove.getAlpha();
 		this.maxIterations = config.getOpt().getMaxiter();
 		this.tolerance = config.getOpt().getTolerance();
 		this.vocabSize = glove.getVocabSize();
 		this.numThreads = config.getThreads();
-		this.crecCount = crecs.coOccurrenceCount();
+		this.coCount = coMatrix.coOccurrenceCount();
 
 		// Make room for the bias terms
 		int dimension = glove.getDimension() + 1;
@@ -58,9 +57,9 @@ public abstract class GloveOptimizer implements Optimizer {
 
 		this.linesPerThread = new int[numThreads];
 		for (int i = 0; i < numThreads - 1; i++) {
-			linesPerThread[i] = crecCount / numThreads;
+			linesPerThread[i] = coCount / numThreads;
 		}
-		linesPerThread[numThreads - 1] = crecCount / numThreads + crecCount % numThreads;
+		linesPerThread[numThreads - 1] = coCount / numThreads + coCount % numThreads;
 
 		this.dimension = glove.getDimension();
 		this.es = Executors.newWorkStealingPool(numThreads);
@@ -73,12 +72,12 @@ public abstract class GloveOptimizer implements Optimizer {
 		CompletionService<Float> completionService = new ExecutorCompletionService<>(es);
 
 		double finalCost = 0;
-		try(ProgressBar pb = config.progressBar(getName(), maxIterations, "epochs")) {
+		try(ProgressBar pb = Configuration.progressBar(getName(), maxIterations, "epochs")) {
 			double prevCost = 0;
 			double iterDiff;
 			for (int iteration = 0; iteration < maxIterations; iteration++) {
 
-				crecs.shuffle();
+				coMatrix.shuffle();
 
 				for (int id = 0; id < numThreads; id++)
 					completionService.submit(createJob(id, iteration));
@@ -95,7 +94,7 @@ public abstract class GloveOptimizer implements Optimizer {
 					}
 				}
 
-				localCost = (localCost / crecCount);
+				localCost = (localCost / coCount);
 				opt.addIntermediaryResult(localCost);
 				iterDiff= FastMath.abs(prevCost - localCost);
 				if(iterDiff <= tolerance) {

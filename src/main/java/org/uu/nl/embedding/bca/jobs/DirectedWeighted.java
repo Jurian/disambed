@@ -1,7 +1,7 @@
 package org.uu.nl.embedding.bca.jobs;
 
-import grph.Grph;
 import grph.properties.NumericalProperty;
+import org.jetbrains.annotations.NotNull;
 import org.uu.nl.embedding.bca.util.BCAJob;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.PaintedNode;
@@ -29,7 +29,7 @@ public class DirectedWeighted extends BCAJob {
 	}
 
     @Override
-	protected BCV doWork(InMemoryRdfGraph graph, boolean reverse) {
+	protected BCV doWork(final InMemoryRdfGraph graph, final boolean reverse) {
 
         final NumericalProperty edgeWeights = graph.getEdgeWeightProperty();
         final NumericalProperty edgeTypes = graph.getEdgeTypeProperty();

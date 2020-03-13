@@ -11,8 +11,8 @@ import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.log4j.Logger;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
-import org.uu.nl.embedding.util.similarity.*;
 import org.uu.nl.embedding.util.config.Configuration;
+import org.uu.nl.embedding.util.similarity.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,7 +66,7 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 
 		final ExtendedIterator<Triple> triples = model.getGraph().find();
 
-		try(ProgressBar pb = config.progressBar("Converting", model.size(), "triples")) {
+		try(ProgressBar pb = Configuration.progressBar("Converting", model.size(), "triples")) {
 			while (triples.hasNext()) {
 
 				t = triples.next();
@@ -130,7 +130,7 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 
 			int received = 0;
 			int edgesAdded = 0;
-			try(ProgressBar pb = config.progressBar("Comparing", groupSize, "literals")) {
+			try(ProgressBar pb = Configuration.progressBar("Comparing", groupSize, "literals")) {
 				pb.setExtraMessage(Integer.toString(edgesAdded));
 				while (received < groupSize) {
 					try {

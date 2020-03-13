@@ -90,12 +90,12 @@ public class AMSGradOptimizer extends GloveOptimizer {
 			float m1, m2, v1, v2, grad_u, grad_v;
 			float cost = 0, innerCost, weightedCost;
 
-			final int offset = crecCount / numThreads * id;
+			final int offset = coCount / numThreads * id;
 			for (a = 0; a < linesPerThread[id]; a++) {
 
-				int node1 = crecs.cIdx_I(a + offset);
-				int node2 = crecs.cIdx_J(a + offset);
-				float Xij = crecs.cIdx_C(a + offset);
+				int node1 = coMatrix.cIdx_I(a + offset);
+				int node2 = coMatrix.cIdx_J(a + offset);
+				float Xij = coMatrix.cIdx_C(a + offset);
 
 				assert Xij >= 0 && Xij <= 1 : "Co-occurrence is not between 0 and 1: " + Xij;
 

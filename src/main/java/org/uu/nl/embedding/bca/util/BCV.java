@@ -44,7 +44,7 @@ public class BCV extends HashMap<Integer, Float> {
 	 * @param value value to be associated with the specified key
 	 */
 	public void add(int key, double value) {
-		super.put(key, getOrDefault(key, 0f) + (float)value);
+		this.add(key, (float)value);
 	}
 
 	/**
@@ -90,20 +90,7 @@ public class BCV extends HashMap<Integer, Float> {
 	 * @param other The other BCV
 	 */
 	public void merge(BCV other) {
-		other.forEach((key, value2) -> {
-			merge(key, value2, (v1, v2) -> (v1 + v2) / 2);
-		});
-	}
-
-	public void negativeSampling(int vertices, int samples) {
-		for(int i = 0; i < samples; i++) {
-			int v;
-			do {
-				v = random.uniform(vertices);
-			} while (containsKey(v));
-
-			put(v, Float.MIN_VALUE);
-		}
+		other.forEach((key, value2) -> merge(key, value2, (v1, v2) -> (v1 + v2) / 2));
 	}
 	
 }

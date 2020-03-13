@@ -4,7 +4,8 @@ import info.debatty.java.stringsimilarity.ShingleBased;
 import info.debatty.java.stringsimilarity.interfaces.NormalizedStringDistance;
 import info.debatty.java.stringsimilarity.interfaces.NormalizedStringSimilarity;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PreComputedCosine extends ShingleBased implements PreComputed, NormalizedStringDistance, NormalizedStringSimilarity {
 

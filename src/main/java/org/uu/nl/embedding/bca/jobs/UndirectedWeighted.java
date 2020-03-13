@@ -1,6 +1,5 @@
 package org.uu.nl.embedding.bca.jobs;
 
-import grph.Grph;
 import grph.properties.NumericalProperty;
 import org.uu.nl.embedding.bca.util.BCAJob;
 import org.uu.nl.embedding.bca.util.BCV;
@@ -28,7 +27,7 @@ public class UndirectedWeighted extends BCAJob {
 	}
 
 	@Override
-	protected BCV doWork(InMemoryRdfGraph graph, boolean reverse) {
+	protected BCV doWork(final InMemoryRdfGraph graph, final boolean reverse) {
 
 		if(reverse) throw new UnsupportedOperationException("No reverse mode in undirected version");
 

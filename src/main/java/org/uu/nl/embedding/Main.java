@@ -1,7 +1,7 @@
 package org.uu.nl.embedding;
 
-import grph.Grph;
 import org.apache.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.uu.nl.embedding.bca.BookmarkColoring;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
 import org.uu.nl.embedding.glove.GloveModel;

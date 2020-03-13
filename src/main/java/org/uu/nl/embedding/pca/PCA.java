@@ -85,8 +85,6 @@ public class PCA {
     private final int nRows, nCols, numThreads;
     private int[] sortedIndices;
 
-    private final Configuration config;
-
 
     /**
      * Calculate all necessary prerequisites for projecting the input matrix into a lower dimensional space
@@ -99,8 +97,6 @@ public class PCA {
 
         assert vectors.length != 0;
         assert vectors.length % dim == 0;
-
-        this.config  = config;
 
         this.numThreads = config.getThreads();
 
@@ -190,7 +186,7 @@ public class PCA {
         final ExecutorService es = Executors.newWorkStealingPool(numThreads);
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
-        try(ProgressBar pb = config.progressBar("Projecting", maxEigenCols, "columns")) {
+        try(ProgressBar pb = Configuration.progressBar("Projecting", maxEigenCols, "columns")) {
             for (int c = 0; c < maxEigenCols; c++) {
                 final int constC = c;
                 cs.submit(() -> {
@@ -302,7 +298,7 @@ public class PCA {
         final ExecutorService es = Executors.newWorkStealingPool(numThreads);
         final CompletionService<Void> cs = new ExecutorCompletionService<>(es);
 
-        try(ProgressBar pb = config.progressBar("Covariance Matrix", nCols, "columns")) {
+        try(ProgressBar pb = Configuration.progressBar("Covariance Matrix", nCols, "columns")) {
 
             for(int col1 = 0; col1 < nCols; col1++) {
                 final int constCol1 = col1;
@@ -345,7 +341,7 @@ public class PCA {
     /**
      * Wrapper for a projection, we need to store the data and also the number of columns
      */
-    public class Projection {
+    public static class Projection {
 
         final double[] projection;
         final int nCols;

@@ -158,7 +158,7 @@ public class Configuration {
         return threadLocalRandom.get();
     }
 
-    public ProgressBar progressBar(String name, long max, String unitName) {
+    public static ProgressBar progressBar(String name, long max, String unitName) {
         return new ProgressBar (
                 name,
                 max,
@@ -381,7 +381,7 @@ public class Configuration {
     public static void check(Configuration config) throws InvalidConfigurationException {
         boolean hasDim = config.dim > 0;
         boolean hasGraph = config.graph != null && !config.graph.isEmpty();
-        boolean hasMethod = config.method != null && !config.graph.isEmpty();
+        boolean hasMethod = config.method != null && !config.method.isEmpty();
         boolean hasBca = config.bca != null && config.bca.alpha > 0 && config.bca.epsilon > 0;
         boolean hasOut = config.output != null && (
                 config.output.outputPredicates() ||

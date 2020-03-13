@@ -51,7 +51,7 @@ public class GloveTextWriter implements GloveWriter {
 		final String delimiter = "\t";
 		final String newLine = "\n";
 
-		try (ProgressBar pb = config.progressBar("Writing to file", vocabSize, "vectors");
+		try (ProgressBar pb = Configuration.progressBar("Writing to file", vocabSize, "vectors");
 			 Writer dict = new BufferedWriter(new FileWriter(outputFolder.resolve(DICT_FILE).toFile()));
 			 Writer vect = new BufferedWriter(new FileWriter(outputFolder.resolve(VECTORS_FILE).toFile()))) {
 

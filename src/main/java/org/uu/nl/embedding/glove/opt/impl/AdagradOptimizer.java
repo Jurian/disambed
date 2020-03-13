@@ -61,13 +61,13 @@ public class AdagradOptimizer extends GloveOptimizer {
 			int a, d, l1, l2;
 			float cost = 0, innerCost, weightedCost, grad1, grad2;
 
-			final int offset = crecCount / numThreads * id;
+			final int offset = coCount / numThreads * id;
 
 			for (a = 0; a < linesPerThread[id]; a++) {
 
-				int node1 = crecs.cIdx_I(a + offset);
-				int node2 = crecs.cIdx_J(a + offset);
-				float Xij = crecs.cIdx_C(a + offset);
+				int node1 = coMatrix.cIdx_I(a + offset);
+				int node2 = coMatrix.cIdx_J(a + offset);
+				float Xij = coMatrix.cIdx_C(a + offset);
 
 				assert Xij >= 0 && Xij <= 1 : "Co-occurrence is not between 0 and 1: " + Xij;
 
