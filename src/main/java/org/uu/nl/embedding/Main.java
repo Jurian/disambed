@@ -1,5 +1,6 @@
 package org.uu.nl.embedding;
 
+import grph.Grph;
 import org.apache.log4j.Logger;
 import org.uu.nl.embedding.bca.BookmarkColoring;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
@@ -107,6 +108,13 @@ public class Main {
             bca_fileName = bca_fileName.substring(0, bca_fileName.lastIndexOf("."));
         }
         bca_fileName += "_" + config.getMethod().toLowerCase();
+
+
+        if(config.getSimilarity() != null && !config.getSimilarity().isEmpty()) {
+            bca_fileName += "_partial";
+        } else {
+            bca_fileName += "_exact";
+        }
 
         if(config.getBca().isDirected()){
             bca_fileName += "_directed";
