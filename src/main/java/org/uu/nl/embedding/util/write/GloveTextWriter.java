@@ -29,11 +29,10 @@ public class GloveTextWriter implements GloveWriter {
 		this.VECTORS_FILE = fileName + "." + "vectors" + FILETYPE;
 		this.DICT_FILE = fileName + "." + "dict" + FILETYPE;
 		this.config = config;
-		this.writeNodeTypes = new boolean[4];
+		this.writeNodeTypes = new boolean[3];
 		this.writeNodeTypes[NodeInfo.URI.id] = config.getOutput().outputUriNodes();
 		this.writeNodeTypes[NodeInfo.BLANK.id]  = config.getOutput().outputBlankNodes();
 		this.writeNodeTypes[NodeInfo.LITERAL.id] = config.getOutput().outputLiteralNodes();
-		this.writeNodeTypes[NodeInfo.PREDICATE.id] = config.getOutput().outputPredicates();
 	}
 
 	@Override
@@ -74,24 +73,17 @@ public class GloveTextWriter implements GloveWriter {
 				}
 
 				final String key = model.getCoMatrix().getKey(i);
-
+				final NodeInfo nodeInfo = NodeInfo.fromByte(type);
 				boolean skip = false;
-				switch (type) {
-					case 1:
-						if(output.getUri().isEmpty()) skip = false;
-						else skip = output.getUri().stream().noneMatch(key::startsWith);
+				switch (nodeInfo) {
+					case URI:
+						if(!output.getUri().isEmpty()) skip = output.getUri().stream().noneMatch(key::startsWith);
 						break;
-					case 2:
-						if(output.getBlank().isEmpty()) skip = false;
-						else skip = output.getBlank().stream().noneMatch(key::startsWith);
+					case BLANK:
+						if(!output.getBlank().isEmpty()) skip = output.getBlank().stream().noneMatch(key::startsWith);
 						break;
-					case 3:
-						if(output.getLiteral().isEmpty()) skip = false;
-						else skip = output.getLiteral().stream().noneMatch(key::startsWith);
-						break;
-					case 4:
-						if(output.getPredicate().isEmpty()) skip = false;
-						else skip = output.getPredicate().stream().noneMatch(key::startsWith);
+					case LITERAL:
+						if(!output.getLiteral().isEmpty()) skip = output.getLiteral().stream().noneMatch(key::startsWith);
 						break;
 				}
 
@@ -112,7 +104,7 @@ public class GloveTextWriter implements GloveWriter {
 						.replace("\r", "")
 						.replace(delimiter, "")
 						+ delimiter
-						+ NodeInfo.fromByte(type).name()
+						+ nodeInfo.name()
 						+ newLine
 				);
 				pb.step();
