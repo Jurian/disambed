@@ -1,6 +1,5 @@
 package org.uu.nl.embedding;
 
-import grph.Grph;
 import org.apache.log4j.Logger;
 import org.uu.nl.embedding.bca.BookmarkColoring;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
@@ -34,7 +33,7 @@ public class Main {
         logger.info("BCA Alpha: " + config.getBca().getAlpha());
         logger.info("BCA Epsilon: " + config.getBca().getEpsilon());
         logger.info("BCA Directed: " + config.getBca().isDirected());
-        logger.info("BCA Reverse: " + config.getBca().isReverse() + " (ignored if directed = false)");
+        if(config.getBca().isDirected()) logger.info("BCA Reverse: " + config.getBca().isReverse());
         logger.info("Gradient Descent Algorithm: " + config.getOpt().getMethod());
         logger.info(config.getMethod() + " Tolerance: " + config.getOpt().getTolerance());
         logger.info(config.getMethod() + " Maximum Iterations: " + config.getOpt().getMaxiter());
@@ -105,22 +104,20 @@ public class Main {
 
         String bca_fileName = config.getGraphFile().getName().toLowerCase();
         if(bca_fileName.contains(".")) {
-            int idx = bca_fileName.lastIndexOf(".");
-            bca_fileName = bca_fileName.substring(0, idx);
+            bca_fileName = bca_fileName.substring(0, bca_fileName.lastIndexOf("."));
         }
         bca_fileName += "_" + config.getMethod().toLowerCase();
-        if(config.getBca().isReverse()){
-            bca_fileName += "_reverse";
-        }
+
         if(config.getBca().isDirected()){
             bca_fileName += "_directed";
+            if(config.getBca().isReverse()) bca_fileName += "_reverse";
         } else {
             bca_fileName += "_undirected";
         }
         bca_fileName += "_" + config.getBca().getAlpha() + "_" + config.getBca().getEpsilon();
         bca_fileName += "_" + config.getOpt().getMethod();
         if(config.usingPca()) bca_fileName += "_pca_" + model.getDimension();
-        else bca_fileName += "_" + config.getDim();
+        else bca_fileName += "_" + model.getDimension();
         GloveWriter writer = new GloveTextWriter(bca_fileName, config);
         writer.write(model, Paths.get("").toAbsolutePath().resolve("out"));
     }
