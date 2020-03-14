@@ -90,7 +90,7 @@ public class BCV extends HashMap<Integer, Float> {
 	 * @param other The other BCV
 	 */
 	public void merge(BCV other) {
-		other.forEach((key, value2) -> merge(key, value2, (v1, v2) -> 2 * v1 * v2 / (v1 + v2)));
+		other.forEach((key, value2) -> this.merge(key, value2, Float::sum));
 	}
 	
 }
