@@ -178,7 +178,7 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 
 		switch (sim.getMethodEnum()) {
 			case NUMERIC:
-				return new Numeric(sim.getAlpha());
+				return new Numeric(sim.getSmooth());
 			case JACCARD:
 				if(sim.getNgram() == 0) return new PreComputedJaccard(3);
 				else return new PreComputedJaccard(sim.getNgram());
@@ -189,6 +189,8 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 				return new JaroWinkler();
 			case TOKEN:
 				return new PreComputedToken();
+			case DATE:
+				return new Date(sim.getFormat(), sim.getSmooth());
 		}
 		return null;
 	}
