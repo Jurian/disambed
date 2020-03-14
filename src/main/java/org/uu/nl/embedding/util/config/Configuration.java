@@ -21,7 +21,7 @@ public class Configuration {
     }
 
     public enum SimilarityMethod {
-        TOKEN, COSINE, JACCARD, JAROWINKLER, LEVENSHTEIN, NUMERIC
+        TOKEN, COSINE, JACCARD, JAROWINKLER, LEVENSHTEIN, NUMERIC, DATE
     }
 
     private String graph;
@@ -177,23 +177,33 @@ public class Configuration {
         private String method;
         private double threshold;
         private int ngram;
-        private double alpha;
+        private double smooth;
+        private String format;
 
         @Override
         public String toString() {
             switch (getMethodEnum()) {
                 case COSINE:
                 case JACCARD: return predicate + ": " + method + ", threshold: " + threshold + ", ngram: " + ngram;
-                case NUMERIC: return predicate + ": " + method + ", threshold: " + threshold + ", alpha: " + alpha;
+                case NUMERIC: return predicate + ": " + method + ", threshold: " + threshold + ", smooth: " + smooth;
                 case TOKEN:
                 case LEVENSHTEIN:
                 case JAROWINKLER: return predicate + ": " + method + ", threshold: " + threshold;
+                case DATE: return predicate + ": " + method + ", format:" + format + ", smooth: " + smooth;
             }
             return null;
         }
 
         public SimilarityMethod getMethodEnum() {
             return SimilarityMethod.valueOf(this.method.toUpperCase());
+        }
+
+        public String getFormat() {
+            return format;
+        }
+
+        public void setFormat(String format) {
+            this.format = format;
         }
 
         public String getPredicate() {
@@ -228,9 +238,9 @@ public class Configuration {
             this.ngram = ngram;
         }
 
-        public double getAlpha() {return alpha == 0 ? 1 : alpha;}
+        public double getSmooth() {return smooth == 0 ? 1 : smooth;}
 
-        public void setAlpha(double alpha) {this.alpha = alpha;}
+        public void setSmooth(double smooth) {this.smooth = smooth;}
     }
 
     public static class BCA {
