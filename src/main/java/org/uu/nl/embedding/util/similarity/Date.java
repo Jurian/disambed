@@ -17,7 +17,7 @@ public class Date implements StringSimilarity {
 
     public Date(String pattern, double alpha) {
         this.alpha = alpha;
-        this.format = pattern == null ? DateTimeFormatter.BASIC_ISO_DATE : DateTimeFormatter.ofPattern(pattern);
+        this.format = pattern.equals("iso") ? DateTimeFormatter.BASIC_ISO_DATE : DateTimeFormatter.ofPattern(pattern);
     }
 
     @Override

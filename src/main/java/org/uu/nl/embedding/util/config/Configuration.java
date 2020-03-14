@@ -182,16 +182,16 @@ public class Configuration {
 
         @Override
         public String toString() {
+            String out = getPredicate() + ": " + getMethod() + ", threshold: " + getThreshold();
             switch (getMethodEnum()) {
                 case COSINE:
-                case JACCARD: return predicate + ": " + method + ", threshold: " + threshold + ", ngram: " + ngram;
-                case NUMERIC: return predicate + ": " + method + ", threshold: " + threshold + ", smooth: " + smooth;
-                case TOKEN:
-                case LEVENSHTEIN:
-                case JAROWINKLER: return predicate + ": " + method + ", threshold: " + threshold;
-                case DATE: return predicate + ": " + method + ", format:" + format + ", smooth: " + smooth;
+                case JACCARD: out += ", ngram: " + getNgram();
+                break;
+                case NUMERIC: out += ", smooth: " + getSmooth();
+                break;
+                case DATE: out += ", format:" + getFormat() + ", smooth: " + getSmooth();
             }
-            return null;
+            return out;
         }
 
         public SimilarityMethod getMethodEnum() {
@@ -199,7 +199,7 @@ public class Configuration {
         }
 
         public String getFormat() {
-            return format;
+            return format == null ? "iso" : format;
         }
 
         public void setFormat(String format) {
@@ -231,7 +231,7 @@ public class Configuration {
         }
 
         public int getNgram() {
-            return ngram;
+            return ngram == 0 ? 3 : ngram;
         }
 
         public void setNgram(int ngram) {

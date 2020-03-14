@@ -83,8 +83,6 @@ public class BookmarkColoring implements CRecMatrix {
 
 					bcv.normalize();
 
-					//bcv.negativeSampling(stats.nrOfVertices, options.getNegativeSamples());
-
 					// It is possible to use this maximum value in GloVe, although in the
 					// literature they set this value to 100 and leave it at that
 					setMax(bcv.max());

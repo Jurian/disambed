@@ -180,11 +180,9 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 			case NUMERIC:
 				return new Numeric(sim.getSmooth());
 			case JACCARD:
-				if(sim.getNgram() == 0) return new PreComputedJaccard(3);
-				else return new PreComputedJaccard(sim.getNgram());
+				return new PreComputedJaccard(sim.getNgram());
 			case COSINE:
-				if(sim.getNgram() == 0) return new PreComputedCosine(3);
-				else return new PreComputedCosine(sim.getNgram());
+				return new PreComputedCosine(sim.getNgram());
 			case JAROWINKLER:
 				return new JaroWinkler();
 			case TOKEN:
