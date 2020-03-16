@@ -98,7 +98,7 @@ public class AMSGradOptimizer extends GloveOptimizer {
 				int node2 = coMatrix.cIdx_J(a + offset);
 				float Xij = coMatrix.cIdx_C(a + offset);
 
-				assert Xij >= 0 && Xij <= 1 : "Co-occurrence is not between 0 and 1: " + Xij;
+				//assert Xij >= 0 && Xij <= 1 : "Co-occurrence is not between 0 and 1: " + Xij;
 
 				l1 = node1 * (dimension + 1);
 				l2 = node2 * (dimension + 1);
