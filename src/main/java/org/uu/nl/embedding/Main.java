@@ -78,7 +78,7 @@ public class Main {
         if(outFileName == null || outFileName.isEmpty()) {
             outFileName = createFileName(config, model);
         }
-
+        logger.info("Writing files with prefix: " + outFileName);
         final GloveWriter writer = new GloveTextWriter(outFileName, config);
         writer.write(model, Paths.get("").toAbsolutePath().resolve("out"));
     }
