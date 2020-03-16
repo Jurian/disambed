@@ -1,6 +1,5 @@
 package org.uu.nl.embedding.bca.util;
 
-import org.apache.commons.math.util.FastMath;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.ExtendedRandom;
 
@@ -51,30 +50,39 @@ public class BCV extends HashMap<Integer, Float> {
 	 * Changes the values to sum to 1, and then removes the rootnode
 	 */
 	public void normalize() {
-		final float sum = sum();
-		for(Entry<Integer, Float> entry : entrySet())
-			entry.setValue(entry.getValue() / sum);
-		remove(rootNode);
+		final float aMax = max();
+		final float aMin = min();
+		for(Entry<Integer, Float> entry : entrySet()) {
+			entry.setValue(scale(entry.getValue(), aMax, aMin, 100, 1));
+		}
 	}
-	
+
+	/**
+	 * @return The minimum value for this BCV
+	 */
+	private float min() {
+		return values().stream().min(Float::compareTo).orElse(0f);
+	}
+
 	/**
 	 * @return The maximum value for this BCV
 	 */
 	public float max() {
-		float max = 0f;
-		for(Float value : values())
-			max = FastMath.max(max,value);
-		return max;
+		return values().stream().max(Float::compareTo).orElse(1f);
 	}
-	
+
+	/**
+	 * Used to scale the probabilities to some positive range
+	 */
+	private float scale(float a, float aMax, float aMin, float max, float min) {
+		return (a / ((aMax - aMin) / (max - min))) + min;
+	}
+
 	/**
 	 * @return The total sum of all values in this BCV
 	 */
     private float sum() {
-    	float sum = 0f;
-		for(Float value : values())
-			sum += value;
-		return sum;
+    	return values().stream().reduce(Float::sum).orElse(0f);
 	}
 	
 	/**
