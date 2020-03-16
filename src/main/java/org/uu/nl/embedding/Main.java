@@ -74,6 +74,16 @@ public class Main {
             model.updateOptimum(pca.project(config.getPca().getVariance()));
         }
 
+        String outFileName = config.getOutput().getName();
+        if(outFileName == null || outFileName.isEmpty()) {
+            outFileName = createFileName(config, model);
+        }
+
+        final GloveWriter writer = new GloveTextWriter(outFileName, config);
+        writer.write(model, Paths.get("").toAbsolutePath().resolve("out"));
+    }
+
+    private static String createFileName(Configuration config, GloveModel model) {
         String outFileName = config.getGraphFile().getName().toLowerCase();
         if(outFileName.contains(".")) {
             outFileName = outFileName.substring(0, outFileName.lastIndexOf("."));
@@ -98,8 +108,7 @@ public class Main {
         if(config.usingPca()) outFileName += "_pca_" + model.getDimension();
         else outFileName += "_" + model.getDimension();
 
-        GloveWriter writer = new GloveTextWriter(outFileName, config);
-        writer.write(model, Paths.get("").toAbsolutePath().resolve("out"));
+        return outFileName;
     }
 
     private static Optimizer createOptimizer(final Configuration config, final GloveModel model) {

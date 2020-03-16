@@ -334,10 +334,19 @@ public class Configuration {
 
     public static class Output {
 
+        private String name;
         private List<String> uri;
         private List<String> blank;
         private List<String> predicate;
         private List<String> literal;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
 
         public boolean outputUriNodes() {
             return uri != null;
