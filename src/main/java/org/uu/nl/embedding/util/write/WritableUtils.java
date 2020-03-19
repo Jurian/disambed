@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.glove.util;
+package org.uu.nl.embedding.util.write;
 
 import java.io.DataInput;
 import java.io.DataOutput;

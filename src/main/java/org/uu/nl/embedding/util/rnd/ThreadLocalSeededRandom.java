@@ -1,6 +1,4 @@
-package org.uu.nl.embedding.glove.util;
-
-import org.uu.nl.embedding.util.rnd.ExtendedRandom;
+package org.uu.nl.embedding.util.rnd;
 
 
 public class ThreadLocalSeededRandom extends ThreadLocal<ExtendedRandom> {
