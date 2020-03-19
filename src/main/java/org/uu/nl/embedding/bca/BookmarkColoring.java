@@ -31,7 +31,6 @@ public class BookmarkColoring implements CRecMatrix {
 
 	public BookmarkColoring(final InMemoryRdfGraph graph, final Configuration config) {
 
-		final boolean includeReverse = config.getBca().isReverse();
 		final double alpha = config.getBca().getAlpha();
 		final double epsilon = config.getBca().getEpsilon();
 		final int[] jobs = graph.getVertices().toIntArray();
@@ -61,7 +60,7 @@ public class BookmarkColoring implements CRecMatrix {
 				if(config.getBca().isDirected()) {
 					completionService.submit(new DirectedWeighted(
 							graph, bookmark,
-							includeReverse, alpha, epsilon,
+							alpha, epsilon,
 							inVertex, outVertex, inEdge, outEdge));
 				} else {
 					completionService.submit(new UndirectedWeighted(
@@ -77,11 +76,19 @@ public class BookmarkColoring implements CRecMatrix {
 			while(received < jobs.length) {
 
 				try {
-					BCV bcv = completionService.take().get();
-					// We have to collect all the BCV's first before we can store them
-					// in a more efficient lookup friendly way below
+					final BCV bcv = completionService.take().get();
 
-					bcv.normalize();
+					switch (config.getBca().getNormalizeEnum()) {
+						case UNITY:
+							bcv.toUnity();
+							break;
+						case COUNTS:
+							bcv.toCounts();
+							break;
+						default:
+						case NONE:
+							break;
+					}
 
 					// It is possible to use this maximum value in GloVe, although in the
 					// literature they set this value to 100 and leave it at that
