@@ -47,13 +47,25 @@ public class BCV extends HashMap<Integer, Float> {
 	}
 
 	/**
-	 * Changes the values to sum to 1, and then removes the rootnode
+	 * Changes the values to positive values between 1 and 100
 	 */
-	public void normalize() {
+	public void toCounts() {
 		final float aMax = max();
 		final float aMin = min();
 		for(Entry<Integer, Float> entry : entrySet()) {
-			entry.setValue(scale(entry.getValue(), aMax, aMin, 100, 1));
+			entry.setValue(scale(entry.getValue(), aMax, aMin, 1000, 1));
+		}
+		remove(rootNode);
+	}
+
+	/**
+	 * Changes the values to sum to 1
+	 */
+	public void toUnity() {
+		remove(rootNode);
+		final float sum = sum();
+		for(Entry<Integer, Float> entry : entrySet()) {
+			entry.setValue(entry.getValue() / sum - 1e-5f);
 		}
 	}
 
