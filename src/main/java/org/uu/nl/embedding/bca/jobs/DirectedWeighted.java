@@ -18,9 +18,9 @@ public class DirectedWeighted extends BCAJob {
 
 	public DirectedWeighted(
             InMemoryRdfGraph graph, int bookmark,
-			boolean reverse, double alpha, double epsilon,
+            double alpha, double epsilon,
 			int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
-		super(bookmark, reverse, alpha, epsilon, graph);
+		super(bookmark, true, alpha, epsilon, graph);
         this.vertexOut = vertexOut;
         this.vertexIn = vertexIn;
         this.edgeOut = edgeOut;
