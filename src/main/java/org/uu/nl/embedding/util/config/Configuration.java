@@ -2,7 +2,7 @@ package org.uu.nl.embedding.util.config;
 
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import org.uu.nl.embedding.glove.util.ThreadLocalSeededRandom;
+import org.uu.nl.embedding.util.rnd.ThreadLocalSeededRandom;
 import org.uu.nl.embedding.util.rnd.ExtendedRandom;
 
 import java.io.File;
@@ -22,6 +22,10 @@ public class Configuration {
 
     public enum SimilarityMethod {
         TOKEN, COSINE, JACCARD, JAROWINKLER, LEVENSHTEIN, NUMERIC, DATE
+    }
+
+    public enum BCANormalization {
+        NONE, UNITY, COUNTS
     }
 
     private String graph;
@@ -247,8 +251,20 @@ public class Configuration {
 
         private double alpha;
         private double epsilon;
-        private boolean reverse;
         private boolean directed;
+        private String normalize;
+
+        public BCANormalization getNormalizeEnum() {
+            return normalize == null ? BCANormalization.NONE : BCANormalization.valueOf(normalize.toUpperCase());
+        }
+
+        public String getNormalize() {
+            return normalize == null ? "none" : normalize;
+        }
+
+        public void setNormalize(String normalize) {
+            this.normalize = normalize;
+        }
 
         public double getAlpha() {
             return alpha;
@@ -264,14 +280,6 @@ public class Configuration {
 
         public void setEpsilon(double epsilon) {
             this.epsilon = epsilon;
-        }
-
-        public boolean isReverse() {
-            return reverse;
-        }
-
-        public void setReverse(boolean reverse) {
-            this.reverse = reverse;
         }
 
         public boolean isDirected() {
