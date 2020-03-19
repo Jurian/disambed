@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.glove.opt;
+package org.uu.nl.embedding.opt;
 
 import java.util.ArrayList;
 import java.util.List;

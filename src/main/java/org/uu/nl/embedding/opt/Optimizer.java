@@ -1,8 +1,7 @@
-package org.uu.nl.embedding.glove.opt;
+package org.uu.nl.embedding.opt;
 
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.commons.math.util.FastMath;
-import org.uu.nl.embedding.glove.GloveModel;
 import org.uu.nl.embedding.util.CRecMatrix;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.ExtendedRandom;
@@ -13,7 +12,7 @@ import java.util.concurrent.*;
 /**
  * @author Jurian Baas
  */
-public abstract class GloveOptimizer implements Optimizer {
+public abstract class Optimizer implements IOptimizer {
 
 	private static final ExtendedRandom random = Configuration.getThreadLocalRandom();
 
@@ -26,29 +25,35 @@ public abstract class GloveOptimizer implements Optimizer {
 	protected final double alpha;
 	protected final double learningRate = 0.05;
 	protected final float[] focus, context;
+	protected final float[] fBias, cBias;
 	protected final int[] linesPerThread;
+	protected final CostFunction costFunction;
 	private final ExecutorService es;
 	private final int maxIterations;
 	private final double tolerance;
 
-	protected GloveOptimizer(GloveModel glove, Configuration config) {
+	protected Optimizer(OptimizerModel optimizerModel, Configuration config, CostFunction costFunction) {
 
-		this.coMatrix = glove.getCoMatrix();
-		this.xMax = glove.getxMax();
-		this.alpha = glove.getAlpha();
+		this.costFunction = costFunction;
+		this.coMatrix = optimizerModel.getCoMatrix();
+		this.xMax = optimizerModel.getxMax();
+		this.alpha = optimizerModel.getAlpha();
 		this.maxIterations = config.getOpt().getMaxiter();
 		this.tolerance = config.getOpt().getTolerance();
-		this.vocabSize = glove.getVocabSize();
+		this.vocabSize = optimizerModel.getVocabSize();
 		this.numThreads = config.getThreads();
 		this.coCount = coMatrix.coOccurrenceCount();
 
-		// Make room for the bias terms
-		int dimension = glove.getDimension() + 1;
+		this.dimension = optimizerModel.getDimension();
 
 		this.focus = new float[vocabSize * dimension];
 		this.context = new float[vocabSize * dimension];
+		this.fBias = new float[vocabSize];
+		this.cBias = new float[vocabSize];
 
 		for (int i = 0; i < vocabSize; i++) {
+			fBias[i] = (float) (random.nextFloat() - 0.5) / dimension;
+			cBias[i] = (float) (random.nextFloat() - 0.5) / dimension;
 			for (int d = 0; d < dimension; d++) {
 				focus[i * dimension + d] = (float) (random.nextFloat() - 0.5) / dimension;
 				context[i * dimension + d] = (float) (random.nextFloat() - 0.5) / dimension;
@@ -61,10 +66,11 @@ public abstract class GloveOptimizer implements Optimizer {
 		}
 		linesPerThread[numThreads - 1] = coCount / numThreads + coCount % numThreads;
 
-		this.dimension = glove.getDimension();
 		this.es = Executors.newWorkStealingPool(numThreads);
 	}
-	
+
+
+
 	@Override
 	public Optimum optimize() {
 
@@ -97,16 +103,15 @@ public abstract class GloveOptimizer implements Optimizer {
 				localCost = (localCost / coCount);
 				opt.addIntermediaryResult(localCost);
 				iterDiff= FastMath.abs(prevCost - localCost);
-				if(iterDiff <= tolerance) {
-					finalCost = localCost;
-					pb.step();
-					pb.setExtraMessage(formatMessage(iterDiff));
-					break;
-				}
-				prevCost = localCost;
 
 				pb.step();
 				pb.setExtraMessage(formatMessage(iterDiff));
+				prevCost = localCost;
+
+				if(iterDiff <= tolerance) {
+					finalCost = localCost;
+					break;
+				}
 			}
 			
 		} finally {
@@ -129,20 +134,17 @@ public abstract class GloveOptimizer implements Optimizer {
 	 */
 	private double[] extractResult() {
 		double[] U = new double[vocabSize * dimension];
-		int l1, l2;
 		for (int a = 0; a < vocabSize; a++) {
-			// Take into account that we included the bias term
-			l1 = a * (dimension + 1); // Index for focus and context nodes
-			l2 = (a * dimension); // Index for output node
+			int i = a * dimension;
 			for (int d = 0; d < dimension; d++) {
 				// For each node, take the average between the focus and context value
-				U[d + l2] = (focus[d + l1] + context[d + l1]) / 2;
+				U[d + i] = (focus[d + i] + context[d + i]) / 2;
 			}
 		}
 
 		return U;
 	}
 
-	protected abstract GloveJob createJob(int id, int iteration);
+	protected abstract OptimizeJob createJob(int id, int iteration);
 
 }

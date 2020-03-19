@@ -1,9 +1,7 @@
-package org.uu.nl.embedding.glove.opt.prob;
+package org.uu.nl.embedding.opt.grad;
 
 import org.apache.commons.math.util.FastMath;
-import org.uu.nl.embedding.glove.GloveModel;
-import org.uu.nl.embedding.glove.opt.GloveJob;
-import org.uu.nl.embedding.glove.opt.GloveOptimizer;
+import org.uu.nl.embedding.opt.*;
 import org.uu.nl.embedding.util.config.Configuration;
 
 /**
@@ -24,51 +22,57 @@ import org.uu.nl.embedding.util.config.Configuration;
  * @see <a href="http://nlp.stanford.edu/projects/glove/">Stanford GloVe page</a>
  * @author Jurian Baas
  */
-@SuppressWarnings("Duplicates")
-public class AdamOptimizer extends GloveOptimizer {
+@SuppressWarnings("DuplicatedCode")
+public class Adam extends Optimizer {
 
 	/**
 	 * Contains the decaying averages of the past first momentums w.r.t. to all parameters
 	 */
 	private final float[] M1focus, M1context;
+	private final float[] M1fBias, M1cBias;
 	/**
 	 * Contains the decaying averages of the past second momentums w.r.t. to all parameters
 	 */
 	private final float[] M2focus, M2context;
+	private final float[] M2fBias, M2cBias;
+
 	/**
 	 * Decay rate for first momentum
 	 */
-	private final double beta1 = 0.9;
+	private final float beta1 = 0.9f;
 	/**
 	 * Decay rate for second momentum
 	 */
-	private final double beta2 = 0.999;
+	private final float beta2 = 0.999f;
 	/**
 	 * Mainly used to prevent divisions by zero, in some cases setting this to 0.1 or 1 can help improve stability
 	 */
-	private final double epsilon = 0.1;
+	private final float epsilon = 1e-7f;
 	
-	public AdamOptimizer(GloveModel glove, Configuration config) {
-		super(glove, config);
+	public Adam(OptimizerModel optimizerModel, Configuration config, CostFunction costFunction) {
+		super(optimizerModel, config, costFunction);
 
-		// Increase dimension to make room for bias terms
-		int dimension = this.dimension + 1;
 		this.M1focus = new float[vocabSize * dimension];
 		this.M2focus = new float[vocabSize * dimension];
 		this.M1context = new float[vocabSize * dimension];
 		this.M2context = new float[vocabSize * dimension];
+		this.M1fBias = new float[vocabSize];
+		this.M2fBias = new float[vocabSize];
+		this.M1cBias = new float[vocabSize];
+		this.M2cBias = new float[vocabSize];
+
 	}
 	
 	@Override
 	public String getName() {
-		return "pGloVe-Adam";
+		return "Adam";
 	}
 
 	@Override
-	public GloveJob createJob(int id, int iteration) {
+	public OptimizeJob createJob(int id, int iteration) {
 		return () -> {
-			int a, d, l1, l2;
-			double m1, m2, v1, v2, grad_u, grad_v;
+			int a, d, l1, l2, d1, d2;
+			float Xij, m1, m2, v1, v2, grad_u, grad_v;
 			float cost = 0, innerCost, weightedCost;
 			// From the paper, a slight improvement of efficiency can be obtained this way
 			final double correction = learningRate * FastMath.sqrt(1 - FastMath.pow(beta2, iteration + 1)) / (1 - FastMath.pow(beta1, iteration + 1));
@@ -76,24 +80,13 @@ public class AdamOptimizer extends GloveOptimizer {
 
 			for (a = 0; a < linesPerThread[id]; a++) {
 
-				int node1 = coMatrix.cIdx_I(a + offset);
-				int node2 = coMatrix.cIdx_J(a + offset);
-				float Xij = coMatrix.cIdx_C(a + offset);
-
-				assert Xij >= 0 && Xij <= 1 : "Co-occurrence is not between 0 and 1: " + Xij;
-
-				l1 = node1 * (dimension + 1);
-				l2 = node2 * (dimension + 1);
+				l1 = coMatrix.cIdx_I(a + offset);
+				l2 = coMatrix.cIdx_J(a + offset);
+				Xij = coMatrix.cIdx_C(a + offset);
 
 				/* Calculate cost, save diff for gradients */
-				innerCost = 0;
-
-				for (d = 0; d < dimension; d++)
-					innerCost += focus[d + l1] * context[d + l2]; // dot product of node and context node vector
-				// Add separate bias for each node
-				innerCost += focus[dimension + l1] + context[dimension + l2] - FastMath.log(Xij / (1 - Xij));
-
-				weightedCost = Xij * innerCost;
+				innerCost = costFunction.innerCost(this, Xij, l1, l2);
+				weightedCost = costFunction.weightedCost(this, innerCost, Xij);
 				cost += 0.5 * weightedCost * innerCost; // weighted squared error
 
 				/*---------------------------
@@ -102,22 +95,26 @@ public class AdamOptimizer extends GloveOptimizer {
 
 				// Update the moments for the word vectors
 				for (d = 0; d < dimension; d++) {
+
+					d1 = d + l1;
+					d2 = d + l2;
+
 					// Compute gradients
-					grad_u = weightedCost * context[d + l2];
-					grad_v = weightedCost * focus[d + l1];
+					grad_u = weightedCost * context[d2];
+					grad_v = weightedCost * focus[d1];
 					// Update biased first and second moment estimates
-					m1 = beta1 * M1focus[d + l1] + (1 - beta1) * grad_u;
-					m2 = beta1 * M1context[d + l2] + (1 - beta1) * grad_v;
-					v1 = beta2 * M2focus[d + l1] + (1 - beta2) * (grad_u * grad_u);
-					v2 = beta2 * M2context[d + l2] + (1 - beta2) * (grad_v * grad_v);
+					m1 = beta1 * M1focus[d1] + (1 - beta1) * grad_u;
+					m2 = beta1 * M1context[d2] + (1 - beta1) * grad_v;
+					v1 = beta2 * M2focus[d1] + (1 - beta2) * (grad_u * grad_u);
+					v2 = beta2 * M2context[d2] + (1 - beta2) * (grad_v * grad_v);
 					// Compute and apply updates
-					focus[d + l1] -= correction * m1 / (FastMath.sqrt(v1) + epsilon);
-					context[d + l2] -= correction * m2 / (FastMath.sqrt(v2) + epsilon);
+					focus[d1] -= correction * m1 / (FastMath.sqrt(v1) + epsilon);
+					context[d2] -= correction * m2 / (FastMath.sqrt(v2) + epsilon);
 					// Store new moments
-					M1focus[d + l1] = (float) m1;
-					M1context[d + l2] = (float) m2;
-					M2focus[d + l1] = (float) v1;
-					M2context[d + l2] = (float) v2;
+					M1focus[d1] = m1;
+					M1context[d2] = m2;
+					M2focus[d1] = v1;
+					M2context[d2] = v2;
 				}
 
 				/*---------------------
@@ -125,18 +122,18 @@ public class AdamOptimizer extends GloveOptimizer {
 				 ---------------------*/
 
 				// Update the first, second moment for the biases
-				m1 = beta1 * M1focus[dimension + l1] + (1 - beta1) * weightedCost;
-				m2 = beta1 * M1context[dimension + l2] + (1 - beta1) * weightedCost;
-				v1 = beta2 * M2focus[dimension + l1] + (1 - beta2) * (weightedCost * weightedCost);
-				v2 = beta2 * M2context[dimension + l2] + (1 - beta2) * (weightedCost * weightedCost);
+				m1 = beta1 * M1fBias[l1] + (1 - beta1) * weightedCost;
+				m2 = beta1 * M1cBias[l2] + (1 - beta1) * weightedCost;
+				v1 = beta2 * M2fBias[l1] + (1 - beta2) * (weightedCost * weightedCost);
+				v2 = beta2 * M2cBias[l2] + (1 - beta2) * (weightedCost * weightedCost);
 				// Perform updates on bias terms
-				focus[dimension + l1] -= correction * m1 / (FastMath.sqrt(v1) + epsilon);
-				context[dimension + l2] -= correction * m2 / (FastMath.sqrt(v2) + epsilon);
+				fBias[l1] -= correction * m1 / (FastMath.sqrt(v1) + epsilon);
+				cBias[l2] -= correction * m2 / (FastMath.sqrt(v2) + epsilon);
 				// Store new moments
-				M1focus[dimension + l1] = (float) m1;
-				M1context[dimension + l2] = (float) m2;
-				M2focus[dimension + l1] = (float) v1;
-				M2context[dimension + l2] = (float) v2;
+				M1fBias[l1] = m1;
+				M1cBias[l2] = m2;
+				M2fBias[l1] = v1;
+				M2cBias[l2] = v2;
 			}
 			return cost;
 		};

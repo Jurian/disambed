@@ -3,15 +3,17 @@ package org.uu.nl.embedding;
 import org.apache.log4j.Logger;
 import org.uu.nl.embedding.bca.BookmarkColoring;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
-import org.uu.nl.embedding.glove.GloveModel;
-import org.uu.nl.embedding.glove.opt.Optimizer;
+import org.uu.nl.embedding.opt.*;
+import org.uu.nl.embedding.opt.grad.AMSGrad;
+import org.uu.nl.embedding.opt.grad.Adagrad;
+import org.uu.nl.embedding.opt.grad.Adam;
 import org.uu.nl.embedding.pca.PCA;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.read.ConfigReader;
 import org.uu.nl.embedding.util.read.JenaReader;
-import org.uu.nl.embedding.util.write.GloveTextWriter;
-import org.uu.nl.embedding.util.write.GloveWriter;
+import org.uu.nl.embedding.util.write.EmbeddingTextWriter;
+import org.uu.nl.embedding.util.write.EmbeddingWriter;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +35,7 @@ public class Main {
         logger.info("BCA Alpha: " + config.getBca().getAlpha());
         logger.info("BCA Epsilon: " + config.getBca().getEpsilon());
         logger.info("BCA Directed: " + config.getBca().isDirected());
-        if(config.getBca().isDirected()) logger.info("BCA Reverse: " + config.getBca().isReverse());
+        logger.info("BCA normalize: " + config.getBca().getNormalize());
         logger.info("Gradient Descent Algorithm: " + config.getOpt().getMethod());
         logger.info(config.getMethod() + " Tolerance: " + config.getOpt().getTolerance());
         logger.info(config.getMethod() + " Maximum Iterations: " + config.getOpt().getMaxiter());
@@ -61,9 +63,9 @@ public class Main {
 
         final BookmarkColoring bca = new BookmarkColoring(graph, config);
 
-        final GloveModel model = new GloveModel(bca, config);
+        final OptimizerModel model = new OptimizerModel(bca, config);
 
-        final Optimizer optimizer = createOptimizer(config, model);
+        final IOptimizer optimizer = createOptimizer(config, model);
 
         assert optimizer != null;
         model.setOptimum(optimizer.optimize());
@@ -79,11 +81,11 @@ public class Main {
             outFileName = createFileName(config, model);
         }
         logger.info("Writing files with prefix: " + outFileName);
-        final GloveWriter writer = new GloveTextWriter(outFileName, config);
+        final EmbeddingWriter writer = new EmbeddingTextWriter(outFileName, config);
         writer.write(model, Paths.get("").toAbsolutePath().resolve("out"));
     }
 
-    private static String createFileName(Configuration config, GloveModel model) {
+    private static String createFileName(Configuration config, OptimizerModel model) {
         String outFileName = config.getGraphFile().getName().toLowerCase();
         if(outFileName.contains(".")) {
             outFileName = outFileName.substring(0, outFileName.lastIndexOf("."));
@@ -98,7 +100,6 @@ public class Main {
 
         if(config.getBca().isDirected()){
             outFileName += "_directed";
-            if(config.getBca().isReverse()) outFileName += "_reverse";
         } else {
             outFileName += "_undirected";
         }
@@ -111,28 +112,28 @@ public class Main {
         return outFileName;
     }
 
-    private static Optimizer createOptimizer(final Configuration config, final GloveModel model) {
+    private static IOptimizer createOptimizer(final Configuration config, final OptimizerModel model) {
+
+        CostFunction cf;
         switch (config.getMethodEnum()) {
+            default:
             case GLOVE:
-                switch(config.getOpt().getMethodEnum()) {
-                    case ADAGRAD:
-                        return new org.uu.nl.embedding.glove.opt.impl.AdagradOptimizer(model, config);
-                    case ADAM:
-                        return new org.uu.nl.embedding.glove.opt.impl.AdamOptimizer(model, config);
-                    case AMSGRAD:
-                        return new org.uu.nl.embedding.glove.opt.impl.AMSGradOptimizer(model, config);
-                }
+                cf = new GloveCost();
+                break;
             case PGLOVE:
-                switch(config.getOpt().getMethodEnum()) {
-                    case ADAGRAD:
-                        return new org.uu.nl.embedding.glove.opt.prob.AdagradOptimizer(model, config);
-                    case ADAM:
-                        return new org.uu.nl.embedding.glove.opt.prob.AdamOptimizer(model, config);
-                    case AMSGRAD:
-                        return new org.uu.nl.embedding.glove.opt.prob.AMSGradOptimizer(model, config);
-                }
+                cf = new PGloveCost();
+                break;
         }
-        return null;
+
+        switch(config.getOpt().getMethodEnum()) {
+            default:
+            case ADAGRAD:
+                return new Adagrad(model, config, cf);
+            case ADAM:
+                return new Adam(model, config, cf);
+            case AMSGRAD:
+                return new AMSGrad(model, config, cf);
+        }
     }
 
     public static void main(String[] args) {

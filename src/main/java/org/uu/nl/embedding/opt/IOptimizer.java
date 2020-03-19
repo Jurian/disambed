@@ -1,9 +1,9 @@
-package org.uu.nl.embedding.glove.opt;
+package org.uu.nl.embedding.opt;
 
 /**
  * @author Jurian Baas
  */
-public interface Optimizer {
+public interface IOptimizer {
 	Optimum optimize();
 	String getName();
 }
