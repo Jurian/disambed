@@ -2,7 +2,7 @@ package org.uu.nl.embedding.util.write;
 
 import me.tongfei.progressbar.ProgressBar;
 import org.uu.nl.embedding.convert.util.NodeInfo;
-import org.uu.nl.embedding.glove.GloveModel;
+import org.uu.nl.embedding.opt.OptimizerModel;
 import org.uu.nl.embedding.util.config.Configuration;
 
 import java.io.BufferedWriter;
@@ -11,20 +11,21 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 /**
  * Writes the output of the GloVe model to 2 text files. One file stores the vectors, the other stores the node names.
  * 
  * @author Jurian Baas
  */
-public class GloveTextWriter implements GloveWriter {
+public class EmbeddingTextWriter implements EmbeddingWriter {
 
 	private final String VECTORS_FILE;
 	private final String DICT_FILE;
 	private final boolean[] writeNodeTypes;
 	private final Configuration config;
 
-	public GloveTextWriter(String fileName, Configuration config) {
+	public EmbeddingTextWriter(String fileName, Configuration config) {
 		String FILETYPE = ".tsv";
 		this.VECTORS_FILE = fileName + "." + "vectors" + FILETYPE;
 		this.DICT_FILE = fileName + "." + "dict" + FILETYPE;
@@ -35,8 +36,40 @@ public class GloveTextWriter implements GloveWriter {
 		this.writeNodeTypes[NodeInfo.LITERAL.id] = config.getOutput().outputLiteralNodes();
 	}
 
+	private void writeConfig(Writer writer) throws IOException {
+
+		writer.write("# Starting the embedding creation process with following settings:");
+		writer.write("# Graph File: " + config.getGraph());
+		writer.write("# Embedding dimensions: " + config.getDim());
+		writer.write("# Threads: " + config.getThreads());
+		writer.write("# BCA Alpha: " + config.getBca().getAlpha());
+		writer.write("# BCA Epsilon: " + config.getBca().getEpsilon());
+		writer.write("# BCA Directed: " + config.getBca().isDirected());
+		writer.write("# BCA normalize: " + config.getBca().getNormalize());
+		writer.write("# Gradient Descent Algorithm: " + config.getOpt().getMethod());
+		writer.write("# " + config.getMethod() + " Tolerance: " + config.getOpt().getTolerance());
+		writer.write("# " + config.getMethod() + " Maximum Iterations: " + config.getOpt().getMaxiter());
+
+		if(config.usingPca()) writer.write("# PCA Minimum Variance: " + config.getPca().getVariance());
+		else writer.write("# No PCA will be performed");
+
+		if(config.usingWeights()) {
+			writer.write("# Using weights, predicates that are not listed are ignored:");
+			for (Map.Entry<String, Float> entry : config.getWeights().entrySet()) {
+				writer.write("# " + entry.getKey() + ": " + entry.getValue());
+			}
+		} else writer.write("# No weights specified, using linear weight");
+
+		if(config.usingSimilarity()) {
+			writer.write("# Using the following similarity metrics:");
+			for (Configuration.SimilarityGroup s : config.getSimilarity()) {
+				writer.write("# " + s.toString());
+			}
+		} else writer.write("# No similarity matching will be performed");
+	}
+
 	@Override
-	public void write(GloveModel model, Path outputFolder) throws IOException {
+	public void write(OptimizerModel model, Path outputFolder) throws IOException {
 
 		Files.createDirectories(outputFolder);
 
@@ -54,6 +87,9 @@ public class GloveTextWriter implements GloveWriter {
 		try (ProgressBar pb = Configuration.progressBar("Writing to file", vocabSize, "vectors");
 			 Writer dict = new BufferedWriter(new FileWriter(outputFolder.resolve(DICT_FILE).toFile()));
 			 Writer vect = new BufferedWriter(new FileWriter(outputFolder.resolve(VECTORS_FILE).toFile()))) {
+
+			writeConfig(dict);
+			writeConfig(vect);
 
 			dict.write("key" + delimiter + "type" + newLine);
 

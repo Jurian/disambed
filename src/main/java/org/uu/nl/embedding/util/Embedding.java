@@ -1,6 +1,6 @@
 package org.uu.nl.embedding.util;
 
-import org.uu.nl.embedding.glove.opt.Optimum;
+import org.uu.nl.embedding.opt.Optimum;
 import org.uu.nl.embedding.pca.PCA;
 
 /**
