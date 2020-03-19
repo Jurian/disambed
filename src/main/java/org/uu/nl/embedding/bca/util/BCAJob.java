@@ -30,10 +30,8 @@ public abstract class BCAJob implements Callable<BCV> {
 
 	@Override
 	public BCV call() {
-
-		BCV bcv = doWork(graph, false);
-		if (this.reverse)
-			bcv.merge(doWork(graph, true));
+		final BCV bcv = doWork(graph, false);
+		if (this.reverse) bcv.merge(doWork(graph, true));
 		return bcv;
 	}
 
