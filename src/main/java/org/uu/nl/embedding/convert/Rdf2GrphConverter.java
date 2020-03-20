@@ -13,11 +13,9 @@ import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.similarity.*;
+import org.uu.nl.embedding.util.similarity.Date;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -242,7 +240,7 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 	private static class SimilarityGroup {
 
 		public final StringSimilarity similarity;
-		public final HashSet<Integer> nodes;
+		public final Set<Integer> nodes;
 		public final double threshold;
 
 		private SimilarityGroup(StringSimilarity similarity, double threshold) {
@@ -266,8 +264,8 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 	private static class CompareResult {
 
 		public final int vert;
-		public final ArrayList<Integer> otherVerts;
-		public final ArrayList<Float> similarities;
+		public final List<Integer> otherVerts;
+		public final List<Float> similarities;
 
 		public CompareResult(int vert) {
 			this.vert = vert;
