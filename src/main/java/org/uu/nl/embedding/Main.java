@@ -7,7 +7,6 @@ import org.uu.nl.embedding.opt.*;
 import org.uu.nl.embedding.opt.grad.AMSGrad;
 import org.uu.nl.embedding.opt.grad.Adagrad;
 import org.uu.nl.embedding.opt.grad.Adam;
-import org.uu.nl.embedding.pca.PCA;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.read.ConfigReader;
