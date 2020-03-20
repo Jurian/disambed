@@ -88,18 +88,19 @@ public class AMSGrad extends Optimizer {
 	public OptimizeJob createJob(int id, int iteration) {
 
 		return () -> {
-			int a, d, u, v, bu, bv, d1, d2;
+
+			int i, d, u, v, bu, bv, d1, d2;
 			float Xij, m1, m2, v1, v2, grad_u, grad_v;
 			float cost = 0, innerCost, weightedCost;
-
 			final int offset = coCount / numThreads * id;
-			for (a = 0; a < linesPerThread[id]; a++) {
 
-				bu = coMatrix.cIdx_I(a + offset); // Index of focus bias
-				bv = coMatrix.cIdx_J(a + offset); // Index of context bias
+			for (i = 0; i < linesPerThread[id]; i++) {
+
+				bu = coMatrix.cIdx_I(i + offset); // Index of focus bias
+				bv = coMatrix.cIdx_J(i + offset); // Index of context bias
 				u = bu * dimension; // Index of focus vector
 				v = bv * dimension; // Index of bias vector
-				Xij = coMatrix.cIdx_C(a + offset); // Co-occurrence
+				Xij = coMatrix.cIdx_C(i + offset); // Co-occurrence
 
 				/* Calculate cost, save diff for gradients */
 				innerCost = costFunction.innerCost(this, Xij, u, v, bu, bv);
