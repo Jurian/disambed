@@ -2,7 +2,8 @@ package org.uu.nl.embedding.util.write;
 
 import me.tongfei.progressbar.ProgressBar;
 import org.uu.nl.embedding.convert.util.NodeInfo;
-import org.uu.nl.embedding.opt.OptimizerModel;
+import org.uu.nl.embedding.opt.Optimum;
+import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.config.Configuration;
 
 import java.io.BufferedWriter;
@@ -69,16 +70,15 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 	}
 
 	@Override
-	public void write(OptimizerModel model, Path outputFolder) throws IOException {
+	public void write(Optimum optimum, CoOccurrenceMatrix coMatrix, Path outputFolder) throws IOException {
 
 		Files.createDirectories(outputFolder);
 
 		byte type;
-		// Take the number of vertices because we don't want to print vectors for predicates
-		final int vocabSize = model.getCoMatrix().vocabSize();
-		final int dimension = model.getDimension();
+		final int vocabSize = coMatrix.vocabSize();
+		final int dimension = config.getDim();
 		final String[] out = new String[dimension];
-		final double[] result = model.getOptimum().getResult();
+		final double[] result = optimum.getResult();
 
 		// Create a tab-separated file
 		final String delimiter = "\t";
@@ -99,7 +99,7 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 
 			for (int i = 0; i < vocabSize; i++) {
 
-				type = model.getCoMatrix().getType(i);
+				type = coMatrix.getType(i);
 
 				if(!writeNodeTypes[type]) {
 					pb.maxHint(pb.getMax()-1);
@@ -108,7 +108,7 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 					continue;
 				}
 
-				final String key = model.getCoMatrix().getKey(i);
+				final String key = coMatrix.getKey(i);
 				final NodeInfo nodeInfo = NodeInfo.fromByte(type);
 				boolean skip = false;
 				switch (nodeInfo) {

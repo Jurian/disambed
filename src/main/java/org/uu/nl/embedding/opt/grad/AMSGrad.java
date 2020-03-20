@@ -1,7 +1,10 @@
 package org.uu.nl.embedding.opt.grad;
 
 import org.apache.commons.math.util.FastMath;
-import org.uu.nl.embedding.opt.*;
+import org.uu.nl.embedding.opt.CostFunction;
+import org.uu.nl.embedding.opt.OptimizeJob;
+import org.uu.nl.embedding.opt.Optimizer;
+import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.config.Configuration;
 
 /**
@@ -66,8 +69,8 @@ public class AMSGrad extends Optimizer {
 	 */
 	private final float epsilon = 1e-7f;
 
-	public AMSGrad(OptimizerModel optimizerModel, Configuration config, CostFunction costFunction) {
-		super(optimizerModel, config, costFunction);
+	public AMSGrad(CoOccurrenceMatrix coMatrix, Configuration config, CostFunction costFunction) {
+		super(coMatrix, config, costFunction);
 
 		this.M1focus = new float[vocabSize * dimension];
 		this.M2focus = new float[vocabSize * dimension];

@@ -23,8 +23,6 @@ public abstract class Optimizer implements IOptimizer {
 	protected final int vocabSize;
 	protected final int numThreads;
 	protected final int coCount;
-	protected final double xMax;
-	protected final double alpha;
 	protected final float learningRate = 0.05f;
 	protected final float[] focus, context;
 	protected final float[] fBias, cBias;
@@ -33,18 +31,16 @@ public abstract class Optimizer implements IOptimizer {
 	private final int maxIterations;
 	private final double tolerance;
 
-	protected Optimizer(OptimizerModel optimizerModel, Configuration config, CostFunction costFunction) {
+	protected Optimizer(CoOccurrenceMatrix coMatrix, Configuration config, CostFunction costFunction) {
 
 		this.costFunction = costFunction;
-		this.coMatrix = optimizerModel.getCoMatrix();
-		this.xMax = optimizerModel.getxMax();
-		this.alpha = optimizerModel.getAlpha();
+		this.coMatrix = coMatrix;
 		this.maxIterations = config.getOpt().getMaxiter();
 		this.tolerance = config.getOpt().getTolerance();
-		this.vocabSize = optimizerModel.getVocabSize();
+		this.vocabSize = coMatrix.vocabSize();
 		this.numThreads = config.getThreads();
 		this.coCount = coMatrix.coOccurrenceCount();
-		this.dimension = optimizerModel.getDimension();
+		this.dimension = config.getDim();
 
 		this.focus = new float[vocabSize * dimension];
 		this.context = new float[vocabSize * dimension];

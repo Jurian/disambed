@@ -12,8 +12,8 @@ import org.apache.log4j.Logger;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
-import org.uu.nl.embedding.util.similarity.*;
 import org.uu.nl.embedding.util.similarity.Date;
+import org.uu.nl.embedding.util.similarity.*;
 
 import java.util.*;
 import java.util.concurrent.*;

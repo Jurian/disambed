@@ -7,6 +7,7 @@ import org.uu.nl.embedding.opt.*;
 import org.uu.nl.embedding.opt.grad.AMSGrad;
 import org.uu.nl.embedding.opt.grad.Adagrad;
 import org.uu.nl.embedding.opt.grad.Adam;
+import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.read.ConfigReader;
@@ -66,17 +67,14 @@ public class Main {
 
         final InMemoryRdfGraph graph = converter.convert(loader.load(config.getGraphFile()));
 
-        final BookmarkColoring bca = new BookmarkColoring(graph, config);
+        final CoOccurrenceMatrix bca = new BookmarkColoring(graph, config);
 
-        final OptimizerModel model = new OptimizerModel(bca, config);
+        final IOptimizer optimizer = createOptimizer(config, bca);
 
-        final IOptimizer optimizer = createOptimizer(config, model);
-
-        model.setOptimum(optimizer.optimize());
-
+        final Optimum optimum = optimizer.optimize();
 
         final EmbeddingWriter writer = new EmbeddingTextWriter(outFileName, config);
-        writer.write(model, Paths.get("").toAbsolutePath().resolve("out"));
+        writer.write(optimum, bca, Paths.get("").toAbsolutePath().resolve("out"));
     }
 
     private static String createFileName(Configuration config) {
@@ -106,7 +104,7 @@ public class Main {
         return outFileName;
     }
 
-    private static IOptimizer createOptimizer(final Configuration config, final OptimizerModel model) {
+    private static IOptimizer createOptimizer(final Configuration config, final CoOccurrenceMatrix coMatrix) {
 
         CostFunction cf;
         switch (config.getMethodEnum()) {
@@ -122,11 +120,11 @@ public class Main {
         switch(config.getOpt().getMethodEnum()) {
             default:
             case ADAGRAD:
-                return new Adagrad(model, config, cf);
+                return new Adagrad(coMatrix, config, cf);
             case ADAM:
-                return new Adam(model, config, cf);
+                return new Adam(coMatrix, config, cf);
             case AMSGRAD:
-                return new AMSGrad(model, config, cf);
+                return new AMSGrad(coMatrix, config, cf);
         }
     }
 

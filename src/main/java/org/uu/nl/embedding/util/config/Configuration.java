@@ -2,8 +2,8 @@ package org.uu.nl.embedding.util.config;
 
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
-import org.uu.nl.embedding.util.rnd.ThreadLocalSeededRandom;
 import org.uu.nl.embedding.util.rnd.ExtendedRandom;
+import org.uu.nl.embedding.util.rnd.ThreadLocalSeededRandom;
 
 import java.io.File;
 import java.nio.file.Paths;

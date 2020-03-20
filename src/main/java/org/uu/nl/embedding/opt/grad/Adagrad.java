@@ -4,7 +4,7 @@ import org.apache.commons.math.util.FastMath;
 import org.uu.nl.embedding.opt.CostFunction;
 import org.uu.nl.embedding.opt.OptimizeJob;
 import org.uu.nl.embedding.opt.Optimizer;
-import org.uu.nl.embedding.opt.OptimizerModel;
+import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.config.Configuration;
 
 
@@ -16,8 +16,8 @@ public class Adagrad extends Optimizer {
     private final float[] gradSqFocus, gradSqContext;
     private final float[] gradSqFBias, gradSqCBias;
 
-    public Adagrad(OptimizerModel optimizerModel, Configuration config, CostFunction costFunction) {
-        super(optimizerModel, config, costFunction);
+    public Adagrad(CoOccurrenceMatrix coMatrix, Configuration config, CostFunction costFunction) {
+        super(coMatrix, config, costFunction);
 
         this.gradSqFocus = new float[vocabSize * dimension];
         this.gradSqContext = new float[vocabSize * dimension];

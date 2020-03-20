@@ -16,6 +16,6 @@ public class GloveCost implements CostFunction {
 
     @Override
     public float weightedCost(Optimizer opt, float innerCost, float Xij) {
-        return (Xij > opt.xMax) ? innerCost : (float) FastMath.pow(Xij / opt.xMax, opt.alpha) * innerCost;
+        return (Xij > opt.coMatrix.max()) ? innerCost : (float) FastMath.pow(Xij /  opt.coMatrix.max(), 0.75) * innerCost;
     }
 }
