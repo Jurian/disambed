@@ -29,12 +29,12 @@ import org.uu.nl.embedding.util.config.Configuration;
 public class Adam extends Optimizer {
 
 	/**
-	 * Contains the decaying averages of the past first momentums w.r.t. to all parameters
+	 * Contains the decaying averages of the past first moments w.r.t. to all parameters
 	 */
 	private final float[] M1focus, M1context;
 	private final float[] M1fBias, M1cBias;
 	/**
-	 * Contains the decaying averages of the past second momentums w.r.t. to all parameters
+	 * Contains the decaying averages of the past second moments w.r.t. to all parameters
 	 */
 	private final float[] M2focus, M2context;
 	private final float[] M2fBias, M2cBias;
