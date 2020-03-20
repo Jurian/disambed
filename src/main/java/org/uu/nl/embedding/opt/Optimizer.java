@@ -2,6 +2,7 @@ package org.uu.nl.embedding.opt;
 
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.commons.math.util.FastMath;
+import org.apache.log4j.Logger;
 import org.uu.nl.embedding.util.CRecMatrix;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.ExtendedRandom;
@@ -14,6 +15,7 @@ import java.util.concurrent.*;
  */
 public abstract class Optimizer implements IOptimizer {
 
+	private final static Logger logger = Logger.getLogger(Optimizer.class);
 	private static final ExtendedRandom random = Configuration.getThreadLocalRandom();
 
 	protected final CRecMatrix coMatrix;
@@ -23,12 +25,11 @@ public abstract class Optimizer implements IOptimizer {
 	protected final int coCount;
 	protected final double xMax;
 	protected final double alpha;
-	protected final double learningRate = 0.05;
+	protected final float learningRate = 0.05f;
 	protected final float[] focus, context;
 	protected final float[] fBias, cBias;
 	protected final int[] linesPerThread;
 	protected final CostFunction costFunction;
-	private final ExecutorService es;
 	private final int maxIterations;
 	private final double tolerance;
 
@@ -43,7 +44,6 @@ public abstract class Optimizer implements IOptimizer {
 		this.vocabSize = optimizerModel.getVocabSize();
 		this.numThreads = config.getThreads();
 		this.coCount = coMatrix.coOccurrenceCount();
-
 		this.dimension = optimizerModel.getDimension();
 
 		this.focus = new float[vocabSize * dimension];
@@ -65,17 +65,14 @@ public abstract class Optimizer implements IOptimizer {
 			linesPerThread[i] = coCount / numThreads;
 		}
 		linesPerThread[numThreads - 1] = coCount / numThreads + coCount % numThreads;
-
-		this.es = Executors.newWorkStealingPool(numThreads);
 	}
-
-
 
 	@Override
 	public Optimum optimize() {
 
-		Optimum opt = new Optimum();
-		CompletionService<Float> completionService = new ExecutorCompletionService<>(es);
+		final Optimum opt = new Optimum();
+		final ExecutorService es = Executors.newWorkStealingPool(numThreads);
+		final CompletionService<Float> completionService = new ExecutorCompletionService<>(es);
 
 		double finalCost = 0;
 		try(ProgressBar pb = Configuration.progressBar(getName(), maxIterations, "epochs")) {
@@ -121,6 +118,8 @@ public abstract class Optimizer implements IOptimizer {
 		opt.setResult(extractResult());
 		opt.setFinalCost(finalCost);
 
+		logger.info("Finished optimization with final cost: " + new BigDecimal(finalCost).stripTrailingZeros().toEngineeringString());
+
 		return opt;
 	}
 
@@ -130,21 +129,18 @@ public abstract class Optimizer implements IOptimizer {
 
 	/**
 	 * Create a new double array containing the averaged values between the focus and context vectors
-	 * @return a new double array containing the averaged values between the focus and context vectors
 	 */
-	private double[] extractResult() {
-		double[] U = new double[vocabSize * dimension];
+	@Override
+	public double[] extractResult() {
+		double[] embedding = new double[vocabSize * dimension];
 		for (int a = 0; a < vocabSize; a++) {
-			int i = a * dimension;
+			final int i = a * dimension;
 			for (int d = 0; d < dimension; d++) {
 				// For each node, take the average between the focus and context value
-				U[d + i] = (focus[d + i] + context[d + i]) / 2;
+				embedding[d + i] = (focus[d + i] + context[d + i]) / 2;
 			}
 		}
-
-		return U;
+		return embedding;
 	}
-
-	protected abstract OptimizeJob createJob(int id, int iteration);
 
 }

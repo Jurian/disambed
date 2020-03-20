@@ -6,4 +6,6 @@ package org.uu.nl.embedding.opt;
 public interface IOptimizer {
 	Optimum optimize();
 	String getName();
+	OptimizeJob createJob(int id, int iteration);
+	double[] extractResult();
 }

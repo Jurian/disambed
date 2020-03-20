@@ -41,19 +41,21 @@ public class Adagrad extends Optimizer {
     @Override
     public OptimizeJob createJob(int id, int iteration) {
         return () -> {
-            int a, d, l1, l2, d1, d2;
+            int a, d, u, v, bu, bv, d1, d2;
             float cost = 0, Xij, innerCost, weightedCost, grad1, grad2;
 
             final int offset = coCount / numThreads * id;
 
             for (a = 0; a < linesPerThread[id]; a++) {
 
-                l1 = coMatrix.cIdx_I(a + offset);
-                l2 = coMatrix.cIdx_J(a + offset);
-                Xij = coMatrix.cIdx_C(a + offset);
+                bu = coMatrix.cIdx_I(a + offset); // Index of focus bias
+                bv = coMatrix.cIdx_J(a + offset); // Index of context bias
+                u = bu * dimension; // Index of focus vector
+                v = bv * dimension; // Index of bias vector
+                Xij = coMatrix.cIdx_C(a + offset); // Co-occurrence
 
                 /* Calculate cost, save diff for gradients */
-                innerCost = costFunction.innerCost(this, Xij, l1, l2);
+                innerCost = costFunction.innerCost(this, Xij, u, v, bu, bv);
                 weightedCost = costFunction.weightedCost(this, innerCost, Xij);
                 cost += 0.5 * weightedCost * innerCost; // weighted squared error
 
@@ -64,8 +66,8 @@ public class Adagrad extends Optimizer {
                 // Compute for word vectors
                 for (d = 0; d < dimension; d++) {
 
-                    d1 = d + l1;
-                    d2 = d + l2;
+                    d1 = d + u; // Index of specific dimension in focus vector
+                    d2 = d + v; // Index of specific dimension in context vector
 
                     // Compute gradients
                     grad1 = weightedCost * context[d2];
@@ -83,16 +85,15 @@ public class Adagrad extends Optimizer {
 				 ---------------------*/
 
                 // Compute updates (gradient of bias is the weighted cost)
-                fBias[l1] -= weightedCost / FastMath.sqrt(gradSqFBias[l1]);
-                cBias[l2] -= weightedCost / FastMath.sqrt(gradSqCBias[l2]);
+                fBias[bu] -= weightedCost / FastMath.sqrt(gradSqFBias[bu]);
+                cBias[bv] -= weightedCost / FastMath.sqrt(gradSqCBias[bv]);
                 weightedCost *= weightedCost;
                 // Store squared gradients
-                gradSqFBias[l1] += weightedCost;
-                gradSqCBias[l2] += weightedCost;
+                gradSqFBias[bu] += weightedCost;
+                gradSqCBias[bv] += weightedCost;
 
             }
             return cost;
         };
     }
-
 }
