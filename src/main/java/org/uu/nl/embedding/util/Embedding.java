@@ -1,7 +1,6 @@
 package org.uu.nl.embedding.util;
 
 import org.uu.nl.embedding.opt.Optimum;
-import org.uu.nl.embedding.pca.PCA;
 
 /**
  * @author Jurian Baas
@@ -33,8 +32,4 @@ public abstract class Embedding {
 
 	public abstract void setDimension(int dimension);
 
-	public void updateOptimum(PCA.Projection projection) {
-		this.optimum.setResult(projection.getProjection());
-		this.dimension = projection.getnCols();
-	}
 }
