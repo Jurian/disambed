@@ -63,7 +63,7 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 		if(config.usingSimilarity()) {
 			writer.write("# Using the following similarity metrics:" + "\n");
 			for (Configuration.SimilarityGroup s : config.getSimilarity()) {
-				writer.write("# " + s.toString());
+				writer.write("# " + s.toString() + "\n");
 			}
 		} else writer.write("# No similarity matching will be performed" + "\n");
 	}
