@@ -3,7 +3,7 @@ package org.uu.nl.embedding.opt;
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.commons.math.util.FastMath;
 import org.apache.log4j.Logger;
-import org.uu.nl.embedding.util.CRecMatrix;
+import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.ExtendedRandom;
 
@@ -18,7 +18,7 @@ public abstract class Optimizer implements IOptimizer {
 	private final static Logger logger = Logger.getLogger(Optimizer.class);
 	private static final ExtendedRandom random = Configuration.getThreadLocalRandom();
 
-	protected final CRecMatrix coMatrix;
+	protected final CoOccurrenceMatrix coMatrix;
 	protected final int dimension;
 	protected final int vocabSize;
 	protected final int numThreads;

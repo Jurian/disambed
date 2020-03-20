@@ -8,10 +8,10 @@ import org.uu.nl.embedding.opt.Optimum;
 public abstract class Embedding {
 	
 	protected int dimension;
-	private final CRecMatrix coMatrix;
+	private final CoOccurrenceMatrix coMatrix;
 	private Optimum optimum;
 	
-	protected Embedding(int dim, CRecMatrix coMatrix) {
+	protected Embedding(int dim, CoOccurrenceMatrix coMatrix) {
 		this.coMatrix = coMatrix;
 		this.dimension = dim;
 	}
@@ -20,7 +20,7 @@ public abstract class Embedding {
 		return dimension;
 	}
 
-	public CRecMatrix getCoMatrix() {
+	public CoOccurrenceMatrix getCoMatrix() {
 		return coMatrix;
 	}
 

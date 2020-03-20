@@ -1,6 +1,6 @@
 package org.uu.nl.embedding.opt;
 
-import org.uu.nl.embedding.util.CRecMatrix;
+import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.Embedding;
 import org.uu.nl.embedding.util.config.Configuration;
 
@@ -13,7 +13,7 @@ public class OptimizerModel extends Embedding {
 	private final double xMax;
 	private final int vocabSize;
 
-	private OptimizerModel(int dimension, double xMax, CRecMatrix coMatrix) {
+	private OptimizerModel(int dimension, double xMax, CoOccurrenceMatrix coMatrix) {
 		super(dimension, coMatrix);
 		this.vocabSize = coMatrix.vocabSize();
 		// Used for the weight function in GloVe
@@ -21,7 +21,7 @@ public class OptimizerModel extends Embedding {
 		this.alpha = 0.75;
 	}
 
-    public OptimizerModel(CRecMatrix coMatrix, Configuration config) {
+    public OptimizerModel(CoOccurrenceMatrix coMatrix, Configuration config) {
         this(config.getDim(), coMatrix.max(), coMatrix);
     }
 

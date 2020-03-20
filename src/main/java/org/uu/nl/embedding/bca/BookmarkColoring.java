@@ -6,7 +6,7 @@ import org.uu.nl.embedding.bca.jobs.UndirectedWeighted;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.convert.util.InEdgeNeighborhoodAlgorithm;
 import org.uu.nl.embedding.convert.util.OutEdgeNeighborhoodAlgorithm;
-import org.uu.nl.embedding.util.CRecMatrix;
+import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.Permutation;
@@ -18,7 +18,7 @@ import java.util.concurrent.*;
 /**
  * @author Jurian Baas
  */
-public class BookmarkColoring implements CRecMatrix {
+public class BookmarkColoring implements CoOccurrenceMatrix {
 
 	private final ArrayList<Integer> coOccurrenceIdx_I;
 	private final ArrayList<Integer> coOccurrenceIdx_J;

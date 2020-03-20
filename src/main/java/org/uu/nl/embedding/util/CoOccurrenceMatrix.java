@@ -3,7 +3,7 @@ package org.uu.nl.embedding.util;
 /**
  * @author Jurian Baas
  */
-public interface CRecMatrix {
+public interface CoOccurrenceMatrix {
 
 	int vocabSize();
 	double max();
