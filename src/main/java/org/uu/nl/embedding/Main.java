@@ -53,6 +53,12 @@ public class Main {
             config.getSimilarity().forEach(s -> logger.info(s.toString()));
         } else logger.info("No similarity matching will be performed");
 
+        String outFileName = config.getOutput().getName();
+        if(outFileName == null || outFileName.isEmpty()) {
+            outFileName = createFileName(config);
+        }
+        logger.info("Writing files with prefix: " + outFileName);
+
         Configuration.setThreadLocalRandom();
 
         final JenaReader loader = new JenaReader();
@@ -67,25 +73,14 @@ public class Main {
 
         final IOptimizer optimizer = createOptimizer(config, model);
 
-        assert optimizer != null;
         model.setOptimum(optimizer.optimize());
 
-        if(config.usingPca()) {
-            logger.info("Starting PCA...");
-            PCA pca = new PCA(model.getOptimum().getResult(), false, config);
-            model.updateOptimum(pca.project(config.getPca().getVariance()));
-        }
 
-        String outFileName = config.getOutput().getName();
-        if(outFileName == null || outFileName.isEmpty()) {
-            outFileName = createFileName(config, model);
-        }
-        logger.info("Writing files with prefix: " + outFileName);
         final EmbeddingWriter writer = new EmbeddingTextWriter(outFileName, config);
         writer.write(model, Paths.get("").toAbsolutePath().resolve("out"));
     }
 
-    private static String createFileName(Configuration config, OptimizerModel model) {
+    private static String createFileName(Configuration config) {
         String outFileName = config.getGraphFile().getName().toLowerCase();
         if(outFileName.contains(".")) {
             outFileName = outFileName.substring(0, outFileName.lastIndexOf("."));
@@ -106,8 +101,8 @@ public class Main {
 
         outFileName += "_" + config.getBca().getAlpha() + "_" + config.getBca().getEpsilon();
         outFileName += "_" + config.getOpt().getMethod();
-        if(config.usingPca()) outFileName += "_pca_" + model.getDimension();
-        else outFileName += "_" + model.getDimension();
+        if(config.usingPca()) outFileName += "_pca_" + config.getDim();
+        else outFileName += "_" + config.getDim();
 
         return outFileName;
     }
