@@ -1,7 +1,6 @@
 package org.uu.nl.embedding.convert;
 
 import grph.properties.Property;
-import info.debatty.java.stringsimilarity.JaroWinkler;
 import info.debatty.java.stringsimilarity.interfaces.StringSimilarity;
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.jena.graph.Node;
@@ -12,8 +11,7 @@ import org.apache.log4j.Logger;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
-import org.uu.nl.embedding.util.similarity.Date;
-import org.uu.nl.embedding.util.similarity.*;
+import org.uu.nl.embedding.util.similarity.PreComputed;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -40,7 +38,9 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 		if(config.getSimilarity() != null)
 		config.getSimilarity().forEach(
 				sim -> similarityGroups.put(
-						sim.getPredicate(), new SimilarityGroup(createSimilarityMetric(sim), sim.getThreshold())));
+						sim.getPredicate(),
+						new SimilarityGroup(sim.toFunction(), sim.getThreshold()))
+		);
 		this.doSimilarityMatching = !similarityGroups.isEmpty();
 		this.doPredicateWeighting = predicateWeights != null && !predicateWeights.isEmpty();
 	}
@@ -168,29 +168,6 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 
 		return g;
 	}
-
-	/**
-	 * Instantiate a similarity object from the configuration information
-	 */
-	private StringSimilarity createSimilarityMetric(Configuration.SimilarityGroup sim ) {
-
-		switch (sim.getMethodEnum()) {
-			case NUMERIC:
-				return new Numeric(sim.getSmooth());
-			case JACCARD:
-				return new PreComputedJaccard(sim.getNgram());
-			case COSINE:
-				return new PreComputedCosine(sim.getNgram());
-			case JAROWINKLER:
-				return new JaroWinkler();
-			case TOKEN:
-				return new PreComputedToken();
-			case DATE:
-				return new Date(sim.getFormat(), sim.getSmooth());
-		}
-		return null;
-	}
-
 
 	private static int type2index(Node node) {
 		if(node.isURI()) return NodeInfo.URI.id;

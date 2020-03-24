@@ -10,11 +10,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class PreComputedJaccard extends ShingleBased implements PreComputed, MetricStringDistance, NormalizedStringDistance, NormalizedStringSimilarity {
+public class PreComputedNgramJaccard extends ShingleBased implements PreComputed, MetricStringDistance, NormalizedStringDistance, NormalizedStringSimilarity {
 
     private final Map<String, Map<String, Integer>> profiles;
 
-    public PreComputedJaccard(int k) {
+    public PreComputedNgramJaccard(int k) {
         super(k);
         profiles = new HashMap<>();
     }

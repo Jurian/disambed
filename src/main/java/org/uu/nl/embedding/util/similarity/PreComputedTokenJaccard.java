@@ -1,15 +1,19 @@
 package org.uu.nl.embedding.util.similarity;
 
+import info.debatty.java.stringsimilarity.interfaces.MetricStringDistance;
+import info.debatty.java.stringsimilarity.interfaces.NormalizedStringDistance;
+import info.debatty.java.stringsimilarity.interfaces.NormalizedStringSimilarity;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class PreComputedToken extends Token implements PreComputed {
+public class PreComputedTokenJaccard extends TokenJaccard implements PreComputed, MetricStringDistance, NormalizedStringDistance, NormalizedStringSimilarity {
 
     private final Map<String, Map<String, Integer>> profiles;
 
-    public PreComputedToken() {
+    public PreComputedTokenJaccard() {
         super();
         profiles = new HashMap<>();
     }

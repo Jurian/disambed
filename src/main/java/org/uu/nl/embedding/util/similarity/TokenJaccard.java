@@ -8,7 +8,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class Token extends TokenBased implements MetricStringDistance, NormalizedStringDistance, NormalizedStringSimilarity {
+public class TokenJaccard extends TokenBased implements MetricStringDistance, NormalizedStringDistance, NormalizedStringSimilarity {
 
     @Override
     public double similarity(String s1, String s2) {

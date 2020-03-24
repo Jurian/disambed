@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 
-public class Date implements StringSimilarity {
+public abstract class Date implements StringSimilarity {
 
     private final static Logger logger = Logger.getLogger(Date.class);
 
@@ -19,6 +19,8 @@ public class Date implements StringSimilarity {
         this.alpha = alpha;
         this.format = pattern.equals("iso") ? DateTimeFormatter.BASIC_ISO_DATE : DateTimeFormatter.ofPattern(pattern);
     }
+
+    protected abstract ChronoUnit unit();
 
     @Override
     public double similarity(String s1, String s2) {
@@ -43,7 +45,7 @@ public class Date implements StringSimilarity {
             final LocalDate d1 = LocalDate.parse(s1, format);
             final LocalDate d2 = LocalDate.parse(s2, format);
 
-            return 1 / Math.pow(Math.abs(ChronoUnit.DAYS.between(d1, d2)) + 1, alpha);
+            return 1 / Math.pow(Math.abs(unit().between(d1, d2)) + 1, alpha);
 
         } catch (DateTimeParseException e) {
             logger.warn("Could not compare dates: " + e.getMessage());

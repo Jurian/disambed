@@ -1,9 +1,13 @@
 package org.uu.nl.embedding.util.config;
 
+import info.debatty.java.stringsimilarity.JaroWinkler;
+import info.debatty.java.stringsimilarity.NormalizedLevenshtein;
+import info.debatty.java.stringsimilarity.interfaces.StringSimilarity;
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import org.uu.nl.embedding.util.rnd.ExtendedRandom;
 import org.uu.nl.embedding.util.rnd.ThreadLocalSeededRandom;
+import org.uu.nl.embedding.util.similarity.*;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -21,7 +25,7 @@ public class Configuration {
     }
 
     public enum SimilarityMethod {
-        TOKEN, COSINE, JACCARD, JAROWINKLER, LEVENSHTEIN, NUMERIC, DATE
+        NGRAM_COSINE, NGRAM_JACCARD, TOKEN_COSINE, TOKEN_JACCARD, JAROWINKLER, LEVENSHTEIN, NUMERIC, DATE_DAYS, DATE_MONTHS, DATE_YEARS
     }
 
     public enum BCANormalization {
@@ -182,32 +186,63 @@ public class Configuration {
         private double threshold;
         private int ngram;
         private double smooth;
-        private String format;
+        private String pattern;
+
+        /**
+         * Instantiate a similarity object from the configuration information
+         */
+        public StringSimilarity toFunction() {
+
+            switch (getMethodEnum()) {
+                case NUMERIC:
+                    return new Numeric(getSmooth());
+                case DATE_DAYS:
+                    return new DateDays(getPattern(), getSmooth());
+                case DATE_MONTHS:
+                    return new DateMonths(getPattern(), getSmooth());
+                case DATE_YEARS:
+                    return new DateYears(getPattern(), getSmooth());
+                case LEVENSHTEIN:
+                    return new NormalizedLevenshtein();
+                case JAROWINKLER:
+                    return new JaroWinkler();
+                case NGRAM_JACCARD:
+                    return new PreComputedNgramJaccard(getNgram());
+                case NGRAM_COSINE:
+                    return new PreComputedNgramCosine(getNgram());
+                case TOKEN_JACCARD:
+                    return new PreComputedTokenJaccard();
+                case TOKEN_COSINE:
+                    return new PreComputedTokenCosine();
+                default:
+                    throw new IllegalArgumentException("Unsupported similarity method: " + getMethodEnum());
+            }
+        }
 
         @Override
         public String toString() {
             String out = getPredicate() + ": " + getMethod() + ", threshold: " + getThreshold();
             switch (getMethodEnum()) {
-                case COSINE:
-                case JACCARD: out += ", ngram: " + getNgram();
-                break;
-                case NUMERIC: out += ", smooth: " + getSmooth();
-                break;
-                case DATE: out += ", format:" + getFormat() + ", smooth: " + getSmooth();
+                default: return out;
+                case NGRAM_COSINE:
+                case NGRAM_JACCARD: return out + ", ngram: " + getNgram();
+                case NUMERIC: return out + ", smooth: " + getSmooth();
+                case DATE_DAYS:
+                case DATE_MONTHS:
+                case DATE_YEARS: return out + ", pattern:" + getPattern() + ", smooth: " + getSmooth();
             }
-            return out;
         }
 
         public SimilarityMethod getMethodEnum() {
             return SimilarityMethod.valueOf(this.method.toUpperCase());
         }
 
-        public String getFormat() {
-            return format == null ? "iso" : format;
+        public String getPattern() {
+            return pattern == null ? "iso" : pattern;
         }
 
-        public void setFormat(String format) {
-            this.format = format;
+        public void setPattern(String pattern) {
+            this.pattern = pattern;
         }
 
         public String getPredicate() {
