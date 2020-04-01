@@ -65,7 +65,7 @@ public class BCV extends HashMap<Integer, Float> {
 		remove(rootNode);
 		final float sum = sum();
 		for(Entry<Integer, Float> entry : entrySet()) {
-			entry.setValue(entry.getValue() / sum - 1e-5f);
+			entry.setValue(entry.getValue() / sum - 1e-6f);
 		}
 	}
 
