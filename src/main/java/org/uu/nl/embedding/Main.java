@@ -109,6 +109,7 @@ public class Main {
         CostFunction cf;
         switch (config.getMethodEnum()) {
             default:
+                throw new IllegalArgumentException("Invalid cost function");
             case GLOVE:
                 cf = new GloveCost();
                 break;
@@ -119,6 +120,7 @@ public class Main {
 
         switch(config.getOpt().getMethodEnum()) {
             default:
+                throw new IllegalArgumentException("Invalid optimization method");
             case ADAGRAD:
                 return new Adagrad(coMatrix, config, cf);
             case ADAM:
