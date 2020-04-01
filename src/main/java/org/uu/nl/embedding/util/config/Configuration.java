@@ -181,12 +181,19 @@ public class Configuration {
 
     public static class SimilarityGroup {
 
-        private String predicate;
+        public enum Time {
+            BACKWARDS, FORWARDS, BIDIRECTIONAL
+        }
+
+        private String sourcePredicate;
+        private String targetPredicate;
         private String method;
         private double threshold;
         private int ngram;
+        private double distance;
         private double smooth;
         private String pattern;
+        private String time;
 
         /**
          * Instantiate a similarity object from the configuration information
@@ -195,13 +202,13 @@ public class Configuration {
 
             switch (getMethodEnum()) {
                 case NUMERIC:
-                    return new Numeric(getSmooth());
+                    return new Numeric(getSmooth(), getDistance());
                 case DATE_DAYS:
-                    return new DateDays(getPattern(), getSmooth());
+                    return new DateDays(getPattern(), getSmooth(), getDistance(), getTimeEnum());
                 case DATE_MONTHS:
-                    return new DateMonths(getPattern(), getSmooth());
+                    return new DateMonths(getPattern(), getSmooth(), getDistance(), getTimeEnum());
                 case DATE_YEARS:
-                    return new DateYears(getPattern(), getSmooth());
+                    return new DateYears(getPattern(), getSmooth(), getDistance(), getTimeEnum());
                 case LEVENSHTEIN:
                     return new NormalizedLevenshtein();
                 case JAROWINKLER:
@@ -221,7 +228,7 @@ public class Configuration {
 
         @Override
         public String toString() {
-            String out = getPredicate() + ": " + getMethod() + ", threshold: " + getThreshold();
+            String out = getSourcePredicate() + " -> " + getTargetPredicate() + "\n method:" + getMethod() + ", threshold: " + getThreshold();
             switch (getMethodEnum()) {
                 default: return out;
                 case NGRAM_COSINE:
@@ -229,8 +236,44 @@ public class Configuration {
                 case NUMERIC: return out + ", smooth: " + getSmooth();
                 case DATE_DAYS:
                 case DATE_MONTHS:
-                case DATE_YEARS: return out + ", pattern:" + getPattern() + ", smooth: " + getSmooth();
+                case DATE_YEARS: return out + ", pattern:" + getPattern() + ", smooth: " + getSmooth() + ", time: " + getTime();
             }
+        }
+
+        public String getTime() {
+            return time == null ? "bidirectional" : time;
+        }
+
+        public Time getTimeEnum() {
+            return Time.valueOf(getTime().toUpperCase());
+        }
+
+        public void setTime(String time) {
+            this.time = time;
+        }
+
+        public String getTargetPredicate() {
+            return targetPredicate;
+        }
+
+        public void setTargetPredicate(String targetPredicate) {
+            this.targetPredicate = targetPredicate;
+        }
+
+        public String getSourcePredicate() {
+            return sourcePredicate;
+        }
+
+        public void setSourcePredicate(String sourcePredicate) {
+            this.sourcePredicate = sourcePredicate;
+        }
+
+        public double getDistance() {
+            return distance;
+        }
+
+        public void setDistance(double distance) {
+            this.distance = distance;
         }
 
         public SimilarityMethod getMethodEnum() {
@@ -243,14 +286,6 @@ public class Configuration {
 
         public void setPattern(String pattern) {
             this.pattern = pattern;
-        }
-
-        public String getPredicate() {
-            return predicate;
-        }
-
-        public void setPredicate(String predicate) {
-            this.predicate = predicate;
         }
 
         public String getMethod() {

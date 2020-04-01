@@ -7,9 +7,11 @@ public class Numeric implements StringSimilarity {
 
     private final static Logger logger = Logger.getLogger(Numeric.class);
     private final double alpha;
+    private final double distance;
 
-    public Numeric(double alpha) {
+    public Numeric(double alpha, double distance) {
         this.alpha = alpha;
+        this.distance = distance;
     }
 
     @Override
@@ -34,8 +36,7 @@ public class Numeric implements StringSimilarity {
         try {
             final int a = Integer.parseInt(s1);
             final int b = Integer.parseInt(s2);
-
-            return 1 / Math.pow(Math.abs(a - b) + 1, alpha);
+            return Math.pow(Math.abs(Math.abs(a - b) - distance) + 1, -(1 - alpha));
         } catch (NumberFormatException e) {
             logger.warn("Could not compare numbers: " + e.getMessage());
             return 0;
