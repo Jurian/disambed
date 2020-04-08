@@ -92,6 +92,7 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 				// Only create a new ID if the vertex is not yet present
 				s_i = addVertex(g, p, s, vertexMap, predicateLiteralMap);
 				o_i = addVertex(g, p, o, vertexMap, predicateLiteralMap);
+				assert predicateWeights != null;
 				addEdge(g, p, s_i, o_i, edgeTypes, predicateWeights.get(predicateString));
 
 				if(doSimilarityMatching) {
