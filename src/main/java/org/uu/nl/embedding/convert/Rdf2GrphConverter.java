@@ -1,6 +1,5 @@
 package org.uu.nl.embedding.convert;
 
-import grph.properties.Property;
 import info.debatty.java.stringsimilarity.interfaces.StringSimilarity;
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.jena.graph.Node;
@@ -8,6 +7,9 @@ import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.log4j.Logger;
+import org.uu.nl.embedding.compare.CompareJob;
+import org.uu.nl.embedding.compare.CompareResult;
+import org.uu.nl.embedding.compare.CompareGroup;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
@@ -39,14 +41,14 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 		final InMemoryRdfGraph g = new InMemoryRdfGraph();
 
 		final Map<String, Float> predicateWeights = config.getWeights();
-		final Map<String, SimilarityGroup> sourceGroups = new HashMap<>();
-		final Map<String, SimilarityGroup> targetGroups = new HashMap<>();
+		final Map<String, CompareGroup> sourceGroups = new HashMap<>();
+		final Map<String, CompareGroup> targetGroups = new HashMap<>();
 
 		if(config.getSimilarity() != null)
 			config.getSimilarity().forEach(
 					sim -> {
 						boolean upperTriangle = sim.getSourcePredicate().equals(sim.getTargetPredicate());
-						SimilarityGroup group = new SimilarityGroup(sim.toFunction(), sim.getThreshold(), upperTriangle);
+						CompareGroup group = new CompareGroup(sim.toFunction(), sim.getThreshold(), upperTriangle);
 						sourceGroups.put(sim.getSourcePredicate(), group);
 						targetGroups.put(sim.getTargetPredicate(), group);
 					}
@@ -94,13 +96,13 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 
 				if(doSimilarityMatching) {
 					// Some similarity metrics require pre-processing
-					final SimilarityGroup source = sourceGroups.get(predicateString);
+					final CompareGroup source = sourceGroups.get(predicateString);
 					if(source != null) {
 						source.addToSource(o_i);
 						if(source.needsPrecompute()) ((PreComputed)source.similarity).preCompute(o.toString(false));
 					}
 
-					final SimilarityGroup target = targetGroups.get(predicateString);
+					final CompareGroup target = targetGroups.get(predicateString);
 					if(target != null) {
 						target.addToTarget(o_i);
 						if(target.needsPrecompute()) ((PreComputed)target.similarity).preCompute(o.toString(false));
@@ -121,12 +123,12 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 			return g;
 		}
 
-		for(Map.Entry<String, SimilarityGroup> entry : sourceGroups.entrySet()) {
+		for(Map.Entry<String, CompareGroup> entry : sourceGroups.entrySet()) {
 
 			final ExecutorService es = Executors.newWorkStealingPool(config.getThreads());
 			final CompletionService<CompareResult> completionService = new ExecutorCompletionService<>(es);
 
-			final SimilarityGroup group = entry.getValue();
+			final CompareGroup group = entry.getValue();
 
 			final int sourceSize = group.source.size();
 			final int targetSize = group.target.size();
@@ -237,98 +239,4 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 		g.getEdgeWeightProperty().setValue(p_i, weight);
 	}
 
-	/**
-	 * Associates a set of nodes with a similarity metric
-	 */
-	private static class SimilarityGroup {
-
-		public final StringSimilarity similarity;
-		public final Set<Integer> source, target;
-		public final double threshold;
-		public final boolean upperTriangle;
-
-		private SimilarityGroup(StringSimilarity similarity, double threshold, boolean upperTriangle) {
-			this.similarity = similarity;
-			this.source = new HashSet<>();
-			this.target = new HashSet<>();
-			this.threshold = threshold;
-			this.upperTriangle = upperTriangle;
-		}
-
-		public boolean needsPrecompute(){
-			return this.similarity instanceof PreComputed;
-		}
-
-		public void addToSource(int i){
-			this.source.add(i);
-		}
-
-		public void addToTarget(int i){
-			this.target.add(i);
-		}
-	}
-
-	/**
-	 * The result of comparing a node with other nodes
-	 */
-	private static class CompareResult {
-
-		public final int vert;
-		public final List<Integer> otherVerts;
-		public final List<Float> similarities;
-
-		public CompareResult(int vert) {
-			this.vert = vert;
-			this.otherVerts = new ArrayList<>();
-			this.similarities = new ArrayList<>();
-		}
-	}
-
-	/**
-	 * Do the similarity matching in parallel
-	 */
-	private static class CompareJob implements Callable<CompareResult> {
-
-		private final int index;
-		private final int startIndex;
-		private final int[] source, target;
-		private final double threshold;
-		private final StringSimilarity metric;
-		private final Property vertexLabels;
-
-
-		public CompareJob(boolean upperTriangle, int index, int[] source, int[] target, double threshold, StringSimilarity metric, Property vertexLabels) {
-			this.index = index;
-			this.source = source;
-			this.target = target;
-			this.threshold = threshold;
-			this.metric = metric;
-			this.vertexLabels = vertexLabels;
-			this.startIndex = upperTriangle ? index + 1 : 0;
-		}
-
-		@Override
-		public CompareResult call() {
-
-			final int vert = source[index];
-			final CompareResult result = new CompareResult(vert);
-
-			for (int j = startIndex; j < target.length; j++) {
-
-				final int otherVert = target[j];
-				if(otherVert == vert) continue;
-
-				final String s1 = vertexLabels.getValueAsString(vert);
-				final String s2 = vertexLabels.getValueAsString(otherVert);
-				final double similarity = metric.similarity(s1, s2);
-
-				if (similarity >= threshold) {
-					result.otherVerts.add(otherVert);
-					result.similarities.add((float) similarity);
-				}
-
-			}
-			return result;
-		}
-	}
 }
