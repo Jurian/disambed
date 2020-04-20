@@ -36,7 +36,7 @@ public class Numeric implements StringSimilarity {
         try {
             final int a = Integer.parseInt(s1);
             final int b = Integer.parseInt(s2);
-            return Math.pow(Math.abs(Math.abs(a - b) - distance) + 1, -(1 - alpha));
+            return Math.pow(Math.abs(Math.abs(a - b) - distance) + 1, alpha - 1);
         } catch (NumberFormatException e) {
             logger.warn("Could not compare numbers: " + e.getMessage());
             return 0;

@@ -57,7 +57,7 @@ public abstract class Date implements StringSimilarity {
                     if(d1.isBefore(d2)) return 0;
                     break;
             }
-            return Math.pow(Math.abs(Math.abs((double) unit().between(d1, d2)) - distance) + 1, -(1 - smooth));
+            return Math.pow(Math.abs(Math.abs((double) unit().between(d1, d2)) - distance) + 1, smooth - 1);
 
         } catch (DateTimeParseException e) {
             logger.warn("Could not compare dates: " + e.getMessage());
