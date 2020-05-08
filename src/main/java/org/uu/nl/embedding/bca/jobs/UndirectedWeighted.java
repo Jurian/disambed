@@ -6,6 +6,7 @@ import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.PaintedNode;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 
+import java.util.Random;
 import java.util.TreeMap;
 
 
@@ -36,9 +37,9 @@ public class UndirectedWeighted extends BCAJob {
 		final TreeMap<Integer, PaintedNode> nodeTree = new TreeMap<>();
 		final BCV bcv = new BCV(bookmark);
 
-		nodeTree.put(bookmark, new PaintedNode(bookmark, PaintedNode.SKIP, PaintedNode.SKIP, 1));
+		nodeTree.put(bookmark, new PaintedNode(bookmark, 1));
 
-		int focusNode, edgeType, neighbor;
+		int focusNode;
 		double wetPaint, partialWetPaint;
 		PaintedNode node;
 
@@ -56,48 +57,22 @@ public class UndirectedWeighted extends BCAJob {
                 continue;
 
 			double totalWeight = 0;
-			int inDegree = vertexIn[focusNode].length;
-			int outDegree = vertexOut[focusNode].length;
-			int degree = inDegree + outDegree;
 
-			for (int i = 0; i < degree; i++) {
-
-
-				if(i < vertexIn[focusNode].length) {
-					// Skip any edges we don't want to follow
-					if(vertexIn[focusNode][i] == node.prevNodeID) continue;
-					totalWeight += edgeWeights.getValueAsFloat(edgeIn[focusNode][i]);
-					//totalWeight += weights[getEdgeType(edgeIn[focusNode][i])];
-				} else {
-					// Skip any edges we don't want to follow
-					if(vertexOut[focusNode][i - inDegree] == node.prevNodeID) continue;
-					totalWeight += edgeWeights.getValueAsFloat(edgeOut[focusNode][i - inDegree]);
-					//totalWeight += weights[getEdgeType(edgeOut[focusNode][i - inDegree])];
-				}
-
+			for (int i = 0; i < vertexOut[focusNode].length; i++) {
+				// Skip any edges we don't want to follow
+				//if(neighbors[i] == node.prevNodeID) continue;
+				totalWeight += edgeWeights.getValueAsFloat(edgeOut[focusNode][i]);
 			}
-			// We ended up skipping all neighbors
-			if(totalWeight == 0) continue;
 
-            for (int i = 0; i < degree; i++) {
+			for (int i = 0; i < vertexIn[focusNode].length; i++) {
+				// Skip any edges we don't want to follow
+				//if(neighbors[i] == node.prevNodeID) continue;
+				totalWeight += edgeWeights.getValueAsFloat(edgeIn[focusNode][i]);
+			}
 
-            	float weight;
-				if(i < vertexIn[focusNode].length) {
-					// Skip any edges we don't want to follow
-					if(vertexIn[focusNode][i] == node.prevNodeID) continue;
+			for (int i = 0; i < vertexOut[focusNode].length; i++) {
 
-					neighbor = vertexIn[focusNode][i];
-					weight = edgeWeights.getValueAsFloat(edgeIn[focusNode][i]);
-					edgeType = edgeTypes.getValueAsInt(edgeIn[focusNode][i]);
-				} else {
-					// Skip any edges we don't want to follow
-					if(vertexOut[focusNode][i - inDegree] == node.prevNodeID) continue;
-
-					neighbor = vertexOut[focusNode][i - inDegree];
-					weight = edgeWeights.getValueAsFloat(edgeOut[focusNode][i - inDegree]);
-					edgeType = edgeTypes.getValueAsInt(edgeOut[focusNode][i - inDegree]);
-				}
-
+				float weight = edgeWeights.getValueAsFloat(edgeOut[focusNode][i]);
 				partialWetPaint = (1 - alpha) * wetPaint * (weight / totalWeight);
 
 				// We can already tell that the neighbor will not have enough paint to continue
@@ -105,16 +80,35 @@ public class UndirectedWeighted extends BCAJob {
 					continue;
 
 				// Log(n) time lookup
-				if (nodeTree.containsKey(neighbor)) {
-					nodeTree.get(neighbor).addPaint(partialWetPaint);
+				if (nodeTree.containsKey(vertexOut[focusNode][i])) {
+					nodeTree.get(vertexOut[focusNode][i]).addPaint(partialWetPaint);
 				} else {
 
 					// Remember which node we came from so we don't go back
 					// Remember which predicate we used to get here
-					nodeTree.put(neighbor, new PaintedNode(neighbor, edgeType, focusNode, partialWetPaint));
+					nodeTree.put(vertexOut[focusNode][i], new PaintedNode(vertexOut[focusNode][i], partialWetPaint));
 				}
+			}
 
-            }
+			for (int i = 0; i < vertexIn[focusNode].length; i++) {
+
+				float weight = edgeWeights.getValueAsFloat(edgeIn[focusNode][i]);
+				partialWetPaint = (1 - alpha) * wetPaint * (weight / totalWeight);
+
+				// We can already tell that the neighbor will not have enough paint to continue
+				if(partialWetPaint < epsilon)
+					continue;
+
+				// Log(n) time lookup
+				if (nodeTree.containsKey(vertexIn[focusNode][i])) {
+					nodeTree.get(vertexIn[focusNode][i]).addPaint(partialWetPaint);
+				} else {
+
+					// Remember which node we came from so we don't go back
+					// Remember which predicate we used to get here
+					nodeTree.put(vertexIn[focusNode][i], new PaintedNode(vertexIn[focusNode][i], partialWetPaint));
+				}
+			}
 		}
 		return bcv;
 	}
