@@ -13,22 +13,12 @@ public class PaintedNode implements Comparable<PaintedNode> {
      * The ID of this node
      */
     public final int nodeID;
-    /**
-     * The ID of the node that lead us to the current node
-     */
-    public final int prevNodeID;
-    /**
-     * The ID of the predicate relationship between the previous and current node
-     */
-    public final int predicateID;
 
 
     private double paint;
 
-    public PaintedNode(int nodeID, int predicateID, int prevNodeID, double startPaint) {
+    public PaintedNode(int nodeID, double startPaint) {
         this.nodeID = nodeID;
-        this.prevNodeID = prevNodeID;
-        this.predicateID = predicateID;
         this.paint = startPaint;
     }
 
@@ -56,9 +46,4 @@ public class PaintedNode implements Comparable<PaintedNode> {
             return this.nodeID == ((PaintedNode) obj).nodeID;
         return false;
     }
-
-    public String toString() {
-        return nodeID + " " + predicateID + " " + prevNodeID + " " + paint;
-    }
-
 }
