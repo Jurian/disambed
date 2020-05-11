@@ -45,8 +45,8 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 		writer.write("# Threads: " + config.getThreads() + "\n");
 		writer.write("# BCA Alpha: " + config.getBca().getAlpha() + "\n");
 		writer.write("# BCA Epsilon: " + config.getBca().getEpsilon() + "\n");
-		writer.write("# BCA Directed: " + config.getBca().isDirected() + "\n");
-		writer.write("# BCA normalize: " + config.getBca().getNormalize() + "\n");
+		writer.write("# BCA Type: " + config.getBca().getType() + "\n");
+		writer.write("# BCA Normalize: " + config.getBca().getNormalize() + "\n");
 		writer.write("# Gradient Descent Algorithm: " + config.getOpt().getMethod() + "\n");
 		writer.write("# " + config.getMethod() + " Tolerance: " + config.getOpt().getTolerance() + "\n");
 		writer.write("# " + config.getMethod() + " Maximum Iterations: " + config.getOpt().getMaxiter() + "\n");

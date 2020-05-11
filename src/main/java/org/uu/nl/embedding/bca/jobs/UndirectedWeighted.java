@@ -59,14 +59,10 @@ public class UndirectedWeighted extends BCAJob {
 			double totalWeight = 0;
 
 			for (int i = 0; i < vertexOut[focusNode].length; i++) {
-				// Skip any edges we don't want to follow
-				//if(neighbors[i] == node.prevNodeID) continue;
 				totalWeight += edgeWeights.getValueAsFloat(edgeOut[focusNode][i]);
 			}
 
 			for (int i = 0; i < vertexIn[focusNode].length; i++) {
-				// Skip any edges we don't want to follow
-				//if(neighbors[i] == node.prevNodeID) continue;
 				totalWeight += edgeWeights.getValueAsFloat(edgeIn[focusNode][i]);
 			}
 
@@ -75,17 +71,11 @@ public class UndirectedWeighted extends BCAJob {
 				float weight = edgeWeights.getValueAsFloat(edgeOut[focusNode][i]);
 				partialWetPaint = (1 - alpha) * wetPaint * (weight / totalWeight);
 
-				// We can already tell that the neighbor will not have enough paint to continue
-				if(partialWetPaint < epsilon)
-					continue;
-
 				// Log(n) time lookup
 				if (nodeTree.containsKey(vertexOut[focusNode][i])) {
 					nodeTree.get(vertexOut[focusNode][i]).addPaint(partialWetPaint);
 				} else {
 
-					// Remember which node we came from so we don't go back
-					// Remember which predicate we used to get here
 					nodeTree.put(vertexOut[focusNode][i], new PaintedNode(vertexOut[focusNode][i], partialWetPaint));
 				}
 			}
@@ -95,17 +85,12 @@ public class UndirectedWeighted extends BCAJob {
 				float weight = edgeWeights.getValueAsFloat(edgeIn[focusNode][i]);
 				partialWetPaint = (1 - alpha) * wetPaint * (weight / totalWeight);
 
-				// We can already tell that the neighbor will not have enough paint to continue
-				if(partialWetPaint < epsilon)
-					continue;
-
 				// Log(n) time lookup
 				if (nodeTree.containsKey(vertexIn[focusNode][i])) {
 					nodeTree.get(vertexIn[focusNode][i]).addPaint(partialWetPaint);
 				} else {
 
 					// Remember which node we came from so we don't go back
-					// Remember which predicate we used to get here
 					nodeTree.put(vertexIn[focusNode][i], new PaintedNode(vertexIn[focusNode][i], partialWetPaint));
 				}
 			}

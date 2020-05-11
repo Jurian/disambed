@@ -2,6 +2,7 @@ package org.uu.nl.embedding.bca;
 
 import me.tongfei.progressbar.ProgressBar;
 import org.uu.nl.embedding.bca.jobs.DirectedWeighted;
+import org.uu.nl.embedding.bca.jobs.HybridWeighted;
 import org.uu.nl.embedding.bca.jobs.UndirectedWeighted;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.convert.util.InEdgeNeighborhoodAlgorithm;
@@ -54,19 +55,30 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		try(ProgressBar pb = Configuration.progressBar("BCA", jobs.length, "nodes")) {
 
 			CompletionService<BCV> completionService = new ExecutorCompletionService<>(es);
-			// Choose a graph neighborhood algorithm
+
 			for(int bookmark : jobs) {
 
-				if(config.getBca().isDirected()) {
-					completionService.submit(new DirectedWeighted(
-							graph, bookmark,
-							alpha, epsilon,
-							inVertex, outVertex, inEdge, outEdge));
-				} else {
-					completionService.submit(new UndirectedWeighted(
-							graph, bookmark,
-							alpha, epsilon,
-							inVertex, outVertex, inEdge, outEdge));
+				// Choose a graph neighborhood algorithm
+				switch (config.getBca().getTypeEnum()){
+
+					case DIRECTED:
+						completionService.submit(new DirectedWeighted(
+								graph, bookmark,
+								alpha, epsilon,
+								inVertex, outVertex, inEdge, outEdge));
+						break;
+					case UNDIRECTED:
+						completionService.submit(new UndirectedWeighted(
+								graph, bookmark,
+								alpha, epsilon,
+								inVertex, outVertex, inEdge, outEdge));
+						break;
+					case HYBRID:
+						completionService.submit(new HybridWeighted(
+								graph, bookmark,
+								alpha, epsilon,
+								inVertex, outVertex, inEdge, outEdge));
+						break;
 				}
 			}
 			
@@ -76,6 +88,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 			while(received < jobs.length) {
 
 				try {
+
 					final BCV bcv = completionService.take().get();
 
 					switch (config.getBca().getNormalizeEnum()) {
@@ -89,8 +102,6 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 						case NONE:
 							break;
 					}
-
-					//System.out.println(bcv);
 
 					// It is possible to use this maximum value in GloVe, although in the
 					// literature they set this value to 100 and leave it at that

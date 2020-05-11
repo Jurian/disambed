@@ -4,6 +4,7 @@ import grph.properties.NumericalProperty;
 import org.uu.nl.embedding.bca.util.BCAJob;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.PaintedNode;
+import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 
 import java.util.TreeMap;
@@ -11,12 +12,12 @@ import java.util.TreeMap;
 /**
  * @author Jurian Baas
  */
-public class DirectedWeighted extends BCAJob {
+public class HybridWeighted extends BCAJob {
 
 
     private final int[][] vertexOut, vertexIn, edgeOut, edgeIn;
 
-	public DirectedWeighted(
+	public HybridWeighted(
             InMemoryRdfGraph graph, int bookmark,
             double alpha, double epsilon,
 			int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
@@ -30,6 +31,7 @@ public class DirectedWeighted extends BCAJob {
     @Override
 	protected BCV doWork(final InMemoryRdfGraph graph, final boolean reverse) {
 
+	    final NumericalProperty nodeTypes = graph.getVertexTypeProperty();
         final NumericalProperty edgeWeights = graph.getEdgeWeightProperty();
         final NumericalProperty edgeTypes = graph.getEdgeTypeProperty();
 
@@ -38,6 +40,7 @@ public class DirectedWeighted extends BCAJob {
 
         nodeTree.put(bookmark, new PaintedNode(bookmark, 1));
 
+        NodeInfo nodeType;
 		int[] neighbors, edges;
 		int focusNode;
 		double wetPaint, partialWetPaint;
@@ -55,14 +58,24 @@ public class DirectedWeighted extends BCAJob {
             // If there is not enough paint we stop and don't distribute among the neighbors
             if (wetPaint < epsilon) continue;
 
-            if(reverse) neighbors = vertexIn[focusNode];
-            else neighbors = vertexOut[focusNode];
+            nodeType = NodeInfo.fromByte((byte) nodeTypes.getValueAsInt(focusNode));
 
-            if(reverse) edges = edgeIn[focusNode];
-            else edges = edgeOut[focusNode];
+            if(nodeType == NodeInfo.LITERAL) {
 
+                neighbors = vertexIn[focusNode];
+                edges = edgeIn[focusNode];
+
+            } else {
+
+                if(reverse) neighbors = vertexIn[focusNode];
+                else neighbors = vertexOut[focusNode];
+
+                if(reverse) edges = edgeIn[focusNode];
+                else edges = edgeOut[focusNode];
+            }
+
+            // Use double to avoid integer division
             double totalWeight = 0;
-
             for (int i = 0; i < neighbors.length; i++) {
                 totalWeight += edgeWeights.getValueAsFloat(edges[i]);
             }
@@ -78,7 +91,6 @@ public class DirectedWeighted extends BCAJob {
                 } else {
                     nodeTree.put(neighbors[i], new PaintedNode(neighbors[i], partialWetPaint));
                 }
-
             }
 		}
 		return bcv;

@@ -94,6 +94,7 @@ public abstract class Optimizer implements IOptimizer {
 				}
 
 				localCost = (localCost / coCount);
+
 				opt.addIntermediaryResult(localCost);
 				iterDiff= FastMath.abs(prevCost - localCost);
 
@@ -120,7 +121,7 @@ public abstract class Optimizer implements IOptimizer {
 	}
 
 	private String formatMessage(double iterDiff) {
-		return new BigDecimal(iterDiff).stripTrailingZeros().toPlainString() + "/" + new BigDecimal(tolerance).stripTrailingZeros().toPlainString();
+		return new BigDecimal(iterDiff).stripTrailingZeros().toPlainString();
 	}
 
 	/**
