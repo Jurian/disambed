@@ -3,6 +3,8 @@
  */
 package or.uu.nl.embedding.logic;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 /**
  * Class for negation logic terms.
  * The negation logic term is the opposite Boolean value 
@@ -64,7 +66,8 @@ public class NegLogicTerm implements LogicRule {
 	 * 			logic terms this.firstTerm is comprised of
 	 */
 	public LogicRule[] getAllTerms() {
-		LogicTerm[] allTerms = this.firstTerm.getAllTerms();
+		LogicRule[] allTerms = new LogicRule[] {};
+		allTerms = ArrayUtils.addAll(allTerms,  this.firstTerm.getAllTerms());
 		return allTerms;
 	}
 
