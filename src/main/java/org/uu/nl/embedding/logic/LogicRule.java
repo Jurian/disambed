@@ -1,7 +1,7 @@
 /**
  * 
  */
-package or.uu.nl.embedding.logic;
+package org.uu.nl.embedding.logic;
 
 /**
  * Interface class for logic rules
@@ -14,4 +14,5 @@ public interface LogicRule {
 
 	abstract boolean getValue();
 	abstract String getName();
+	abstract String toString();
 }

@@ -1,21 +1,18 @@
-/**
- * 
- */
-package or.uu.nl.embedding.logic;
+package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
 
 /**
- * Class for conjunction logic formulae.
- * The conjunction logic formula is the Boolean value 
- * 		returning True if and only if both terms are True
+ * Class for disjunction logic formulae.
+ * The disjunction logic formula is the Boolean value 
+ * 		returning True if one of both terms is True
  * 		else it returns False
  * 
  * @author Euan Westenbroek
  * @version 1.0
  * @since 12-05-2020
  */
-public class Conjunction implements LogicRule {
+public class Disjunction implements LogicRule {
 
 	protected LogicTerm firstTerm;
 	protected LogicTerm secondTerm;
@@ -31,7 +28,7 @@ public class Conjunction implements LogicRule {
 	 * @param firstTerm A LogicTerm class representing the first logic formula
 	 * @param secondTerm A LogicTerm class representing the second logic formula
 	 */
-	protected Conjunction(LogicTerm firstTerm, LogicTerm secondTerm) {
+	protected Disjunction(LogicTerm firstTerm, LogicTerm secondTerm) {
 		super();
 		this.firstTerm = firstTerm;
 		this.secondTerm = secondTerm;
@@ -48,7 +45,7 @@ public class Conjunction implements LogicRule {
 	 * @param secondTerm A LogicTerm class representing the second logic formula
 	 * @param name The given name of this logic formula defined by the user
 	 */
-	protected Conjunction(LogicTerm term, LogicTerm secondTerm, String name) {
+	protected Disjunction(LogicTerm term, LogicTerm secondTerm, String name) {
 		super();
 		this.firstTerm = term;
 		createFinalValue();
@@ -63,7 +60,7 @@ public class Conjunction implements LogicRule {
 	private void createFinalValue() {
 		boolean finalVal;
 		
-		finalVal = (this.firstTerm.getValue() && this.secondTerm.getValue()); // A AND B
+		finalVal = (this.firstTerm.getValue() || this.secondTerm.getValue()); // A OR B
 		
 		this.finalValue = finalVal;
 	}
@@ -73,7 +70,7 @@ public class Conjunction implements LogicRule {
 	 * 		in standard first-order logic form
 	 */
 	private void createNameSimple() {
-		this.nameSimple = ("(" + this.firstTerm.getName() + " AND " + this.secondTerm.getName() + ")");
+		this.nameSimple = ("(" + this.firstTerm.getName() + " OR " + this.secondTerm.getName() + ")");
 	}
 
 	/**
@@ -81,11 +78,11 @@ public class Conjunction implements LogicRule {
 	 * 		in Conjunctive Normal Form (CNF)
 	 */
 	private void createNameCNF() {
-		this.nameCNF = ("(" + this.firstTerm.getName() + "AND " + this.secondTerm.getName() + ")");
+		this.nameCNF = ("(" + this.firstTerm.getName() + " OR " + this.secondTerm.getName() + ")");
 	}
 
 	/**
-	 * Sets the String represented name of the conjunction 
+	 * Sets the String represented name of the disjunction 
 	 * 		in either the user-given name form or else 
 	 * 		in standard first-order logic form
 	 */
@@ -99,7 +96,7 @@ public class Conjunction implements LogicRule {
 	}
 	
 	/**
-	 * @return Returns the Boolean value of this conjunctive logic formula
+	 * @return Returns the Boolean value of this disjunctive logic formula
 	 */
 	public boolean getValue() {
 		return this.finalValue;

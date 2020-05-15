@@ -1,7 +1,7 @@
 /**
  * 
  */
-package or.uu.nl.embedding.logic;
+package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -14,22 +14,24 @@ import org.apache.commons.lang3.ArrayUtils;
  * @version 1.0
  * @since 12-05-2020
  */
-public class NegLogicTerm implements LogicRule {
+public class Negation implements LogicRule {
 	
 	protected LogicTerm firstTerm;
 	protected boolean finalValue;
 	private String name;
+	private String str;
 	
 	/**
 	 * Constructor method without user-given name declaration.
 	 * 
 	 * @param term A LogicTerm class representing the negated logic term 
 	 */
-	protected NegLogicTerm(LogicTerm term) {
+	protected Negation(LogicTerm term) {
 		super();
 		this.firstTerm = term;
 		this.finalValue = !this.firstTerm.getValue(); // NOT A
 		this.name = ("NOT " + this.firstTerm.getName());
+		this.str =  ("NOT " + this.firstTerm.toString());
 	}
 	
 	/**
@@ -38,11 +40,12 @@ public class NegLogicTerm implements LogicRule {
 	 * @param term A LogicTerm class representing the negated logic term
 	 * @param name The given name of the logic term defined by the user
 	 */
-	protected NegLogicTerm(LogicTerm term, String name) {
+	protected Negation(LogicTerm term, String name) {
 		super();
 		this.firstTerm = term;
 		this.finalValue = !this.firstTerm.getValue();
 		this.name = name;
+		this.str =  ("NOT " + this.firstTerm.toString());
 	}
 	
 	/**
@@ -57,6 +60,13 @@ public class NegLogicTerm implements LogicRule {
 	 */
 	public String getName() {
 		return this.name;
+	}
+	
+	/**
+	 * @return Returns the string of the logic term
+	 */
+	public String toString() {
+		return this.str;
 	}
 	
 	/**

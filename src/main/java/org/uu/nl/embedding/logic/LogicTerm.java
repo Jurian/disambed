@@ -1,7 +1,7 @@
 /**
  * 
  */
-package or.uu.nl.embedding.logic;
+package org.uu.nl.embedding.logic;
 
 /**
  * Class for simple logic terms.
@@ -43,12 +43,20 @@ public class LogicTerm implements LogicRule {
 		return this.name;
 	}
 	
+	public String toString() {
+		if(firstTerm) {
+			return "true";
+		} else {
+			return "false";
+		}
+	}
+	
 	/**
 	 * @return Returns an array with the logic term itself; 
 	 * 		In this case it return "[this]" (i.e. self)
 	 */
-	public LogicTerm[] getAllTerms() {
-		LogicTerm[] allTerms = new LogicTerm[] {this};
+	public LogicRule[] getAllTerms() {
+		LogicRule[] allTerms = new LogicRule[] {this};
 		return allTerms;
 	}
 	

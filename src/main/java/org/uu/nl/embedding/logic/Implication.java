@@ -1,7 +1,7 @@
 /**
  * 
  */
-package or.uu.nl.embedding.logic;
+package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
 

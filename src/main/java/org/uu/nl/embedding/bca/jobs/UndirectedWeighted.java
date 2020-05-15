@@ -1,11 +1,15 @@
 package org.uu.nl.embedding.bca.jobs;
 
 import grph.properties.NumericalProperty;
+
 import org.uu.nl.embedding.bca.util.BCAJob;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.PaintedNode;
+import org.uu.nl.embedding.logic.DateCompareLogic;
+import org.uu.nl.embedding.logic.LogicRule;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 
+import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 
@@ -25,6 +29,50 @@ public class UndirectedWeighted extends BCAJob {
 		this.vertexIn = vertexIn;
 		this.edgeOut = edgeOut;
 		this.edgeIn = edgeIn;
+	}
+
+	/**
+	 * Nog niet af!!!
+	 * 
+	 * @author Euan Westenbroek
+	 * @version 0.1
+	 * @since 14-05-2020
+	 */
+	protected BCV addDateAwareWindow(final BCV bcv, final DateCompareLogic dateRule, final InMemoryRdfGraph graph) {
+
+		final NumericalProperty edgeWeights = graph.getEdgeWeightProperty();
+		final NumericalProperty edgeTypes = graph.getEdgeTypeProperty();
+		final TreeMap<Integer, PaintedNode> nodeTree = new TreeMap<>();
+		final BCV awareBcv = new BCV(bcv.getRootNode());
+
+		nodeTree.put(bcv.getRootNode(), new PaintedNode(bcv.getRootNode(), 1));
+
+		int focusNode;
+		double wetPaint, partialWetPaint;
+		PaintedNode node;
+		
+
+		
+		// wat zit er in een bcv? en hoe kunnen we die langs gaan om buren te checken op waarden en paint aanpassen?
+		for(Map.Entry<Integer, Float> entry : bcv.entrySet()) {
+			focusNode = entry.getKey();
+		}
+		
+		while (!nodeTree.isEmpty()) {
+
+			node = nodeTree.pollFirstEntry().getValue();
+			focusNode = node.nodeID;
+			wetPaint = node.getPaint();
+
+            // Keep part of the available paint on this node, distribute the rest
+			awareBcv.add(focusNode, (alpha * wetPaint));
+            
+			for (int i = 0; i < vertexOut[focusNode].length; i++) {
+				
+			}
+		}
+		
+		return awareBcv;
 	}
 
 	@Override

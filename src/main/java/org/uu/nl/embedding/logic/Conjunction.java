@@ -1,29 +1,30 @@
 /**
  * 
  */
-package or.uu.nl.embedding.logic;
+package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
 
 /**
- * Class for bicondition logic formulae.
- * The bicondition logic formula is the Boolean value 
- * 		returning True if and only if both terms are True,
- * 		returning True if and only if both terms are False,
+ * Class for conjunction logic formulae.
+ * The conjunction logic formula is the Boolean value 
+ * 		returning True if and only if both terms are True
  * 		else it returns False
  * 
  * @author Euan Westenbroek
  * @version 1.0
  * @since 12-05-2020
  */
-public class Bicondition implements LogicRule {
-	
+public class Conjunction implements LogicRule {
+
 	protected LogicTerm firstTerm;
 	protected LogicTerm secondTerm;
 	protected boolean finalValue;
 	private String nameGiven;
 	private String nameSimple;
 	private String nameCNF;
+	private String strSimple;
+	private String strCNF;
 
 	
 	/**
@@ -32,16 +33,16 @@ public class Bicondition implements LogicRule {
 	 * @param firstTerm A LogicTerm class representing the first logic formula
 	 * @param secondTerm A LogicTerm class representing the second logic formula
 	 */
-	protected Bicondition(LogicTerm firstTerm, LogicTerm secondTerm) {
+	protected Conjunction(LogicTerm firstTerm, LogicTerm secondTerm) {
 		super();
 		this.firstTerm = firstTerm;
 		this.secondTerm = secondTerm;
 		createFinalValue();
-		determineNameGiven("None");
+		determineNameGiven(null);
 		createNameSimple();
 		createNameCNF();
 	}
-
+	
 	/**
 	 * Constructor method with user-given name declaration.
 	 * 
@@ -49,7 +50,7 @@ public class Bicondition implements LogicRule {
 	 * @param secondTerm A LogicTerm class representing the second logic formula
 	 * @param name The given name of this logic formula defined by the user
 	 */
-	protected Bicondition(LogicTerm term, LogicTerm secondTerm, String name) {
+	protected Conjunction(LogicTerm term, LogicTerm secondTerm, String name) {
 		super();
 		this.firstTerm = term;
 		createFinalValue();
@@ -59,44 +60,41 @@ public class Bicondition implements LogicRule {
 	}
 	
 	/**
-	 * Sets the Boolean finalValue of this biconditional logic formula.
+	 * Sets the Boolean finalValue of this conjunctive logic formula.
 	 */
 	private void createFinalValue() {
 		boolean finalVal;
 		
-		boolean firstDist = (!this.firstTerm.getValue()) && (!this.secondTerm.getValue()); // NOT A AND NOT B = C
-		boolean secondDist = (this.firstTerm.getValue()) && (this.secondTerm.getValue()); // A AND B = D
-		finalVal = (firstDist || secondDist); // C OR D
+		finalVal = (this.firstTerm.getValue() && this.secondTerm.getValue()); // A AND B
 		
 		this.finalValue = finalVal;
 	}
 	
 	/**
-	 * Sets the String represented name of the bicondition 
+	 * Sets the String represented name of the conjunction 
 	 * 		in standard first-order logic form
 	 */
 	private void createNameSimple() {
-		this.nameSimple = ("(IF AND ONLY IF " + this.firstTerm.getName() + " THEN " + this.secondTerm.getName() + ")");
+		this.nameSimple = ("(" + this.firstTerm.getName() + " AND " + this.secondTerm.getName() + ")");
+		this.strSimple =  ("(" + this.firstTerm.toString() + " AND " + this.secondTerm.toString() + ")");
 	}
 
 	/**
-	 * Sets the String represented name of the bicondition 
+	 * Sets the String represented name of the conjunction 
 	 * 		in Conjunctive Normal Form (CNF)
 	 */
 	private void createNameCNF() {
-		String firstDist = ("(NOT " + this.firstTerm.getName() + " AND NOT " + this.secondTerm.getName() + ")");
-		String secondDist = ("( " + this.firstTerm.getName() + " AND " + this.secondTerm.getName() + ")");
-		
-		this.nameCNF = ("(" + firstDist + " OR " + secondDist + ")");
+		this.nameCNF = ("(" + this.firstTerm.getName() + "AND " + this.secondTerm.getName() + ")");
+		this.strCNF = ("(" + this.firstTerm.toString() + "AND " + this.secondTerm.toString() + ")");
 	}
 
 	/**
-	 * Sets the String represented name of the bicondition 
+	 * Sets the String represented name of the conjunction 
 	 * 		in either the user-given name form or else 
 	 * 		in standard first-order logic form
 	 */
 	private void determineNameGiven(String name) {
-		if(name != "None") {
+		if(name != null) {
 			this.nameGiven = name;
 		}
 		else {
@@ -105,7 +103,7 @@ public class Bicondition implements LogicRule {
 	}
 	
 	/**
-	 * @return Returns the Boolean value of this biconditional logic formula
+	 * @return Returns the Boolean value of this conjunctive logic formula
 	 */
 	public boolean getValue() {
 		return this.finalValue;
@@ -132,6 +130,22 @@ public class Bicondition implements LogicRule {
 	 */
 	public String getNameCNF() {
 		return this.nameCNF;
+	}
+	
+	/**
+	 * @return Returns the simple form string of this logic 
+	 * 		formula (generated)
+	 */
+	public String toString() {
+		return this.strSimple;
+	}
+	
+	/**
+	 * @return Returns the Conjunctive Normal Form (CNF) string of this logic 
+	 * 		formula (generated)
+	 */
+	public String toStringCNF() {
+		return this.strCNF;
 	}
 	
 	/**

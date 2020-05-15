@@ -1,19 +1,23 @@
-package or.uu.nl.embedding.logic;
+/**
+ * 
+ */
+package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
 
 /**
- * Class for disjunction logic formulae.
- * The disjunction logic formula is the Boolean value 
- * 		returning True if one of both terms is True
+ * Class for bicondition logic formulae.
+ * The bicondition logic formula is the Boolean value 
+ * 		returning True if and only if both terms are True,
+ * 		returning True if and only if both terms are False,
  * 		else it returns False
  * 
  * @author Euan Westenbroek
  * @version 1.0
  * @since 12-05-2020
  */
-public class Disjunction implements LogicRule {
-
+public class Bicondition implements LogicRule {
+	
 	protected LogicTerm firstTerm;
 	protected LogicTerm secondTerm;
 	protected boolean finalValue;
@@ -28,7 +32,7 @@ public class Disjunction implements LogicRule {
 	 * @param firstTerm A LogicTerm class representing the first logic formula
 	 * @param secondTerm A LogicTerm class representing the second logic formula
 	 */
-	protected Disjunction(LogicTerm firstTerm, LogicTerm secondTerm) {
+	protected Bicondition(LogicTerm firstTerm, LogicTerm secondTerm) {
 		super();
 		this.firstTerm = firstTerm;
 		this.secondTerm = secondTerm;
@@ -37,7 +41,7 @@ public class Disjunction implements LogicRule {
 		createNameSimple();
 		createNameCNF();
 	}
-	
+
 	/**
 	 * Constructor method with user-given name declaration.
 	 * 
@@ -45,7 +49,7 @@ public class Disjunction implements LogicRule {
 	 * @param secondTerm A LogicTerm class representing the second logic formula
 	 * @param name The given name of this logic formula defined by the user
 	 */
-	protected Disjunction(LogicTerm term, LogicTerm secondTerm, String name) {
+	protected Bicondition(LogicTerm term, LogicTerm secondTerm, String name) {
 		super();
 		this.firstTerm = term;
 		createFinalValue();
@@ -55,34 +59,39 @@ public class Disjunction implements LogicRule {
 	}
 	
 	/**
-	 * Sets the Boolean finalValue of this conjunctive logic formula.
+	 * Sets the Boolean finalValue of this biconditional logic formula.
 	 */
 	private void createFinalValue() {
 		boolean finalVal;
 		
-		finalVal = (this.firstTerm.getValue() || this.secondTerm.getValue()); // A OR B
+		boolean firstDist = (!this.firstTerm.getValue()) && (!this.secondTerm.getValue()); // NOT A AND NOT B = C
+		boolean secondDist = (this.firstTerm.getValue()) && (this.secondTerm.getValue()); // A AND B = D
+		finalVal = (firstDist || secondDist); // C OR D
 		
 		this.finalValue = finalVal;
 	}
 	
 	/**
-	 * Sets the String represented name of the conjunction 
+	 * Sets the String represented name of the bicondition 
 	 * 		in standard first-order logic form
 	 */
 	private void createNameSimple() {
-		this.nameSimple = ("(" + this.firstTerm.getName() + " OR " + this.secondTerm.getName() + ")");
+		this.nameSimple = ("(IF AND ONLY IF " + this.firstTerm.getName() + " THEN " + this.secondTerm.getName() + ")");
 	}
 
 	/**
-	 * Sets the String represented name of the conjunction 
+	 * Sets the String represented name of the bicondition 
 	 * 		in Conjunctive Normal Form (CNF)
 	 */
 	private void createNameCNF() {
-		this.nameCNF = ("(" + this.firstTerm.getName() + " OR " + this.secondTerm.getName() + ")");
+		String firstDist = ("(NOT " + this.firstTerm.getName() + " AND NOT " + this.secondTerm.getName() + ")");
+		String secondDist = ("( " + this.firstTerm.getName() + " AND " + this.secondTerm.getName() + ")");
+		
+		this.nameCNF = ("(" + firstDist + " OR " + secondDist + ")");
 	}
 
 	/**
-	 * Sets the String represented name of the disjunction 
+	 * Sets the String represented name of the bicondition 
 	 * 		in either the user-given name form or else 
 	 * 		in standard first-order logic form
 	 */
@@ -96,7 +105,7 @@ public class Disjunction implements LogicRule {
 	}
 	
 	/**
-	 * @return Returns the Boolean value of this disjunctive logic formula
+	 * @return Returns the Boolean value of this biconditional logic formula
 	 */
 	public boolean getValue() {
 		return this.finalValue;
