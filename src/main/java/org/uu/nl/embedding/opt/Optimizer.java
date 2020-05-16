@@ -64,13 +64,12 @@ public abstract class Optimizer implements IOptimizer {
 	}
 
 	@Override
-	public Optimum optimize() {
+	public Optimum optimize() throws OptimizationFailedException {
 
 		final Optimum opt = new Optimum();
 		final ExecutorService es = Executors.newWorkStealingPool(numThreads);
 		final CompletionService<Float> completionService = new ExecutorCompletionService<>(es);
 
-		double finalCost = 0;
 		try(ProgressBar pb = Configuration.progressBar(getName(), maxIterations, "epochs")) {
 			double prevCost = 0;
 			double iterDiff;
@@ -93,6 +92,10 @@ public abstract class Optimizer implements IOptimizer {
 					}
 				}
 
+				if(Double.isNaN(localCost) || Double.isInfinite(localCost)) {
+					throw new OptimizationFailedException("Cost infinite or NAN");
+				}
+
 				localCost = (localCost / coCount);
 
 				opt.addIntermediaryResult(localCost);
@@ -103,7 +106,12 @@ public abstract class Optimizer implements IOptimizer {
 				prevCost = localCost;
 
 				if(iterDiff <= tolerance) {
-					finalCost = localCost;
+
+					opt.setResult(extractResult());
+					opt.setFinalCost(localCost);
+
+					logger.info("Finished optimization with final cost: " + new BigDecimal(localCost).stripTrailingZeros().toEngineeringString());
+
 					break;
 				}
 			}
@@ -111,11 +119,6 @@ public abstract class Optimizer implements IOptimizer {
 		} finally {
 			es.shutdown();
 		}
-
-		opt.setResult(extractResult());
-		opt.setFinalCost(finalCost);
-
-		logger.info("Finished optimization with final cost: " + new BigDecimal(finalCost).stripTrailingZeros().toEngineeringString());
 
 		return opt;
 	}
