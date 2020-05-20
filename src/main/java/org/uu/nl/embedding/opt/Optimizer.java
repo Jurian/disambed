@@ -71,6 +71,7 @@ public abstract class Optimizer implements IOptimizer {
 		final CompletionService<Float> completionService = new ExecutorCompletionService<>(es);
 
 		try(ProgressBar pb = Configuration.progressBar(getName(), maxIterations, "epochs")) {
+
 			double prevCost = 0;
 			double iterDiff;
 			for (int iteration = 0; iteration < maxIterations; iteration++) {
@@ -109,8 +110,6 @@ public abstract class Optimizer implements IOptimizer {
 
 					opt.setResult(extractResult());
 					opt.setFinalCost(localCost);
-
-					logger.info("Finished optimization with final cost: " + new BigDecimal(localCost).stripTrailingZeros().toEngineeringString());
 
 					break;
 				}
