@@ -162,6 +162,10 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 							final int e1 = g.addDirectedSimpleEdge(vert, otherVert);
 							final int e2 = g.addDirectedSimpleEdge(otherVert, vert);
 
+							// TODO: This would be nicer than adding two edges, however the edge-neighborhood algorithms
+							//  would need to account for this, among other things
+							//g.addSimpleEdge(vert, otherVert, false);
+
 							// Similarities between vertices are stored as edge width property, which is limited to
 							// a few bits so we store the similarity as a byte (a number between 0 and 100)
 							g.getEdgeWeightProperty().setValue(e1, similarity);
