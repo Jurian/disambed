@@ -15,9 +15,7 @@ import toools.collections.primitive.LucIntSet;
  */
 public class InEdgeNeighborhoodAlgorithm extends EdgeNeighborhoodAlgorithm {
 
-    public InEdgeNeighborhoodAlgorithm(Configuration config) {
-        super(config);
-    }
+    public InEdgeNeighborhoodAlgorithm(Configuration config) { super(config); }
 
     @Override
     FindEdges getEdgesAlgorithm(ProgressBar pb, Grph g, int threadId, int numThreads, int[] vertices, int[] verticesPerThread, int[][] v) {
@@ -29,8 +27,7 @@ public class InEdgeNeighborhoodAlgorithm extends EdgeNeighborhoodAlgorithm {
         return Grph.DIRECTION.in;
     }
 
-    class FindInEdges extends EdgeNeighborhoodAlgorithm.FindEdges {
-
+    class FindInEdges extends FindEdges {
 
         FindInEdges(ProgressBar pb, Grph g, int threadId, int numThreads, int[] vertices, int[] verticesPerThread, int[][] v) {
             super(pb, g, threadId, numThreads, vertices, verticesPerThread, v);
