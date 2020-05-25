@@ -15,7 +15,7 @@ import org.apache.log4j.Logger;
  * Class for a simple date format
  * 
  * @author Euan Westenbroek
- * @version 1.0
+ * @version 1.1
  * @since 13-05-2020
  */
 public class SimpleDate {
@@ -73,27 +73,23 @@ public class SimpleDate {
     }
     
     public static boolean isDateFormat(String pattern) {
-    	try {
-	    	switch(pattern) {
-	    		// Check for universal date format
-				case "\\0[1-9]-\\0[1-9]-\\d{4}":
-	    			return true;
-				case "\\[1-2][0-9]-\\0[1-9]-\\d{4}":
-	    			return true;
-	    		case "\\3[0-2]-\\0[1-9]-\\d{4}":
-	    			return true;
-				case "\\0[1-9]-\\1[0-9]-\\d{4}":
-	    			return true;
-				case "\\[1-2][0-9]-\\1[0-9]-\\d{4}":
-	    			return true;
-	    		case "\\3[0-2]-\\1[0-9]-\\d{4}":
-	    			return true;
-	    	}
-	    	    	
-	    } catch(DateTimeParseException e) {
-                logger.warn("Could not covert to date: " + e.getMessage());
-	    	}
-		return false;
+    	switch(pattern) {
+    		// Check for universal date format
+			case "\\0[1-9]-\\0[1-9]-\\d{4}":
+    			return true;
+			case "\\[1-2][0-9]-\\0[1-9]-\\d{4}":
+    			return true;
+    		case "\\3[0-2]-\\0[1-9]-\\d{4}":
+    			return true;
+			case "\\0[1-9]-\\1[0-9]-\\d{4}":
+    			return true;
+			case "\\[1-2][0-9]-\\1[0-9]-\\d{4}":
+    			return true;
+    		case "\\3[0-2]-\\1[0-9]-\\d{4}":
+    			return true;
+    		default:
+    			return false;
+    	}
     }
 
 
