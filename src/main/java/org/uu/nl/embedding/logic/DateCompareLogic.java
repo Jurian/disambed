@@ -12,17 +12,26 @@ import org.uu.nl.embedding.logic.util.SimpleDate;
  * 		constraints that apply in practice.
  * 
  * @author Euan Westenbroek
- * @version 1.0
+ * @version 1.1
  * @since 14-05-2020
  */
 public abstract class DateCompareLogic implements LogicRule {
 	
-	protected DateLogic firstDay;
-	protected DateLogic secondDay;
-	protected boolean isDate;
-	protected boolean logicValue;
-	protected String name;
-	protected String str;
+	protected DateLogic firstDay = null;
+	protected DateLogic secondDay = null;
+	protected Boolean isDate = null;
+	protected Boolean logicValue = null;
+	protected String name = null;
+	protected String str = null;
+	
+	public DateCompareLogic() {
+		/*
+		 * This is a filler constructor to use for
+		 * creating an undefined class initialization
+		 * which makes it possible to use this class
+		 * as a logic type only to use its static methods.
+		 */ 
+	}
 	
 	public DateCompareLogic(String firstDate, String secondDate) {
 		this.firstDay = new DateLogic(firstDate);
@@ -40,7 +49,21 @@ public abstract class DateCompareLogic implements LogicRule {
 		this.secondDay = secondDate;
 	}
 	
-	protected abstract void compareDates();
+	protected abstract void compareTheseDates();
+	
+	/**
+	 * 
+	 * @param 	firstDate A String representing the logic date format 
+	 * @param 	secondDate A String representing the logic date format
+	 * @param 	daysDifference An integer specifying the allowed number of difference
+	 * 			between the two dates
+	 * @return 	boolean Returns false if method is not
+	 * 			newly specified in child class
+	 */
+	public static boolean compareTwoDates(String firstDate, String secondDate, int daysDifference) {
+		return false;
+	}
+
 	
 	/**
 	 * @return Returns the Boolean value whether it is the same date (true) or not (false)
@@ -75,7 +98,7 @@ public abstract class DateCompareLogic implements LogicRule {
 	}
 	
 	/**
-	 * @return Returns an array of SimpleDates of this SameDateLogic (generated)
+	 * @return Returns an array of SimpleDates of this ExactSameDateLogic (generated)
 	 */
 	public SimpleDate[] getSimpleDate() {
 		return new SimpleDate[] {
