@@ -15,7 +15,7 @@ import org.apache.log4j.Logger;
  * Class for a simple date format
  * 
  * @author Euan Westenbroek
- * @version 1.1
+ * @version 1.2
  * @since 13-05-2020
  */
 public class SimpleDate {
@@ -25,20 +25,43 @@ public class SimpleDate {
     
     private String date;
     private boolean isDate;
+	private int[] intDate = new int[3];
 
     public SimpleDate(final String pattern) {
     	this.date = null;
     	isDate = checkDateFormat(this.date);
-    	throwException();
+    	checkForException();
+    	setDateAsIntArray();
     }
     
     public String toString() {
     	return this.date;
     }
+
+	/**
+	 * 
+	 * @return Returns the date as an integer array as [dd, mm, yyyy]
+	 */
+    public int[] getDateAsIntArray() {
+    	return this.intDate;
+    }
     
-    private void throwException() {
+
+    private void checkForException() {
     	if(!this.isDate) {
         	throw new IllegalArgumentException("Invalid date format: " + this.date);
+    	}
+    }
+
+	/**
+	 * 
+	 * Sets the date as an integer array as [dd, mm, yyyy]
+	 */
+    private void setDateAsIntArray() {
+    	String[] tokens = this.date.split("-");
+    	for(int i = 0; i < tokens.length; i++) {
+    		try { this.intDate[i] = Integer.parseInt(tokens[i]); }
+    		catch (NumberFormatException e) { break; }
     	}
     }
     
