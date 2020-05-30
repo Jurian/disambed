@@ -90,6 +90,14 @@ public class DateLogic implements LogicRule {
 	}
 	
 	/**
+	 * 
+	 * @return Returns the date as an integer array as [dd, mm, yyyy]
+	 */
+	public int[] getDateAsIntArray() {
+		return this.firstDay.getDateAsIntArray();
+	}
+	
+	/**
 	 * @return Returns the name of the date term (given or generated)
 	 */
 	@Override
