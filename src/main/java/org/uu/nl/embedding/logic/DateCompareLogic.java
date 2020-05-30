@@ -73,6 +73,14 @@ public abstract class DateCompareLogic implements LogicRule {
 	}
 	
 	/**
+	 * 
+	 * @return Returns the dates as an integer arrays as [[dd, mm, yyyy], [dd, mm, yyyy]]
+	 */
+	public int[][] getDateAsIntArray() {
+		return new int[][] {this.firstDay.getDateAsIntArray(), this.secondDay.getDateAsIntArray()};
+	}
+	
+	/**
 	 * @return Returns the name of the SameDate term (given or generated)
 	 */
 	public String getName() {
