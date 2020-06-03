@@ -4,6 +4,7 @@
 package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
 
 /**
  * Class for negation logic terms.
@@ -16,23 +17,11 @@ import org.apache.commons.lang3.ArrayUtils;
  */
 public class Negation implements LogicRule {
 	
-	protected LogicTerm firstTerm;
+	protected LogicRule firstTerm;
 	protected boolean finalValue;
-	private String name;
+	private String name = null;
 	private String str;
-	
-	/**
-	 * Constructor method without user-given name declaration.
-	 * 
-	 * @param term A LogicTerm class representing the negated logic term 
-	 */
-	protected Negation(LogicTerm term) {
-		super();
-		this.firstTerm = term;
-		this.finalValue = !this.firstTerm.getValue(); // NOT A
-		this.name = ("NOT " + this.firstTerm.getName());
-		this.str =  ("NOT " + this.firstTerm.toString());
-	}
+	private InMemoryDdnnfGraph ddnnfGraph;
 	
 	/**
 	 * Constructor method with user-given name declaration.
@@ -40,12 +29,22 @@ public class Negation implements LogicRule {
 	 * @param term A LogicTerm class representing the negated logic term
 	 * @param name The given name of the logic term defined by the user
 	 */
-	protected Negation(LogicTerm term, String name) {
+	protected Negation(LogicRule term, String name) {
 		super();
 		this.firstTerm = term;
 		this.finalValue = !this.firstTerm.getValue();
 		this.name = name;
 		this.str =  ("NOT " + this.firstTerm.toString());
+		generateDdnnfGraph();
+	}
+	
+	/**
+	 * Constructor method without user-given name declaration.
+	 * 
+	 * @param term A LogicTerm class representing the negated logic term 
+	 */
+	protected Negation(LogicRule term) {
+		this(term, null);
 	}
 	
 	/**
@@ -79,6 +78,31 @@ public class Negation implements LogicRule {
 		LogicRule[] allTerms = new LogicRule[] {};
 		allTerms = ArrayUtils.addAll(allTerms,  this.firstTerm.getAllTerms());
 		return allTerms;
+	}
+	
+	/**
+	 * @return Returns this LogicRule as Precedent
+	 */
+	public LogicRule getPrecedent() {
+		return this;
+	}
+	
+	/**
+	 * Placeholder for abstract method
+	 * This method shouldn't be used
+	 */
+	public LogicRule getAntecedent() {
+		return this;
+	}
+
+	private void generateDdnnfGraph() {
+		InMemoryDdnnfGraph leftGraph = this.firstTerm.getDdnnfGraph();
+		
+		ddnnfGraph = new InMemoryDdnnfGraph(this, leftGraph);
+	}
+	
+	public InMemoryDdnnfGraph getDdnnfGraph() {
+		return this.ddnnfGraph;
 	}
 
 }

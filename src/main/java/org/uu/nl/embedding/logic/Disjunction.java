@@ -1,6 +1,7 @@
 package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
 
 /**
  * Class for disjunction logic formulae.
@@ -9,34 +10,20 @@ import org.apache.commons.lang3.ArrayUtils;
  * 		else it returns False
  * 
  * @author Euan Westenbroek
- * @version 1.0
+ * @version 1.1
  * @since 12-05-2020
  */
 public class Disjunction implements LogicRule {
 
-	protected LogicTerm firstTerm;
-	protected LogicTerm secondTerm;
+	protected LogicRule firstTerm;
+	protected LogicRule secondTerm;
 	protected boolean finalValue;
-	private String nameGiven;
+	private String nameGiven = null;
 	private String nameSimple;
 	private String nameCNF;
+	private InMemoryDdnnfGraph ddnnfGraph;
 
-	
-	/**
-	 * Constructor method with user-given name declaration.
-	 * 
-	 * @param firstTerm A LogicTerm class representing the first logic formula
-	 * @param secondTerm A LogicTerm class representing the second logic formula
-	 */
-	protected Disjunction(LogicTerm firstTerm, LogicTerm secondTerm) {
-		super();
-		this.firstTerm = firstTerm;
-		this.secondTerm = secondTerm;
-		createFinalValue();
-		determineNameGiven("None");
-		createNameSimple();
-		createNameCNF();
-	}
+
 	
 	/**
 	 * Constructor method with user-given name declaration.
@@ -45,13 +32,25 @@ public class Disjunction implements LogicRule {
 	 * @param secondTerm A LogicTerm class representing the second logic formula
 	 * @param name The given name of this logic formula defined by the user
 	 */
-	protected Disjunction(LogicTerm term, LogicTerm secondTerm, String name) {
+	protected Disjunction(LogicRule firstTerm, LogicRule secondTerm, String name) {
 		super();
-		this.firstTerm = term;
+		this.firstTerm = firstTerm;
+		this.secondTerm = secondTerm;
 		createFinalValue();
 		determineNameGiven(name);
 		createNameSimple();
 		createNameCNF();
+		generateDdnnfGraph();
+	}
+	
+	/**
+	 * Constructor method with user-given name declaration.
+	 * 
+	 * @param firstTerm A LogicTerm class representing the first logic formula
+	 * @param secondTerm A LogicTerm class representing the second logic formula
+	 */
+	protected Disjunction(LogicRule firstTerm, LogicRule secondTerm) {
+		this(firstTerm, secondTerm, null);
 	}
 	
 	/**
@@ -87,7 +86,7 @@ public class Disjunction implements LogicRule {
 	 * 		in standard first-order logic form
 	 */
 	private void determineNameGiven(String name) {
-		if(name != "None") {
+		if(name != null) {
 			this.nameGiven = name;
 		}
 		else {
@@ -137,6 +136,25 @@ public class Disjunction implements LogicRule {
 		LogicRule[] allTerms = this.firstTerm.getAllTerms(); 
 		allTerms = ArrayUtils.addAll(allTerms,  this.secondTerm.getAllTerms());
 		return allTerms;
+	}
+	
+	public LogicRule getPrecedent() {
+		return this.firstTerm;
+	}
+	
+	public LogicRule getAntecedent() {
+		return this.secondTerm;
+	}
+
+	private void generateDdnnfGraph() {
+		InMemoryDdnnfGraph leftGraph = this.firstTerm.getDdnnfGraph();
+		InMemoryDdnnfGraph rightGraph = this.secondTerm.getDdnnfGraph();
+		
+		ddnnfGraph = new InMemoryDdnnfGraph(this, leftGraph, rightGraph);
+	}
+	
+	public InMemoryDdnnfGraph getDdnnfGraph() {
+		return this.ddnnfGraph;
 	}
 	
 }

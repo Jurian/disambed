@@ -114,4 +114,12 @@ public abstract class DateCompareLogic implements LogicRule {
 				this.secondDay.getSimpleDate()
 		};
 	}
+	
+	public LogicRule getPrecedent() {
+		return this.firstDay;
+	}
+	
+	public LogicRule getAntecedent() {
+		return this.secondDay;
+	}
 }

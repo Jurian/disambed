@@ -4,6 +4,7 @@
 package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
 
 /**
  * Class for bicondition logic formulae.
@@ -18,29 +19,14 @@ import org.apache.commons.lang3.ArrayUtils;
  */
 public class Bicondition implements LogicRule {
 	
-	protected LogicTerm firstTerm;
-	protected LogicTerm secondTerm;
+	protected LogicRule firstTerm;
+	protected LogicRule secondTerm;
 	protected boolean finalValue;
-	private String nameGiven;
+	private String nameGiven = null;
 	private String nameSimple;
 	private String nameCNF;
+	private InMemoryDdnnfGraph ddnnfGraph;
 
-	
-	/**
-	 * Constructor method with user-given name declaration.
-	 * 
-	 * @param firstTerm A LogicTerm class representing the first logic formula
-	 * @param secondTerm A LogicTerm class representing the second logic formula
-	 */
-	protected Bicondition(LogicTerm firstTerm, LogicTerm secondTerm) {
-		super();
-		this.firstTerm = firstTerm;
-		this.secondTerm = secondTerm;
-		createFinalValue();
-		determineNameGiven("None");
-		createNameSimple();
-		createNameCNF();
-	}
 
 	/**
 	 * Constructor method with user-given name declaration.
@@ -49,13 +35,24 @@ public class Bicondition implements LogicRule {
 	 * @param secondTerm A LogicTerm class representing the second logic formula
 	 * @param name The given name of this logic formula defined by the user
 	 */
-	protected Bicondition(LogicTerm term, LogicTerm secondTerm, String name) {
+	protected Bicondition(LogicTerm firstTerm, LogicTerm secondTerm, String name) {
 		super();
-		this.firstTerm = term;
+		this.firstTerm = firstTerm;
+		this.secondTerm = secondTerm;
 		createFinalValue();
 		determineNameGiven(name);
 		createNameSimple();
 		createNameCNF();
+		generateDdnnfGraph();
+	}
+	/**
+	 * Constructor method with user-given name declaration.
+	 * 
+	 * @param firstTerm A LogicTerm class representing the first logic formula
+	 * @param secondTerm A LogicTerm class representing the second logic formula
+	 */
+	protected Bicondition(LogicTerm firstTerm, LogicTerm secondTerm) {
+		this(firstTerm, secondTerm, null);
 	}
 	
 	/**
@@ -96,7 +93,7 @@ public class Bicondition implements LogicRule {
 	 * 		in standard first-order logic form
 	 */
 	private void determineNameGiven(String name) {
-		if(name != "None") {
+		if(name != null) {
 			this.nameGiven = name;
 		}
 		else {
@@ -146,6 +143,41 @@ public class Bicondition implements LogicRule {
 		LogicRule[] allTerms = this.firstTerm.getAllTerms(); 
 		allTerms = ArrayUtils.addAll(allTerms,  this.secondTerm.getAllTerms());
 		return allTerms;
+	}
+	
+	public LogicRule getPrecedent() {
+		return this.firstTerm;
+	}
+	
+	public LogicRule getAntecedent() {
+		return this.secondTerm;
+	}
+	
+	public LogicRule covertToCnfRule() {
+		Negation notPrecedent = new Negation(this.firstTerm);
+		Negation notAntecedent = new Negation(this.secondTerm);
+		Conjunction cnfBothNot = new Conjunction(notPrecedent, notAntecedent);
+		Conjunction cnfBothTrue = new Conjunction(this.firstTerm, this.secondTerm);
+		Disjunction cnfBicondition = new Disjunction(cnfBothNot, cnfBothTrue);
+		return cnfBicondition;
+	}
+	
+	private void generateDdnnfGraph() {
+		LogicRule cnfBicondition = covertToCnfRule();
+		
+		InMemoryDdnnfGraph negPrecGraph = cnfBicondition.getPrecedent().getPrecedent().getDdnnfGraph();
+		InMemoryDdnnfGraph negAntGraph = cnfBicondition.getPrecedent().getAntecedent().getDdnnfGraph();
+		InMemoryDdnnfGraph bothNotGraph = new InMemoryDdnnfGraph(cnfBicondition.getPrecedent(), negPrecGraph, negAntGraph);
+		
+		InMemoryDdnnfGraph truePrecGraph = cnfBicondition.getAntecedent().getPrecedent().getDdnnfGraph();
+		InMemoryDdnnfGraph trueAntGraph = cnfBicondition.getAntecedent().getPrecedent().getDdnnfGraph();
+		InMemoryDdnnfGraph bothTrueGraph = new InMemoryDdnnfGraph(cnfBicondition.getAntecedent(), truePrecGraph, trueAntGraph);
+		
+		ddnnfGraph = new InMemoryDdnnfGraph(cnfBicondition, bothNotGraph, bothTrueGraph);
+	}
+	
+	public InMemoryDdnnfGraph getDdnnfGraph() {
+		return this.ddnnfGraph;
 	}
 	
 }

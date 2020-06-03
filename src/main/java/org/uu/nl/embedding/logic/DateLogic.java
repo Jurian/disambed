@@ -2,6 +2,7 @@
 package org.uu.nl.embedding.logic;
 
 
+import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
 import org.uu.nl.embedding.logic.LogicRule;
 import org.uu.nl.embedding.logic.util.SimpleDate;
 
@@ -12,29 +13,16 @@ import org.uu.nl.embedding.logic.util.SimpleDate;
  * 		constraints that apply in practice.
  * 
  * @author Euan Westenbroek
- * @version 1.0
+ * @version 1.1
  * @since 13-05-2020
  */
 public class DateLogic implements LogicRule {
 	
 	protected SimpleDate firstDay;
 	protected boolean isDate;
-	private String name;
+	private String name = null;
 	private String str;
-	
-	/**
-	 * Constructor method without user-given name declaration.
-	 * 
-	 * @param term A LogicRule class representing the logic date format 
-	 */
-	public DateLogic(String date) {
-		super();
-		this.isDate = SimpleDate.isDateFormat(date);
-		
-		this.firstDay = new SimpleDate(date);
-		this.name = ("DATE(" + date + ")");
-		this.str = ("DATE(" + date + ")");
-	}
+	private InMemoryDdnnfGraph ddnnfGraph;
 	
 	/**
 	 * Constructor method without user-given name declaration.
@@ -45,25 +33,20 @@ public class DateLogic implements LogicRule {
 	public DateLogic(String date, String name) {
 		super();
 		this.isDate = SimpleDate.isDateFormat(date);
-		
 		this.firstDay = new SimpleDate(date);
 		this.name = name;
 		this.str = ("DATE(" + date + ")");
+		generateDdnnfGraph();
 	}
 	
 	/**
-	 * Constructor method with user-given name declaration.
+	 * Constructor method without user-given name declaration.
 	 * 
 	 * @param term A LogicRule class representing the logic date format 
-	 * @param term A LogicTerm class representing the negated logic term
 	 */
-	public DateLogic(SimpleDate date) {
-		super();
-		this.isDate = this.firstDay.checkDateFormat(date.toString());
-		
-		this.firstDay = new SimpleDate(date.toString());
+	public DateLogic(String date) {
+		this(date, null);
 		this.name = ("DATE(" + date.toString() + ")");
-		this.str = ("DATE(" + date.toString() + ")");
 	}
 	
 	/**
@@ -79,6 +62,18 @@ public class DateLogic implements LogicRule {
 		this.firstDay = new SimpleDate(date.toString());
 		this.name = name;
 		this.str = ("DATE(" + date.toString() + ")");
+		generateDdnnfGraph();
+	}
+	
+	/**
+	 * Constructor method with user-given name declaration.
+	 * 
+	 * @param term A LogicRule class representing the logic date format 
+	 * @param term A LogicTerm class representing the negated logic term
+	 */
+	public DateLogic(SimpleDate date) {
+		this(date, null);
+		this.name = ("DATE(" + date.toString() + ")");
 	}
 	
 	/**
@@ -308,6 +303,22 @@ public class DateLogic implements LogicRule {
 	public LogicRule[] getAllTerms() {
 		LogicRule[] allTerms = new LogicRule[] {this};
 		return allTerms;
+	}
+	
+	public LogicRule getPrecedent() {
+		return this;
+	}
+	
+	public LogicRule getAntecedent() {
+		return this;
+	}
+	
+	private void generateDdnnfGraph() {
+		ddnnfGraph = new InMemoryDdnnfGraph(this);
+	}
+	
+	public InMemoryDdnnfGraph getDdnnfGraph() {
+		return this.ddnnfGraph;
 	}
 
 }

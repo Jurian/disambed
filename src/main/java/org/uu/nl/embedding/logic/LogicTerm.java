@@ -3,6 +3,8 @@
  */
 package org.uu.nl.embedding.logic;
 
+import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
+
 /**
  * Class for simple logic terms.
  * The simple logic term is the most basic term class
@@ -16,6 +18,7 @@ public class LogicTerm implements LogicRule {
 
 	protected boolean firstTerm;
 	private String name;
+	private InMemoryDdnnfGraph ddnnfGraph;
 	
 	/**
 	 * Constructor method with user-given name declaration.
@@ -27,6 +30,7 @@ public class LogicTerm implements LogicRule {
 		super();
 		this.firstTerm = term;
 		this.name = name;
+		generateDdnnfGraph();
 	}
 	
 	/**
@@ -58,6 +62,29 @@ public class LogicTerm implements LogicRule {
 	public LogicRule[] getAllTerms() {
 		LogicRule[] allTerms = new LogicRule[] {this};
 		return allTerms;
+	}
+	
+	/**
+	 * @return Returns this LogicRule as Precedent
+	 */
+	public LogicRule getPrecedent() {
+		return this;
+	}
+	
+	/**
+	 * Placeholder for abstract method
+	 * This method shouldn't be used
+	 */
+	public LogicRule getAntecedent() {
+		return this;
+	}
+	
+	private void generateDdnnfGraph() {
+		ddnnfGraph = new InMemoryDdnnfGraph(this);
+	}
+	
+	public InMemoryDdnnfGraph getDdnnfGraph() {
+		return this.ddnnfGraph;
 	}
 	
 

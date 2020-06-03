@@ -4,6 +4,7 @@
 package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
 
 /**
  * Class for implication logic formulae.
@@ -13,7 +14,7 @@ import org.apache.commons.lang3.ArrayUtils;
  * 		else it returns False
  * 
  * @author Euan Westenbroek
- * @version 1.0
+ * @version 1.1
  * @since 12-05-2020
  */
 public class Implication implements LogicRule {
@@ -21,26 +22,11 @@ public class Implication implements LogicRule {
 	protected LogicTerm firstTerm;
 	protected LogicTerm secondTerm;
 	protected boolean finalValue;
-	private String nameGiven;
+	private String nameGiven = null;
 	private String nameSimple;
 	private String nameCNF;
+	private InMemoryDdnnfGraph ddnnfGraph;
 
-	
-	/**
-	 * Constructor method with user-given name declaration.
-	 * 
-	 * @param firstTerm A LogicTerm class representing the first logic formula
-	 * @param secondTerm A LogicTerm class representing the second logic formula
-	 */
-	protected Implication(LogicTerm firstTerm, LogicTerm secondTerm) {
-		super();
-		this.firstTerm = firstTerm;
-		this.secondTerm = secondTerm;
-		createFinalValue();
-		determineNameGiven("None");
-		createNameSimple();
-		createNameCNF();
-	}
 	
 	/**
 	 * Constructor method with user-given name declaration.
@@ -56,6 +42,17 @@ public class Implication implements LogicRule {
 		determineNameGiven(name);
 		createNameSimple();
 		createNameCNF();
+		generateDdnnfGraph();
+	}
+
+	/**
+	 * Constructor method with user-given name declaration.
+	 * 
+	 * @param firstTerm A LogicTerm class representing the first logic formula
+	 * @param secondTerm A LogicTerm class representing the second logic formula
+	 */
+	protected Implication(LogicTerm firstTerm, LogicTerm secondTerm) {
+		this(firstTerm, secondTerm, null);
 	}
 	
 	/**
@@ -74,7 +71,7 @@ public class Implication implements LogicRule {
 	 * 		in standard first-order logic form
 	 */
 	private void createNameSimple() {
-		this.nameSimple = ("(" + this.firstTerm.getName() + " OR " + this.secondTerm.getName() + ")");
+		this.nameSimple = ("(" + this.firstTerm.getName() + " THEN " + this.secondTerm.getName() + ")");
 	}
 
 	/**
@@ -91,7 +88,7 @@ public class Implication implements LogicRule {
 	 * 		in standard first-order logic form
 	 */
 	private void determineNameGiven(String name) {
-		if(name != "None") {
+		if(name != null) {
 			this.nameGiven = name;
 		}
 		else {
@@ -141,6 +138,52 @@ public class Implication implements LogicRule {
 		LogicRule[] allTerms = this.firstTerm.getAllTerms(); 
 		allTerms = ArrayUtils.addAll(allTerms,  this.secondTerm.getAllTerms());
 		return allTerms;
+	}
+	
+	/**
+	 * @return Returns the precedent of this implication
+	 */
+	public LogicRule getPrecedent() {
+		return this.firstTerm;
+	}
+	
+	/**
+	 * @return Returns the antecedent of this implication
+	 */
+	public LogicRule getAntecedent() {
+		return this.secondTerm;
+	}
+	
+	/**
+	 * Convert the implication to its CNF equivalent
+	 * @return Returns the newly created CNF LogicRule
+	 */
+	public LogicRule covertToCnfRule() {
+		Negation notPrecedent = new Negation(this.firstTerm);
+		Disjunction cnfImplication = new Disjunction(notPrecedent, this.secondTerm);
+		return cnfImplication;
+	}
+	
+	/**
+	 * Generates the d-DNNF graph of this implication,
+	 * To be able to create this graph, the implication
+	 * should first be converted to CNF.
+	 */
+	private void generateDdnnfGraph() {
+		LogicRule cnfImplication = covertToCnfRule();
+		
+		InMemoryDdnnfGraph negPrecGraph = cnfImplication.getPrecedent().getDdnnfGraph();
+		InMemoryDdnnfGraph trueAntGraph = cnfImplication.getAntecedent().getDdnnfGraph();
+		
+		ddnnfGraph = new InMemoryDdnnfGraph(cnfImplication, negPrecGraph, trueAntGraph);
+	}
+	
+	/**
+	 * @return Returns the d-DNNF graph of this implication
+	 * based on its CNF/d-DNNF.
+	 */
+	public InMemoryDdnnfGraph getDdnnfGraph() {
+		return this.ddnnfGraph;
 	}
 	
 }
