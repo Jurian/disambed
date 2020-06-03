@@ -169,6 +169,25 @@ public class OpsMatrix {
 		}
 		return diag;
 	}
+
+	
+	public static Matrix antiIdentity(final int row, final int col) {
+		Matrix subResult = Matrix.identity(row, col);
+		Matrix res = new Matrix(row, col);
+		
+		for(int c = 0; c < col; c++) {
+			for(int r = 0; r < row; r++) {
+				if(subResult.get(r, c) == 0.0) { res.set(r, c, 1.0); }
+				else if(subResult.get(r, c) == 1.0) { res.set(r, c, 0.0); }
+				else { throw new IllegalArgumentException("Invalid value in Identity matrix"); }
+			}
+		}
+		return res;
+	}
+	
+	public static Matrix antiIdentity(Matrix matrix) {
+		return antiIdentity(matrix.getRowDimension(), matrix.getColumnDimension());
+	}
 	
 	/**
 	 * 
