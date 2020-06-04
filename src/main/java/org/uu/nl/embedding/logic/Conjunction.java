@@ -5,7 +5,7 @@ package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.jena.graph.Graph;
-import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
+import org.uu.nl.embedding.lensr.DdnnfGraph;
 
 /**
  * Class for conjunction logic formulae.
@@ -21,13 +21,16 @@ public class Conjunction implements LogicRule {
 
 	protected LogicRule firstTerm;
 	protected LogicRule secondTerm;
+	private LogicRule inCnf;
+	private LogicRule inDdnnf;
+	
 	protected boolean finalValue;
-	private String nameGiven;
 	private String nameSimple;
 	private String nameCNF;
+	private String nameDdnnf;
 	private String strSimple;
-	private String strCNF;
-	private InMemoryDdnnfGraph ddnnfGraph;
+	private DdnnfGraph ddnnfGraph;
+
 
 	
 	/**
@@ -42,9 +45,10 @@ public class Conjunction implements LogicRule {
 		this.firstTerm = firstTerm;
 		this.secondTerm = secondTerm;
 		createFinalValue();
-		determineNameGiven(name);
 		createNameSimple();
 		createNameCNF();
+		createCnfRule();
+		createDdnnfRule();
 		generateDdnnfGraph();
 	}
 	
@@ -74,7 +78,6 @@ public class Conjunction implements LogicRule {
 	 */
 	private void createNameSimple() {
 		this.nameSimple = ("(" + this.firstTerm.getName() + " AND " + this.secondTerm.getName() + ")");
-		this.strSimple =  ("(" + this.firstTerm.toString() + " AND " + this.secondTerm.toString() + ")");
 	}
 
 	/**
@@ -83,35 +86,6 @@ public class Conjunction implements LogicRule {
 	 */
 	private void createNameCNF() {
 		this.nameCNF = ("(" + this.firstTerm.getName() + "AND " + this.secondTerm.getName() + ")");
-		this.strCNF = ("(" + this.firstTerm.toString() + "AND " + this.secondTerm.toString() + ")");
-	}
-
-	/**
-	 * Sets the String represented name of the conjunction 
-	 * 		in either the user-given name form or else 
-	 * 		in standard first-order logic form
-	 */
-	private void determineNameGiven(String name) {
-		if(name != null) {
-			this.nameGiven = name;
-		}
-		else {
-			createNameSimple();
-		}
-	}
-	
-	/**
-	 * @return Returns the Boolean value of this conjunctive logic formula
-	 */
-	public boolean getValue() {
-		return this.finalValue;
-	}
-	
-	/**
-	 * @return Returns the name of this logic formula (given or generated)
-	 */
-	public String getName() {
-		return this.nameGiven;
 	}
 	
 	/**
@@ -121,15 +95,6 @@ public class Conjunction implements LogicRule {
 	public String getNameSimple() {
 		return this.nameSimple;
 	}
-	
-	/**
-	 * @return Returns the Conjunctive Normal Form (CNF) name of this logic 
-	 * 		formula (generated)
-	 */
-	public String getNameCNF() {
-		return this.nameCNF;
-	}
-	
 	/**
 	 * @return Returns the simple form string of this logic 
 	 * 		formula (generated)
@@ -139,11 +104,63 @@ public class Conjunction implements LogicRule {
 	}
 	
 	/**
-	 * @return Returns the Conjunctive Normal Form (CNF) string of this logic 
-	 * 		formula (generated)
+	 * Convert the conjunction to its CNF equivalent
 	 */
-	public String toStringCNF() {
-		return this.strCNF;
+	private void createCnfRule() {
+		this.inCnf = new Conjunction(this.firstTerm.getCnfRule(), this.secondTerm.getCnfRule());
+	}
+
+	/**
+	 * Convert the conjunction to its d-DNNF equivalent
+	 */
+	private void createDdnnfRule() {
+		this.inDdnnf = new Conjunction(this.firstTerm.getDdnnfRule(), this.secondTerm.getDdnnfRule());
+	}
+	
+	
+	private void generateDdnnfGraph() {
+		DdnnfGraph leftGraph = this.firstTerm.getDdnnfGraph();
+		DdnnfGraph rightGraph = this.secondTerm.getDdnnfGraph();
+		
+		ddnnfGraph = new DdnnfGraph(this, leftGraph, rightGraph);
+	}
+	
+
+	
+	/*
+	 * All interface methods implemented
+	 */
+	
+	/**
+	 * @return Returns the Boolean value of the logic term
+	 */
+	@Override
+	public boolean getValue() {
+		return this.finalValue;
+	}
+	
+	/**
+	 * @return Returns the name of the logic term (given or generated)
+	 */
+	@Override
+	public String getName() {
+		return this.nameSimple;
+	}
+
+	/**
+	 * @return Returns the string of the logic term in CNF
+	 */
+	@Override
+	public String getNameCNF() {
+		return this.nameCNF;
+	}
+
+	/**
+	 * @return Returns the string of the logic term in d-DNNF
+	 */
+	@Override
+	public String getNameDdnnf() {
+		return this.nameDdnnf;
 	}
 	
 	/**
@@ -160,22 +177,43 @@ public class Conjunction implements LogicRule {
 		return allTerms;
 	}
 	
+	/**
+	 * @return Returns this LogicRule as Precedent
+	 */
+	@Override
 	public LogicRule getPrecedent() {
 		return this.firstTerm;
 	}
-	
+
+	/**
+	 * @return Returns this LogicRule as Antecedent
+	 */
+	@Override
 	public LogicRule getAntecedent() {
 		return this.secondTerm;
 	}
-	
-	private void generateDdnnfGraph() {
-		InMemoryDdnnfGraph leftGraph = this.firstTerm.getDdnnfGraph();
-		InMemoryDdnnfGraph rightGraph = this.secondTerm.getDdnnfGraph();
-		
-		ddnnfGraph = new InMemoryDdnnfGraph(this, leftGraph, rightGraph);
+
+	/**
+	 * Returns this LogicRule in its CNF
+	 */
+	@Override
+	public LogicRule getCnfRule() {
+		return this.inCnf;
 	}
-	
-	public InMemoryDdnnfGraph getDdnnfGraph() {
+
+	/**
+	 * Returns this LogicRule in its d-DNNF
+	 */
+	@Override
+	public LogicRule getDdnnfRule() {
+		return this.inDdnnf;
+	}
+
+	/**
+	 * Returns the logic graph of the d-DNNF
+	 */
+	@Override
+	public DdnnfGraph getDdnnfGraph() {
 		return this.ddnnfGraph;
 	}
 	

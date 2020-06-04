@@ -2,7 +2,7 @@
 package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
+import org.uu.nl.embedding.lensr.DdnnfGraph;
 import org.uu.nl.embedding.logic.util.SimpleDate;
 
 /**
@@ -17,11 +17,19 @@ import org.uu.nl.embedding.logic.util.SimpleDate;
  * @since 13-05-2020
  */
 public class ExactSameDateLogic extends DateCompareLogic {
+
+	protected boolean isDate;
+	
+	private String nameSimple;
+	private String nameCNF;
+	private String nameDdnnf;
 	
 	protected DateLogic firstDay;
 	protected DateLogic secondDay;
-	protected boolean isDate;
-	private InMemoryDdnnfGraph ddnnfGraph;
+	private LogicRule inCnf;
+	private LogicRule inDdnnf;
+	
+	private DdnnfGraph ddnnfGraph;
 	
 	/**
 	 * Constructor method for undefined class
@@ -155,29 +163,103 @@ public class ExactSameDateLogic extends DateCompareLogic {
 	}
 	
 	private void generateDdnnfGraph() {
-		InMemoryDdnnfGraph leftGraph = this.firstDay.getDdnnfGraph();
-		InMemoryDdnnfGraph rightGraph = this.secondDay.getDdnnfGraph();
+		DdnnfGraph leftGraph = this.firstDay.getDdnnfGraph();
+		DdnnfGraph rightGraph = this.secondDay.getDdnnfGraph();
 		
-		ddnnfGraph = new InMemoryDdnnfGraph(this, leftGraph, rightGraph);
-	}
-	
-	public InMemoryDdnnfGraph getDdnnfGraph() {
-		return this.ddnnfGraph;
+		ddnnfGraph = new DdnnfGraph(this, leftGraph, rightGraph);
 	}
 
+
+	
+	/*
+	 * All interface methods implemented
+	 */
+	
+	/**
+	 * @return Returns the Boolean value of the logic term
+	 */
 	@Override
+	public boolean getValue() {
+		return this.isDate;
+	}
+	
+	/**
+	 * @return Returns the name of the logic term (given or generated)
+	 */
+	@Override
+	public String getName() {
+		return this.nameSimple;
+	}
+
+	/**
+	 * @return Returns the string of the logic term in CNF
+	 */
+	@Override
+	public String getNameCNF() {
+		return this.nameCNF;
+	}
+
+	/**
+	 * @return Returns the string of the logic term in d-DNNF
+	 */
+	@Override
+	public String getNameDdnnf() {
+		return this.nameDdnnf;
+	}
+
+	/**
+	 * @return Returns an array of all the basic logic terms themselves,
+	 * 		without any logical operator; 
+	 * 			In this case it returns all the basic 
+	 * 			logic terms this.firstTerm is comprised of,
+	 * 			as well as, all the basic logic terms
+	 * 			this.secondTerm is comprised of
+	 */
 	public LogicRule[] getAllTerms() {
 		LogicRule[] allTerms = this.firstDay.getAllTerms(); 
 		allTerms = ArrayUtils.addAll(allTerms,  this.secondDay.getAllTerms());
 		return allTerms;
 	}
 	
+	/**
+	 * @return Returns this LogicRule as Precedent
+	 */
+	@Override
 	public LogicRule getPrecedent() {
 		return this.firstDay;
 	}
 	
+	/**
+	 * @return Returns this LogicRule as Antecedent
+	 */
+	@Override
 	public LogicRule getAntecedent() {
 		return this.secondDay;
+	}
+	
+
+	/**
+	 * Returns this LogicRule in its CNF
+	 */
+	@Override
+	public LogicRule getCnfRule() {
+		return this.inCnf;
+	}
+
+	/**
+	 * Returns this LogicRule in its d-DNNF
+	 */
+	@Override
+	public LogicRule getDdnnfRule() {
+		return this.inDdnnf;
+	}
+
+	/**
+	 * Returns the logic graph of the d-DNNF
+	 */
+	@Override
+	public DdnnfGraph getDdnnfGraph() {
+		return this.ddnnfGraph;
 	}
 	
 }
