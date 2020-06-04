@@ -4,7 +4,7 @@
 package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
+import org.uu.nl.embedding.lensr.DdnnfGraph;
 
 /**
  * Class for bicondition logic formulae.
@@ -21,38 +21,35 @@ public class Bicondition implements LogicRule {
 	
 	protected LogicRule firstTerm;
 	protected LogicRule secondTerm;
+	private LogicRule inCnf;
+	private LogicRule inDdnnf;
+	
 	protected boolean finalValue;
-	private String nameGiven = null;
+	
 	private String nameSimple;
 	private String nameCNF;
-	private InMemoryDdnnfGraph ddnnfGraph;
+	private String nameDdnnf;
+	
+	private DdnnfGraph ddnnfGraph;
 
-
+	
 	/**
-	 * Constructor method with user-given name declaration.
+	 * Constructor method.
 	 * 
 	 * @param firstTerm A LogicTerm class representing the first logic formula
 	 * @param secondTerm A LogicTerm class representing the second logic formula
 	 * @param name The given name of this logic formula defined by the user
 	 */
-	protected Bicondition(LogicTerm firstTerm, LogicTerm secondTerm, String name) {
+	protected Bicondition(LogicTerm firstTerm, LogicTerm secondTerm) {
 		super();
 		this.firstTerm = firstTerm;
 		this.secondTerm = secondTerm;
 		createFinalValue();
-		determineNameGiven(name);
 		createNameSimple();
 		createNameCNF();
+		createCnfRule();
+		createDdnnfRule();
 		generateDdnnfGraph();
-	}
-	/**
-	 * Constructor method with user-given name declaration.
-	 * 
-	 * @param firstTerm A LogicTerm class representing the first logic formula
-	 * @param secondTerm A LogicTerm class representing the second logic formula
-	 */
-	protected Bicondition(LogicTerm firstTerm, LogicTerm secondTerm) {
-		this(firstTerm, secondTerm, null);
 	}
 	
 	/**
@@ -86,34 +83,6 @@ public class Bicondition implements LogicRule {
 		
 		this.nameCNF = ("(" + firstDist + " OR " + secondDist + ")");
 	}
-
-	/**
-	 * Sets the String represented name of the bicondition 
-	 * 		in either the user-given name form or else 
-	 * 		in standard first-order logic form
-	 */
-	private void determineNameGiven(String name) {
-		if(name != null) {
-			this.nameGiven = name;
-		}
-		else {
-			createNameSimple();
-		}
-	}
-	
-	/**
-	 * @return Returns the Boolean value of this biconditional logic formula
-	 */
-	public boolean getValue() {
-		return this.finalValue;
-	}
-	
-	/**
-	 * @return Returns the name of this logic formula (given or generated)
-	 */
-	public String getName() {
-		return this.nameGiven;
-	}
 	
 	/**
 	 * @return Returns the standard first-order logic name of this logic 
@@ -123,14 +92,100 @@ public class Bicondition implements LogicRule {
 		return this.nameSimple;
 	}
 	
+
 	/**
-	 * @return Returns the Conjunctive Normal Form (CNF) name of this logic 
-	 * 		formula (generated)
+	 * Convert the bicondition to its CNF equivalent
 	 */
+	private void createCnfRule() {
+		
+		LogicRule notPrecedent = generateNegation(this.firstTerm.getCnfRule());
+		LogicRule notAntecedent = generateNegation(this.secondTerm.getCnfRule());
+		Conjunction cnfBothNot = new Conjunction(notPrecedent, notAntecedent);
+		Conjunction cnfBothTrue = new Conjunction(this.firstTerm.getCnfRule(), this.secondTerm.getCnfRule());
+		Disjunction cnfBicondition = new Disjunction(cnfBothNot, cnfBothTrue);
+		
+		this.inCnf = cnfBicondition;
+	}
+
+	/**
+	 * Convert the bicondition to its d-DNNF equivalent
+	 */
+	private void createDdnnfRule() {
+		
+		Conjunction resConj;
+		
+		Implication firstImpl = new Implication(this.firstTerm, this.secondTerm); // Gaat dit goed zonder .getDdnnfRule()?
+		Implication secondImpl = new Implication(this.secondTerm, this.firstTerm);
+		resConj = new Conjunction(firstImpl.getDdnnfRule(), secondImpl.getDdnnfRule());
+		
+		this.inDdnnf = resConj;
+	}
+	
+	private void generateDdnnfGraph() {
+		LogicRule cnfBicondition = this.inDdnnf;
+		
+		DdnnfGraph negPrecGraph = cnfBicondition.getPrecedent().getPrecedent().getDdnnfGraph();
+		DdnnfGraph negAntGraph = cnfBicondition.getPrecedent().getAntecedent().getDdnnfGraph();
+		DdnnfGraph bothNotGraph = new DdnnfGraph(cnfBicondition.getPrecedent(), negPrecGraph, negAntGraph);
+		
+		DdnnfGraph truePrecGraph = cnfBicondition.getAntecedent().getPrecedent().getDdnnfGraph();
+		DdnnfGraph trueAntGraph = cnfBicondition.getAntecedent().getPrecedent().getDdnnfGraph();
+		DdnnfGraph bothTrueGraph = new DdnnfGraph(cnfBicondition.getAntecedent(), truePrecGraph, trueAntGraph);
+		
+		ddnnfGraph = new DdnnfGraph(cnfBicondition, bothNotGraph, bothTrueGraph);
+	}
+
+	/**
+	 * Method to correct for double negations
+	 * (Solely for readability if necessary)
+	 * 
+	 * @param term The LogicRule to be checked
+	 * @return Returns a negation if term was not a negation,
+	 * 			else it returns the only the term of the negation
+	 */
+	private LogicRule generateNegation(LogicRule term) {
+		
+		if(term instanceof Negation) { return term.getAntecedent(); }
+		else { return new Negation(term); }
+	}
+	
+	
+	/*
+	 * All interface methods implemented
+	 */
+	
+	/**
+	 * @return Returns the Boolean value of the logic term
+	 */
+	@Override
+	public boolean getValue() {
+		return this.finalValue;
+	}
+	
+	/**
+	 * @return Returns the name of the logic term (given or generated)
+	 */
+	@Override
+	public String getName() {
+		return this.nameSimple;
+	}
+
+	/**
+	 * @return Returns the string of the logic term in CNF
+	 */
+	@Override
 	public String getNameCNF() {
 		return this.nameCNF;
 	}
-	
+
+	/**
+	 * @return Returns the string of the logic term in d-DNNF
+	 */
+	@Override
+	public String getNameDdnnf() {
+		return this.nameDdnnf;
+	}
+
 	/**
 	 * @return Returns an array of all the basic logic terms themselves,
 	 * 		without any logical operator; 
@@ -145,39 +200,45 @@ public class Bicondition implements LogicRule {
 		return allTerms;
 	}
 	
+	/**
+	 * @return Returns this LogicRule as Precedent
+	 */
+	@Override
 	public LogicRule getPrecedent() {
 		return this.firstTerm;
 	}
 	
+	/**
+	 * @return Returns this LogicRule as Antecedent
+	 */
+	@Override
 	public LogicRule getAntecedent() {
 		return this.secondTerm;
 	}
-	
-	public LogicRule covertToCnfRule() {
-		Negation notPrecedent = new Negation(this.firstTerm);
-		Negation notAntecedent = new Negation(this.secondTerm);
-		Conjunction cnfBothNot = new Conjunction(notPrecedent, notAntecedent);
-		Conjunction cnfBothTrue = new Conjunction(this.firstTerm, this.secondTerm);
-		Disjunction cnfBicondition = new Disjunction(cnfBothNot, cnfBothTrue);
-		return cnfBicondition;
+
+	/**
+	 * Returns this LogicRule in its CNF
+	 */
+	@Override
+	public LogicRule getCnfRule() {
+		return this.inCnf;
 	}
-	
-	private void generateDdnnfGraph() {
-		LogicRule cnfBicondition = covertToCnfRule();
-		
-		InMemoryDdnnfGraph negPrecGraph = cnfBicondition.getPrecedent().getPrecedent().getDdnnfGraph();
-		InMemoryDdnnfGraph negAntGraph = cnfBicondition.getPrecedent().getAntecedent().getDdnnfGraph();
-		InMemoryDdnnfGraph bothNotGraph = new InMemoryDdnnfGraph(cnfBicondition.getPrecedent(), negPrecGraph, negAntGraph);
-		
-		InMemoryDdnnfGraph truePrecGraph = cnfBicondition.getAntecedent().getPrecedent().getDdnnfGraph();
-		InMemoryDdnnfGraph trueAntGraph = cnfBicondition.getAntecedent().getPrecedent().getDdnnfGraph();
-		InMemoryDdnnfGraph bothTrueGraph = new InMemoryDdnnfGraph(cnfBicondition.getAntecedent(), truePrecGraph, trueAntGraph);
-		
-		ddnnfGraph = new InMemoryDdnnfGraph(cnfBicondition, bothNotGraph, bothTrueGraph);
+
+	/**
+	 * Returns this LogicRule in its d-DNNF
+	 */
+	@Override
+	public LogicRule getDdnnfRule() {
+		return this.inDdnnf;
 	}
-	
-	public InMemoryDdnnfGraph getDdnnfGraph() {
+
+	/**
+	 * Returns the logic graph of the d-DNNF
+	 */
+	@Override
+	public DdnnfGraph getDdnnfGraph() {
 		return this.ddnnfGraph;
 	}
+	
 	
 }

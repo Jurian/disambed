@@ -4,7 +4,7 @@
 package org.uu.nl.embedding.logic;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
+import org.uu.nl.embedding.lensr.DdnnfGraph;
 
 /**
  * Class for negation logic terms.
@@ -20,45 +20,25 @@ public class Negation implements LogicRule {
 	protected LogicRule firstTerm;
 	protected boolean finalValue;
 	private String name = null;
+	private String nameCnf;
+	private String nameDdnnf;
 	private String str;
-	private InMemoryDdnnfGraph ddnnfGraph;
+	private LogicRule inCnf;
+	private LogicRule inDdnnf;
+	private DdnnfGraph ddnnfGraph;
 	
 	/**
-	 * Constructor method with user-given name declaration.
+	 * Constructor method.
 	 * 
 	 * @param term A LogicTerm class representing the negated logic term
-	 * @param name The given name of the logic term defined by the user
 	 */
-	protected Negation(LogicRule term, String name) {
+	protected Negation(LogicRule term) {
 		super();
 		this.firstTerm = term;
 		this.finalValue = !this.firstTerm.getValue();
-		this.name = name;
-		this.str =  ("NOT " + this.firstTerm.toString());
+		this.name = ("NOT " + this.firstTerm.getName());
+		this.str = ("NOT " + this.firstTerm.toString());
 		generateDdnnfGraph();
-	}
-	
-	/**
-	 * Constructor method without user-given name declaration.
-	 * 
-	 * @param term A LogicTerm class representing the negated logic term 
-	 */
-	protected Negation(LogicRule term) {
-		this(term, null);
-	}
-	
-	/**
-	 * @return Returns the Boolean value of the logic term
-	 */
-	public boolean getValue() {
-		return this.finalValue;
-	}
-	
-	/**
-	 * @return Returns the name of the logic term (given or generated)
-	 */
-	public String getName() {
-		return this.name;
 	}
 	
 	/**
@@ -69,11 +49,58 @@ public class Negation implements LogicRule {
 	}
 	
 	/**
+	 * This method generates the d-DNNF graph
+	 * of this LogicRule
+	 */
+	private void generateDdnnfGraph() {
+		DdnnfGraph leftGraph = this.firstTerm.getDdnnfGraph();
+		
+		ddnnfGraph = new DdnnfGraph(this, leftGraph);
+	}
+	
+	/*
+	 * All interface methods implemented
+	 */
+	
+	/**
+	 * @return Returns the Boolean value of the logic term
+	 */
+	@Override
+	public boolean getValue() {
+		return this.finalValue;
+	}
+	
+	/**
+	 * @return Returns the name of the logic term (given or generated)
+	 */
+	@Override
+	public String getName() {
+		return this.name;
+	}
+
+	/**
+	 * @return Returns the string of the logic term in CNF
+	 */
+	@Override
+	public String getNameCNF() {
+		return this.nameCnf;
+	}
+
+	/**
+	 * @return Returns the string of the logic term in d-DNNF
+	 */
+	@Override
+	public String getNameDdnnf() {
+		return this.nameDdnnf;
+	}
+	
+	/**
 	 * @return Returns an array of all the basic logic terms themselves,
 	 * 		without any logical operator; 
 	 * 			In this case it returns all the basic 
 	 * 			logic terms this.firstTerm is comprised of
 	 */
+	@Override
 	public LogicRule[] getAllTerms() {
 		LogicRule[] allTerms = new LogicRule[] {};
 		allTerms = ArrayUtils.addAll(allTerms,  this.firstTerm.getAllTerms());
@@ -83,6 +110,7 @@ public class Negation implements LogicRule {
 	/**
 	 * @return Returns this LogicRule as Precedent
 	 */
+	@Override
 	public LogicRule getPrecedent() {
 		return this;
 	}
@@ -91,18 +119,32 @@ public class Negation implements LogicRule {
 	 * Placeholder for abstract method
 	 * This method shouldn't be used
 	 */
+	@Override
 	public LogicRule getAntecedent() {
 		return this;
 	}
 
-	private void generateDdnnfGraph() {
-		InMemoryDdnnfGraph leftGraph = this.firstTerm.getDdnnfGraph();
-		
-		ddnnfGraph = new InMemoryDdnnfGraph(this, leftGraph);
-	}
-	
-	public InMemoryDdnnfGraph getDdnnfGraph() {
-		return this.ddnnfGraph;
+	/**
+	 * Returns this LogicRule in its CNF
+	 */
+	@Override
+	public LogicRule getCnfRule() {
+		return this.inCnf;
 	}
 
+	/**
+	 * Returns this LogicRule in its d-DNNF
+	 */
+	@Override
+	public LogicRule getDdnnfRule() {
+		return this.inDdnnf;
+	}
+
+	/**
+	 * Returns the logic graph of the d-DNNF
+	 */
+	@Override
+	public DdnnfGraph getDdnnfGraph() {
+		return this.ddnnfGraph;
+	}
 }

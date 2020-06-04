@@ -2,7 +2,8 @@
 package org.uu.nl.embedding.logic;
 
 
-import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
+import org.apache.commons.lang3.ArrayUtils;
+import org.uu.nl.embedding.lensr.DdnnfGraph;
 import org.uu.nl.embedding.logic.LogicRule;
 import org.uu.nl.embedding.logic.util.SimpleDate;
 
@@ -19,10 +20,16 @@ import org.uu.nl.embedding.logic.util.SimpleDate;
 public class DateLogic implements LogicRule {
 	
 	protected SimpleDate firstDay;
+	private LogicRule inCnf;
+	private LogicRule inDdnnf;
 	protected boolean isDate;
+	
 	private String name = null;
 	private String str;
-	private InMemoryDdnnfGraph ddnnfGraph;
+	private String nameCNF;
+	private String nameDdnnf;
+	
+	private DdnnfGraph ddnnfGraph;
 	
 	/**
 	 * Constructor method without user-given name declaration.
@@ -36,6 +43,8 @@ public class DateLogic implements LogicRule {
 		this.firstDay = new SimpleDate(date);
 		this.name = name;
 		this.str = ("DATE(" + date + ")");
+		createCnfRule();
+		createDdnnfRule();
 		generateDdnnfGraph();
 	}
 	
@@ -62,6 +71,8 @@ public class DateLogic implements LogicRule {
 		this.firstDay = new SimpleDate(date.toString());
 		this.name = name;
 		this.str = ("DATE(" + date.toString() + ")");
+		createCnfRule();
+		createDdnnfRule();
 		generateDdnnfGraph();
 	}
 	
@@ -77,27 +88,11 @@ public class DateLogic implements LogicRule {
 	}
 	
 	/**
-	 * @return Returns the Boolean value if this term has a valid date format
-	 */
-	@Override
-	public boolean getValue() {
-		return this.isDate;
-	}
-	
-	/**
 	 * 
 	 * @return Returns the date as an integer array as [dd, mm, yyyy]
 	 */
 	public int[] getDateAsIntArray() {
 		return this.firstDay.getDateAsIntArray();
-	}
-	
-	/**
-	 * @return Returns the name of the date term (given or generated)
-	 */
-	@Override
-	public String getName() {
-		return this.name;
 	}
 	
 	/**
@@ -296,6 +291,62 @@ public class DateLogic implements LogicRule {
 		}
 	}
 	
+	private void generateDdnnfGraph() {
+		ddnnfGraph = new DdnnfGraph(this);
+	}
+
+	/**
+	 * Convert the implication to its CNF equivalent
+	 */
+	private void createCnfRule() {
+		this.inCnf = this;
+	}
+	
+	/**
+	 * Convert the implication to its d-DNNF equivalent
+	 */
+	private void createDdnnfRule() {
+		this.inDdnnf = this;
+	}
+	
+
+	
+	/*
+	 * All interface methods implemented
+	 */
+
+	/**
+	 * @return Returns the Boolean value if this term has a valid date format
+	 */
+	@Override
+	public boolean getValue() {
+		return this.isDate;
+	}
+	
+	/**
+	 * @return Returns the name of the date term (given or generated)
+	 */
+	@Override
+	public String getName() {
+		return this.name;
+	}
+
+	/**
+	 * @return Returns the string of the logic term in CNF
+	 */
+	@Override
+	public String getNameCNF() {
+		return this.nameCNF;
+	}
+
+	/**
+	 * @return Returns the string of the logic term in d-DNNF
+	 */
+	@Override
+	public String getNameDdnnf() {
+		return this.nameDdnnf;
+	}
+
 	/**
 	 * @return Returns an array with the logic date itself; 
 	 * 		In this case it return "[this]" (i.e. self)
@@ -305,19 +356,44 @@ public class DateLogic implements LogicRule {
 		return allTerms;
 	}
 	
+	/**
+	 * @return Returns this LogicRule as Precedent
+	 */
+	@Override
 	public LogicRule getPrecedent() {
 		return this;
 	}
 	
+	/**
+	 * Placeholder for abstract method
+	 * This method shouldn't be used
+	 */
+	@Override
 	public LogicRule getAntecedent() {
 		return this;
 	}
-	
-	private void generateDdnnfGraph() {
-		ddnnfGraph = new InMemoryDdnnfGraph(this);
+
+	/**
+	 * Returns this LogicRule in its CNF
+	 */
+	@Override
+	public LogicRule getCnfRule() {
+		return this.inCnf;
 	}
-	
-	public InMemoryDdnnfGraph getDdnnfGraph() {
+
+	/**
+	 * Returns this LogicRule in its d-DNNF
+	 */
+	@Override
+	public LogicRule getDdnnfRule() {
+		return this.inDdnnf;
+	}
+
+	/**
+	 * Returns the logic graph of the d-DNNF
+	 */
+	@Override
+	public DdnnfGraph getDdnnfGraph() {
 		return this.ddnnfGraph;
 	}
 

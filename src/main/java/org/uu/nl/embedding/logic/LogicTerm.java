@@ -3,7 +3,8 @@
  */
 package org.uu.nl.embedding.logic;
 
-import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
+import org.apache.commons.lang3.ArrayUtils;
+import org.uu.nl.embedding.lensr.DdnnfGraph;
 
 /**
  * Class for simple logic terms.
@@ -17,8 +18,14 @@ import org.uu.nl.embedding.lensr.InMemoryDdnnfGraph;
 public class LogicTerm implements LogicRule {
 
 	protected boolean firstTerm;
-	private String name;
-	private InMemoryDdnnfGraph ddnnfGraph;
+	private LogicRule inCnf;
+	private LogicRule inDdnnf;
+	
+	private String name = null;
+	private String nameCnf;
+	private String nameDdnnf;
+	
+	private DdnnfGraph ddnnfGraph;
 	
 	/**
 	 * Constructor method with user-given name declaration.
@@ -30,21 +37,18 @@ public class LogicTerm implements LogicRule {
 		super();
 		this.firstTerm = term;
 		this.name = name;
+		this.nameCnf = name;
+		this.nameDdnnf = name;
 		generateDdnnfGraph();
 	}
 	
 	/**
-	 * @return Returns the Boolean value of the logic term
+	 * Constructor method without user-given name declaration.
+	 * 
+	 * @param term A Boolean value representing the logic term
 	 */
-	public boolean getValue() {
-		return this.firstTerm;
-	}
-	
-	/**
-	 * @return Returns the name of the logic term
-	 */
-	public String getName() {
-		return this.name;
+	public LogicTerm(boolean term) {
+		this(term, String.valueOf(term));
 	}
 	
 	public String toString() {
@@ -53,6 +57,47 @@ public class LogicTerm implements LogicRule {
 		} else {
 			return "false";
 		}
+	}
+	
+	private void generateDdnnfGraph() {
+		ddnnfGraph = new DdnnfGraph(this);
+	}
+
+	
+	/*
+	 * All interface methods implemented
+	 */
+	
+	/**
+	 * @return Returns the Boolean value of the logic term
+	 */
+	@Override
+	public boolean getValue() {
+		return this.firstTerm;
+	}
+	
+	/**
+	 * @return Returns the name of the logic term (given or generated)
+	 */
+	@Override
+	public String getName() {
+		return this.name;
+	}
+
+	/**
+	 * @return Returns the string of the logic term in CNF
+	 */
+	@Override
+	public String getNameCNF() {
+		return this.nameCnf;
+	}
+
+	/**
+	 * @return Returns the string of the logic term in d-DNNF
+	 */
+	@Override
+	public String getNameDdnnf() {
+		return this.nameDdnnf;
 	}
 	
 	/**
@@ -78,14 +123,29 @@ public class LogicTerm implements LogicRule {
 	public LogicRule getAntecedent() {
 		return this;
 	}
-	
-	private void generateDdnnfGraph() {
-		ddnnfGraph = new InMemoryDdnnfGraph(this);
+
+	/**
+	 * Returns this LogicRule in its CNF
+	 */
+	@Override
+	public LogicRule getCnfRule() {
+		return this.inCnf;
 	}
-	
-	public InMemoryDdnnfGraph getDdnnfGraph() {
+
+	/**
+	 * Returns this LogicRule in its d-DNNF
+	 */
+	@Override
+	public LogicRule getDdnnfRule() {
+		return this.inDdnnf;
+	}
+
+	/**
+	 * Returns the logic graph of the d-DNNF
+	 */
+	@Override
+	public DdnnfGraph getDdnnfGraph() {
 		return this.ddnnfGraph;
 	}
-	
 
 }
