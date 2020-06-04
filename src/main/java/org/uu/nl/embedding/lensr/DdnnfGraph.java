@@ -19,11 +19,11 @@ import grph.properties.NumericalProperty;
  * @author Euan Westenbroek
  *
  */
-public class InMemoryDdnnfGraph {
+public class DdnnfGraph {
 	
 	LogicRule f; // Formula as CNF 
-	InMemoryDdnnfGraph leftChild =  null;
-	InMemoryDdnnfGraph rightChild = null;
+	DdnnfGraph leftChild =  null;
+	DdnnfGraph rightChild = null;
 	
     int parent;
     int root;
@@ -34,7 +34,7 @@ public class InMemoryDdnnfGraph {
 
     int maxVertInt = -1;
     
-    public InMemoryDdnnfGraph(LogicRule formula, InMemoryDdnnfGraph leftGrph, InMemoryDdnnfGraph rightGrph) {
+    public DdnnfGraph(LogicRule formula, DdnnfGraph leftGrph, DdnnfGraph rightGrph) {
     	f = formula;
     	this.leftChild = leftGrph;
     	this.rightChild = rightGrph;
@@ -43,11 +43,11 @@ public class InMemoryDdnnfGraph {
     	setLogicMaps();
     }
     
-    public InMemoryDdnnfGraph(LogicRule formula, InMemoryDdnnfGraph leftGrph) {
+    public DdnnfGraph(LogicRule formula, DdnnfGraph leftGrph) {
     	this(formula, leftGrph, null);
     }
     
-    public InMemoryDdnnfGraph(LogicRule formula) {
+    public DdnnfGraph(LogicRule formula) {
     	this(formula, null, null);
     }
 	
@@ -98,7 +98,7 @@ public class InMemoryDdnnfGraph {
 		this.operatorMap.put(root, this.logicType);
 	}
 	
-	private void setChildGraph(InMemoryDdnnfGraph graph) {
+	private void setChildGraph(DdnnfGraph graph) {
 		for(Map.Entry<Integer,String> entry : graph.getGraph().entrySet()) {
 			this.operatorMap.put(entry.getKey(), entry.getValue());
 			if(maxVertInt < entry.getKey()) { maxVertInt = entry.getKey(); }
