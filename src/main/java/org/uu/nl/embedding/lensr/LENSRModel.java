@@ -32,7 +32,7 @@ public class LENSRModel {
 	
 	/*
 	 * Below all sub-algorithms can be found
-	 * Which, when combined, make up the 
+	 * which, when combined, make up the 
 	 * algorithm as a whole.
 	 * 
 	 */
@@ -75,7 +75,7 @@ public class LENSRModel {
 	// semanticRegularization variables
 	ArrayList<Integer> orNodes;
 	ArrayList<Integer> andNodes;
-	InMemoryDdnnfGraph logicGraph;
+	DdnnfGraph logicGraph;
 	
 	private void semanticRegularization(LogicRule F) {
 		
@@ -149,7 +149,7 @@ public class LENSRModel {
 	
 	private ArrayList<Integer> getAndNodes(LogicRule F) {
 		List<Integer> andNodes = new ArrayList<Integer>();
-		InMemoryDdnnfGraph logicGraph = F.getDdnnfGraph();
+		DdnnfGraph logicGraph = F.getDdnnfGraph();
 		
 		for(Map.Entry<Integer, String> entry : logicGraph.getGraph().entrySet()) {
 			if(entry.getValue() == "AND") {
@@ -163,7 +163,7 @@ public class LENSRModel {
 
 	private ArrayList<Integer> getOrNodes(LogicRule F) {
 		List<Integer> orNodes = new ArrayList<Integer>();
-		InMemoryDdnnfGraph logicGraph = F.getDdnnfGraph();
+		DdnnfGraph logicGraph = F.getDdnnfGraph();
 		
 		for(Map.Entry<Integer, String> entry : logicGraph.getGraph().entrySet()) {
 			if(entry.getValue() == "OR") {
