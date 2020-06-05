@@ -370,6 +370,13 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	 * @param inOutSize
 	 * @return removedMaps, a list of HashMap<Integer, int[]>
 	 */
+	/*
+	 * Deze methode als aanroep methode gebruiken en die hierboven juist als private?
+	 * d.w.z. in deze methode wordt bovenstaande methode aangeroepen om de juiste 
+	 * data terug te krijgen. --> Realistisch m.b.t. de hoeveelheid arrays etc die 
+	 * aangemaakt moeten worden?
+	 * 
+	 */
 	private List<Map<Integer, int[]>> createRemovedMaps(final int[][][] allProxyDateVerts, final int[][][] allProxyDateEdges,
 									final int[][][] allDateVerts, final int[][][] allDateEdges,
 									final Property vertexLabels, final Property edgeLabels,

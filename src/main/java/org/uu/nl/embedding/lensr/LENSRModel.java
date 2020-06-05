@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.jena.graph.Graph;
 import org.uu.nl.embedding.logic.LogicRule;
@@ -39,11 +40,12 @@ public class LENSRModel {
 	
 
 	// layerWisePropagationRule variables
-	Matrix[] Z; // Z(l) = 1xn learnt latent node embedding at different layers
+	int networkDepth;
+	Matrix[] Z; // Z(l) = l times 1xn learnt latent node embedding at different layers
 	Matrix D; // Dtilde = 2d diagonal degree matrix 
 	Matrix A; // Atilde = 2d adjacency matrix
 	Matrix I; // I_N = 2d identity matrix
-	Matrix[] W; // W(l) = nx1 layer-specific trainable weight matrix
+	Matrix[] W; // W(l) = l times nx1 layer-specific trainable weight matrix
 	/*
 	 * Activation Function needs to get proper functions etc.
 	 */
@@ -70,6 +72,30 @@ public class LENSRModel {
 		//*******************************************************************
 		
 		Z[layer+1] = resMatrix;
+	}
+	
+	private void initPropWeights() {
+		/*
+		 * This weight initialization takes inspiration
+		 * from the paper by He et al. (2015), and is
+		 * based on the Xavier initialization.
+		 */
+		Random rand = new Random();
+		double randX;
+		int layerSize;
+		
+		for(int l = 0; l < W.length; l++) {
+			layerSize = Z[l].getColumnDimension();
+			/* Get random variable based on Xavier init,
+			* here, nextGaussian() selects a number from
+			* a Gaussian distribution with mean 0 and std 1
+			* and 2 in 2/n_in comes from He et al.
+			*/
+			for(int neuron = 0; neuron < W[l].getRowDimension(); neuron++) {
+				randX = rand.nextGaussian()*(2/layerSize);
+				W[l].set(neuron, 0, randX);
+			}
+		}
 	}
 
 	// semanticRegularization variables
@@ -99,9 +125,9 @@ public class LENSRModel {
 			for(LogicRule vj : allTerms) {
 				subSum = subSum.plus(embedLogic(vj) - 1);
 			}
-			// Get Euclidean distance
-			subSum = Math.abs(subSum);  
-			subResult = (result.ycoord)*(result.ycoord) + (result.xcoord)*(result.xcoord); // Not Math.sqrt() for squared Euclidean distance
+			// Get squared Euclidean distance
+			subResult = subResult.plus(OpsMatrix.power(subSum, 2));   
+			//subResult = (result.ycoord)*(result.ycoord) + (result.xcoord)*(result.xcoord);// Misschien helemaal niet nodig? // Not Math.sqrt() for squared Euclidean distance
 		}
 		resLoss = subResult;
 		
@@ -109,16 +135,17 @@ public class LENSRModel {
 		for(int v : orNodes) {
 			subSum = new Matrix(Z[Z.length-1].getRowDimension(), 1);
 			rule = logicGraph.getIntLogicMap().get(v);
+			
 			allTerms = rule.getAllTerms();
-			for(LogicRule vj : allTerms) {
-				matMultip = VertexMatrixK(vj).transpose().times(VertexMatrixK(vj));
-				subSum = matMultip.minus(matMultip.arrayTimes(OpsMatrix.antiIdentity(matMultip)));
-			}
-			// Get Euclidean distance
-			subSum = Math.abs(subSum);  
-			subResult = (result.ycoord)*(result.ycoord) + (result.xcoord)*(result.xcoord); // Not Math.sqrt() for squared Euclidean distance
+			matMultip = VertexMatrixK(allTerms).transpose().times(VertexMatrixK(allTerms));
+			subSum = matMultip.minus(matMultip.arrayTimes(OpsMatrix.antiIdentity(matMultip)));
+			
+			// Get squared Euclidean distance
+			subSum = OpsMatrix.power(subSum, 2);  
+			//subResult = (result.ycoord)*(result.ycoord) + (result.xcoord)*(result.xcoord);// Misschien helemaal niet nodig? // Not Math.sqrt() for squared Euclidean distance
+			subResult = subResult.plus(subSum);
 		}
-		resLoss = resLoss.plus(subResult);
+		resLoss = subResult;
 	}
 	
 	private Matrix embedLogic(LogicRule rule) {
@@ -126,7 +153,7 @@ public class LENSRModel {
 		return placeHolder;
 	}
 	
-	private Matrix VertexMatrixK(LogicRule rule) {
+	private Matrix VertexMatrixK(LogicRule[] rules) {
 		Matrix placeHolder = new Matrix(Z[Z.length-1].getRowDimension(), 1);;
 		return placeHolder;
 	}
