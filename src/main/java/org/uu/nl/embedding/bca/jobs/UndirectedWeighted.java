@@ -120,7 +120,7 @@ public class UndirectedWeighted extends BCAJob {
 		return bcv;
 	}
 
-	protected BCV doWorkWithIgnore(final InMemoryRdfGraph graph, final boolean reverse, 
+	public BCV doWorkWithIgnore(final InMemoryRdfGraph graph, final boolean reverse, 
 									final BCV origBcv, final int[] orderedNodes, final List<Map<Integer, int[]>> removedInOutMaps) {
 
 		if(reverse) throw new UnsupportedOperationException("No reverse mode in undirected version");
