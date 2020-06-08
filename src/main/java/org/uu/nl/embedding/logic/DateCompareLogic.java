@@ -68,7 +68,7 @@ public abstract class DateCompareLogic implements LogicRule {
 	/**
 	 * @return Returns the Boolean value whether it is the same date (true) or not (false)
 	 */
-	public boolean getValue() {
+	public boolean getAssignment() {
 		return this.logicValue;
 	}
 	

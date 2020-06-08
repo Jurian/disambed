@@ -58,8 +58,8 @@ public class Bicondition implements LogicRule {
 	private void createFinalValue() {
 		boolean finalVal;
 		
-		boolean firstDist = (!this.firstTerm.getValue()) && (!this.secondTerm.getValue()); // NOT A AND NOT B = C
-		boolean secondDist = (this.firstTerm.getValue()) && (this.secondTerm.getValue()); // A AND B = D
+		boolean firstDist = (!this.firstTerm.getAssignment()) && (!this.secondTerm.getAssignment()); // NOT A AND NOT B = C
+		boolean secondDist = (this.firstTerm.getAssignment()) && (this.secondTerm.getAssignment()); // A AND B = D
 		finalVal = (firstDist || secondDist); // C OR D
 		
 		this.finalValue = finalVal;
@@ -158,7 +158,7 @@ public class Bicondition implements LogicRule {
 	 * @return Returns the Boolean value of the logic term
 	 */
 	@Override
-	public boolean getValue() {
+	public boolean getAssignment() {
 		return this.finalValue;
 	}
 	

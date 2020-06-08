@@ -3,6 +3,7 @@
  */
 package org.uu.nl.embedding.logic;
 
+import java.util.Set;
 import org.uu.nl.embedding.lensr.DdnnfGraph;
 
 /**
@@ -14,16 +15,23 @@ import org.uu.nl.embedding.lensr.DdnnfGraph;
  */
 public interface LogicRule {
 
-	abstract boolean getValue();
+	abstract boolean getAssignment();
+	abstract void setAssignment(boolean value);
+	abstract void setFalse();
+	abstract void setTrue();
+	abstract boolean isFalse();
+	abstract boolean isTrue();
+	
 
 	abstract String getName();
 	abstract String toString();
-	abstract String getNameCNF();
-	abstract String getNameDdnnf();
-
-	abstract LogicRule[] getAllTerms();
+	abstract String getCnfName();
+	abstract String getDdnnfName();
+	
 	abstract LogicRule getPrecedent();
 	abstract LogicRule getAntecedent();
+	
+	abstract LogicRule getNfRule();
 	abstract LogicRule getCnfRule();
 	abstract LogicRule getDdnnfRule();
 

@@ -17,7 +17,7 @@ import org.uu.nl.embedding.lensr.DdnnfGraph;
  */
 public class LogicTerm implements LogicRule {
 
-	protected boolean firstTerm;
+	protected boolean assignment;
 	private LogicRule inCnf;
 	private LogicRule inDdnnf;
 	
@@ -30,39 +30,25 @@ public class LogicTerm implements LogicRule {
 	/**
 	 * Constructor method with user-given name declaration.
 	 * 
-	 * @param term A Boolean value representing the logic term
+	 * @param value A Boolean value representing the logic term
 	 * @param name The name of the logic term
 	 */
-	public LogicTerm(boolean term, String name) {
+	public LogicTerm(boolean value, String name) {
 		super();
-		this.firstTerm = term;
+		this.assignment = value;
 		this.name = name;
 		this.nameCnf = name;
 		this.nameDdnnf = name;
 		generateDdnnfGraph();
 	}
 	
-	/**
-	 * Constructor method without user-given name declaration.
-	 * 
-	 * @param term A Boolean value representing the logic term
-	 */
-	public LogicTerm(boolean term) {
-		this(term, String.valueOf(term));
-	}
-	
 	public String toString() {
-		if(firstTerm) {
-			return "true";
-		} else {
-			return "false";
-		}
+		return String.valueOf(this.assignment);
 	}
 	
 	private void generateDdnnfGraph() {
 		ddnnfGraph = new DdnnfGraph(this);
 	}
-
 	
 	/*
 	 * All interface methods implemented
@@ -72,8 +58,16 @@ public class LogicTerm implements LogicRule {
 	 * @return Returns the Boolean value of the logic term
 	 */
 	@Override
-	public boolean getValue() {
-		return this.firstTerm;
+	public boolean getAssignment() {
+		return this.assignment;
+	}
+
+	/**
+	 * Method to assign truth value.
+	 */
+	@Override
+	public void assign(boolean value) {
+		this.assignment = value;
 	}
 	
 	/**

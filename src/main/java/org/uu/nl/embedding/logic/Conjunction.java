@@ -67,7 +67,7 @@ public class Conjunction implements LogicRule {
 	 */
 	private void createFinalValue() {
 		boolean finalVal;
-		finalVal = (this.firstTerm.getValue() && this.secondTerm.getValue()); // A AND B
+		finalVal = (this.firstTerm.getAssignment() && this.secondTerm.getAssignment()); // A AND B
 		
 		this.finalValue = finalVal;
 	}
@@ -135,7 +135,7 @@ public class Conjunction implements LogicRule {
 	 * @return Returns the Boolean value of the logic term
 	 */
 	@Override
-	public boolean getValue() {
+	public boolean getAssignment() {
 		return this.finalValue;
 	}
 	

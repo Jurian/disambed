@@ -62,7 +62,7 @@ public class Disjunction implements LogicRule {
 	 */
 	private void createFinalValue() {
 		boolean finalVal;
-		finalVal = (this.firstTerm.getValue() || this.secondTerm.getValue()); // A OR B
+		finalVal = (this.firstTerm.getAssignment() || this.secondTerm.getAssignment()); // A OR B
 		
 		this.finalValue = finalVal;
 	}
@@ -162,7 +162,7 @@ public class Disjunction implements LogicRule {
 	 * @return Returns the Boolean value of the logic term
 	 */
 	@Override
-	public boolean getValue() {
+	public boolean getAssignment() {
 		return this.finalValue;
 	}
 	

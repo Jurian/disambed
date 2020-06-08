@@ -179,7 +179,7 @@ public class ExactSameDateLogic extends DateCompareLogic {
 	 * @return Returns the Boolean value of the logic term
 	 */
 	@Override
-	public boolean getValue() {
+	public boolean getAssignment() {
 		return this.isDate;
 	}
 	

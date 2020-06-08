@@ -35,7 +35,7 @@ public class Negation implements LogicRule {
 	protected Negation(LogicRule term) {
 		super();
 		this.firstTerm = term;
-		this.finalValue = !this.firstTerm.getValue();
+		this.finalValue = !this.firstTerm.getAssignment();
 		this.name = ("NOT " + this.firstTerm.getName());
 		this.str = ("NOT " + this.firstTerm.toString());
 		generateDdnnfGraph();
@@ -66,7 +66,7 @@ public class Negation implements LogicRule {
 	 * @return Returns the Boolean value of the logic term
 	 */
 	@Override
-	public boolean getValue() {
+	public boolean getAssignment() {
 		return this.finalValue;
 	}
 	

@@ -35,7 +35,7 @@ public class Implication implements LogicRule {
 	/**
 	 * Constructor method with user-given name declaration.
 	 * 
-	 * @param firstTerm A LogicTerm class representing the first logic formula
+	 * @param value A LogicTerm class representing the first logic formula
 	 * @param secondTerm A LogicTerm class representing the second logic formula
 	 * @param name The given name of this logic formula defined by the user
 	 */
@@ -56,7 +56,7 @@ public class Implication implements LogicRule {
 	private void createFinalValue() {
 		boolean finalVal;
 		
-		finalVal = ((!this.firstTerm.getValue()) || this.secondTerm.getValue()); // (NOT A) OR B
+		finalVal = ((!this.firstTerm.getAssignment()) || this.secondTerm.getAssignment()); // (NOT A) OR B
 		
 		this.finalValue = finalVal;
 	}
@@ -153,7 +153,7 @@ public class Implication implements LogicRule {
 	 * @return Returns the Boolean value of the logic term
 	 */
 	@Override
-	public boolean getValue() {
+	public boolean getAssignment() {
 		return this.finalValue;
 	}
 	

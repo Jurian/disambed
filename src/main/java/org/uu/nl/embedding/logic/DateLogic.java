@@ -319,7 +319,7 @@ public class DateLogic implements LogicRule {
 	 * @return Returns the Boolean value if this term has a valid date format
 	 */
 	@Override
-	public boolean getValue() {
+	public boolean getAssignment() {
 		return this.isDate;
 	}
 	
