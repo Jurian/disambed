@@ -23,6 +23,7 @@ import Jama.Matrix;
 public class LENSRModel {
 	
 	Matrix qEmbedder;
+	double lambda;
 	
 	public void LENSRModel() {
 		
@@ -86,8 +87,8 @@ public class LENSRModel {
 		
 		for(int l = 0; l < W.length; l++) {
 			layerSize = Z[l].getColumnDimension();
-			/* Get random variable based on Xavier init,
-			* here, nextGaussian() selects a number from
+			/* Get random variable based on Xavier init.
+			* Here, nextGaussian() selects a number from
 			* a Gaussian distribution with mean 0 and std 1
 			* and 2 in 2/n_in comes from He et al.
 			*/
@@ -149,20 +150,34 @@ public class LENSRModel {
 	}
 	
 	private Matrix embedLogic(LogicRule rule) {
-		Matrix placeHolder = new Matrix(Z[Z.length-1].getRowDimension(), 1);;
+		Matrix placeHolder = new Matrix(Z[Z.length].getRowDimension(), 1);
 		return placeHolder;
 	}
 	
-	private Matrix VertexMatrixK(LogicRule[] rules) {
-		Matrix placeHolder = new Matrix(Z[Z.length-1].getRowDimension(), 1);;
-		return placeHolder;
+	private Matrix VertexMatrixK(LogicRule[] rules) { // Gaat dit helemaal goed?
+		Matrix Vk = new Matrix(Z[Z.length].getRowDimension(), rules.length);
+		
+		for(int i = 0; i < rules.length; i++) {
+			Vk.setMatrix(0, Z[Z.length].getRowDimension(), 
+						i, i, 
+						embedLogic(rules[i]));
+		}
+		return Vk;
 	}
 
-	private void heterogeneousNodeEmbedding() {
+	private double heterogeneousNodeEmbedding(LogicRule rule, LogicRule truthAssign, LogicRule falseAssign, double margin) {
+		double res;
+		Matrix embedRule = embedLogic(rule);
+		Matrix embedTruth = embedLogic(truthAssign);
+		Matrix embedFalse = embedLogic(falseAssign);
 		
+		res = sqrdEuclidDistance(embedRule, embedFalse) - sqrdEuclidDistance(embedRule, embedTruth);
+		res += margin;
+		
+		return Math.max(res, 0);
 	}
 	
-	private void embeddingTrainer() {
+	private void embeddingTrainer(LogicRule[] allRules) {
 		
 	}
 	
@@ -172,6 +187,27 @@ public class LENSRModel {
 	
 	private void logicLoss () {
 		
+	}
+	
+	private double sqrdEuclidDistance(Matrix mat1, Matrix mat2) {
+		double res = 0;
+		double dist;
+		
+		for(int i = 0; i < mat1.getRowDimension(); i++) {
+			dist = (mat1.get(i, 1) - mat2.get(i, 1));
+			res += dist*dist;
+		}
+		return res;
+	}
+	
+	private ArrayList<LogicRule> getTruthAssignments(LogicRule rule) {
+		List<LogicRule> resList = new ArrayList<LogicRule>();
+		return resList;
+	}
+	
+	private ArrayList<LogicRule> getFalseAssignments(LogicRule rule) {
+		List<LogicRule> resList = new ArrayList<LogicRule>();
+		return resList;
 	}
 	
 	private ArrayList<Integer> getAndNodes(LogicRule F) {
