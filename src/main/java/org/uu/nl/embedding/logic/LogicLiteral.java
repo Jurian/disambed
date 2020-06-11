@@ -22,7 +22,7 @@ import java.util.TreeSet;
 public class LogicLiteral implements CnfLogicRule {
 
 	private boolean assignment;
-	
+	private boolean negated;
 
 	private LogicRule inNf;
 	private LogicRule inCnf;
@@ -36,19 +36,36 @@ public class LogicLiteral implements CnfLogicRule {
 	
 	
 	/**
-	 * Constructor method for the literal class
+	 * Constructor method for the literal class.
+	 * @param name The name of this literal, e.g. "p", 
+	 * or "isCar".
+	 * @param value The starting boolean truth value of 
+	 * this literal.
+	 * @param negated The boolean value stating if this
+	 * literal should, or shouldn't be negated.
+	 */
+	public LogicLiteral(final String name, boolean value, boolean negated) {
+		this.name = name;
+		this.assignment = value;
+		this.negated = negated;
+		
+		this.cnfName = name;
+		this.ddnnfName = name;
+	}
+	
+	/**
+	 * Constructor method for the literal class that 
+	 * assumes that the literal should have its given
+	 * value.
 	 * @param name The name of this literal, e.g. "p", 
 	 * or "isCar".
 	 * @param value The starting boolean truth value of 
 	 * this literal.
 	 */
 	public LogicLiteral(final String name, boolean value) {
-		this.name = name;
-		this.assignment = value;
-		
-		this.cnfName = name;
-		this.ddnnfName = name;
+		this(name, value, !value);
 	}
+	
 	
 	
 	/*
@@ -57,7 +74,7 @@ public class LogicLiteral implements CnfLogicRule {
 
     /**
      * Sets the a new boolean assignment of
-     * this logic rule
+     * this logic rule.
      */
     @Override
     public void setAssignment(boolean assignment) {
@@ -123,8 +140,17 @@ public class LogicLiteral implements CnfLogicRule {
      */
     @Override
     public String toString() {
-    	return String.valueOf(this.assignment);
+    	return this.name;
     }
+    
+    /**
+     * @return Returns this literal's value
+     * as a string
+     */
+	@Override
+	public String toValueString() {
+    	return String.valueOf(this.assignment);
+	}
     
     /**
      * @return Returns the name in CNF of this
@@ -151,6 +177,28 @@ public class LogicLiteral implements CnfLogicRule {
     @Override
     public Set<LogicLiteral> getLiterals() {
     	return new TreeSet<LogicLiteral>( Arrays.asList(this) );
+    }
+    
+    /**
+     * @return Returns this literal in an 
+     * ArrayList if this literal should be positive,
+     * else it returns an empty list.
+     */
+    @Override
+    public Set<LogicLiteral> getPositiveLiterals() {
+    	if(!negated) { new TreeSet<LogicLiteral>( Arrays.asList(this) ); }
+    	return new TreeSet<LogicLiteral>(/*Empty set*/); 
+    }
+    
+    /**
+     * @return Returns this literal in an 
+     * ArrayList if this literal should be negative,
+     * else it returns an empty list.
+     */
+    @Override
+    public Set<LogicLiteral> getNegativeLiterals() {
+    	if(negated) { return new TreeSet<LogicLiteral>( Arrays.asList(this) ); }
+    	return  new TreeSet<LogicLiteral>(/*Empty set*/); 
     }
     
     /**

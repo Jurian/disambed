@@ -31,8 +31,6 @@ public class CnfFormula implements CnfLogicRule {
 	private String cnfName;
 	private String ddnnfName;
 	
-	private DdnnfGraph ddnnfGraph;
-	
 	/**
 	 * The list of clauses that belong to this formula.
 	 */
@@ -50,29 +48,81 @@ public class CnfFormula implements CnfLogicRule {
             new TreeSet<>();
 
     
-    public CnfFormula(Clause[] clauses) {
+    /**
+     * Constructor method for this class.
+     * @param clauses The clauses that make up this formula.
+	 * @param nfRule The Normal Form formula this CNF formula
+	 * is generated from.
+	 */
+    public CnfFormula(Clause[] clauses, LogicRule nfRule) {
+    	for(Clause clause : clauses) { addClause(clause); }
     	
-		this.name = clause.getName();
-		this.assignment = clause.getAssignment();
-		this.cnfName = clause.getCnfName();
-		this.ddnnfName = clause.getDdnnfName();
+		this.name = this.toString();
+		this.cnfName = this.name;
+		
+		if(nfRule == null) { nfRule = generateNf(); }
+		this.inNf = nfRule;
+		this.inCnf = this;
+		this.inDdnnf = nfRule.getDdnnfRule(); // Checken of dit goed gaat qua compile volgorde!!!!!!
+		this.ddnnfName = nfRule.getDdnnfName();
+		this.assignment = isSatisfied();
 	}
-    
-	public CnfFormula(Clause clause) {
-		this.name = clause.getName();
-		this.assignment = clause.getAssignment();
-		this.cnfName = clause.getCnfName();
-		this.ddnnfName = clause.getDdnnfName();
+
+    /**
+     * Constructor method for this class.
+     * @param clauses The clauses that make up this formula.
+	 */
+    public CnfFormula(Clause[] clauses) {
+    	this(clauses, null);
+    }
+
+    /**
+     * Constructor method for this class.
+     * @param clauses The clause that makes up this formula.
+	 * @param nfRule The Normal Form formula this CNF formula
+	 * is generated from.
+	 */
+	public CnfFormula(Clause clause, LogicRule nfRule) {
+		addClause(clause);
+		
+		this.name = this.toString();
+		this.cnfName = this.name;
+		
+		if(nfRule == null) { nfRule = generateNf(); }
+		this.inNf = nfRule;
+		this.inCnf = this;
+		this.inDdnnf = nfRule.getDdnnfRule(); // Checken of dit goed gaat qua compile volgorde!!!!!!
+		this.ddnnfName = nfRule.getDdnnfName();
+		this.assignment = isSatisfied();
 	}
+
+    /**
+     * Constructor method for this class.
+     * @param clause The clause that makes up this formula.
+	 */
+    public CnfFormula(Clause clause) {
+    	this(clause, null);
+    }
 	
+	/**
+	 * Method to add a clause to the formula.
+	 * @param clause The clause to be added.
+	 */
 	public void addClause(Clause clause) {
-		Set<LogicLiteral> literals = clause.getLiterals();
-		for(LogicLiteral literal : literals) {
-			addLiteral(literal);
-		}
 		this.clauseList.add(clause);
+		
+		this.positiveLiteralSet.addAll(
+				clause.getPositiveLiterals());
+		this.negativeLiteralSet.addAll(
+				clause.getNegativeLiterals());
+		
+		this.assignment = isSatisfied();
 	}
-	
+
+	/**
+	 * Method to remove a clause from the formula.
+	 * @param clause The clause to be removed.
+	 */
 	public void removeClause(String clauseName) {
 		this.positiveLiteralSet.clear();
 		this.negativeLiteralSet.clear();
@@ -82,66 +132,186 @@ public class CnfFormula implements CnfLogicRule {
 				clauseList.remove(clause);
 			}
 			else {
-				for(LogicLiteral literal : clause.getLiterals()) {
-					addLiteral(literal);
-				}
+				
+				this.positiveLiteralSet.addAll(
+						clause.getPositiveLiterals());
+				this.negativeLiteralSet.addAll(
+						clause.getNegativeLiterals());
 			}
 		}
+		this.assignment = isSatisfied();
 		
 	}
-	
-	/**
-	 * This method checks if the LogicLiteral is negated
-	 * or not, and adds it to the corresponding set.
-	 * 
-	 * @param literal The LogicLiteral to check.
-	 */
-    private void addLiteral(LogicLiteral literal) {
-		if(literal.isNegated()) { addNegativeLiteral(literal); }
-		else { addPositiveLiteral(literal); }
-    }
 
     /**
-     * Adds a non-negated literal to this clause.
+     * Adds a non-negated literal to the given clause.
      * 
      * @param LogicLiteral the literal to add.
+     * @param targetClause The clause to which to add.
      */
-    private void addPositiveLiteral(LogicLiteral literal) {
-    	if(!literal.isNegated()) { positiveLiteralSet.add(literal); }
-    	else { throw new IllegalArgumentException("Cannot add negative literals to positiveLiteralSet."); }
+    public void addPositiveLiteral(LogicLiteral literal, Clause targetClause) {
+    	targetClause.addPositiveLiteral(literal);
+ 		this.assignment = isSatisfied();
     }
 
     /**
-     * Adds a negated literal to this clause.
+     * Adds a negated literal to the given clause.
      * 
-     * @param LogicLiteral the literal to add.
+     * @param LogicLiteral The literal to add.
+     * @param targetClause The clause to which to add.
      */
-    private void addNegativeLiteral(LogicLiteral literal) {
-    	if(literal.isNegated()) { negativeLiteralSet.add(literal); }
-    	else { throw new IllegalArgumentException("Cannot add positive literals to negativeLiteralSet."); }
+    public void addNegativeLiteral(LogicLiteral literal, Clause targetClause) {
+    	targetClause.addNegativeLiteral(literal);
+		this.assignment = isSatisfied();
     }
 
     /**
-     * Checks whether the input assignment satisfies this clause.
+     * Checks whether the input assignment satisfies this formula.
      * 
      * @return {@code true} if the assignment satisfies this clause, and 
      *         {@code false} otherwise.
      */
     public boolean isSatisfied() {
-        for (LogicLiteral positiveLogicLiteral : positiveLiteralSet) {
-            if (positiveLogicLiteral.isTrue()) {
-                return true;
-            }
-        }
-
-        for (LogicLiteral negativeLogicLiteral : negativeLiteralSet) {
-            if (negativeLogicLiteral.isFalse()) {
-                return true;
-            }
-        }
-
-        return false;
+    	for(Clause clause : clauseList) {
+    		if(!clause.isSatisfied()) { return false; }
+    	}
+    	return true;
     }
+    
+    /**
+     * Method to merge two CNF formulae to one.
+     * @param formula The other formula to merge this one with
+     * @return Returns the resulting formula from this formula and
+     * the given formula.
+     */
+    public CnfFormula mergeWith(CnfFormula formula) {
+    	List<Clause> uniqueClauses = this.clauseList;
+    	boolean samePos, sameNeg;
+    	
+    	// Loop through local (this formula) and 
+    	// incoming clauses (other formula)
+    	for(Clause localClause : getClauses()) {
+    		for(Clause incClause : formula.getClauses()) {
+    			samePos = localClause.getPositiveLiterals().equals(
+    					incClause.getPositiveLiterals());
+    			sameNeg = localClause.getNegativeLiterals().equals(
+    					incClause.getNegativeLiterals());
+    			
+    			if(!(samePos && sameNeg)) {
+    				uniqueClauses.add(incClause);
+    			}
+    			// else No need for duplicate clauses.
+    		}
+    	}
+    	Clause[] resClauses = uniqueClauses.toArray(new Clause[0]);
+    	Conjunction combinedRules = new Conjunction(this.inNf, formula.getNfRule());
+    	CnfFormula resForm = new CnfFormula(resClauses, combinedRules);
+    	//resForm.cleanClauses();
+    	
+    	return resForm;
+    }
+    
+    public void cleanClauses() {
+    	
+    }
+
+    /**
+     * Method for satisfying this clause.
+     */
+    private void satisfy() {
+    	
+    	// If formula is already satisfied, re-satisfy the formula
+    	// by satisfying each clause with another literal.
+    	if(isSatisfied()) {
+    		
+			// Loop through clauses and re-satisfy each clause.
+            for(Clause clause : clauseList) {
+            	clause.setTrue();
+            }
+    	}
+    	else {
+    		// Loop through clauses and satisfy the unsatisfied
+    		// clauses.
+            for(Clause clause : clauseList) {
+            	if(clause.isFalse()) { clause.setTrue(); }
+            }
+    	}
+		// Re-assign clause.
+		this.assignment = isSatisfied();
+    }
+    
+    /**
+     * Method for unsatisfying this clause.
+     */
+    private void unsatisfy() {
+    	if(isSatisfied()) {
+    		// Loop through clauses and unsatisfy the first
+    		// clause.
+            for(Clause clause : clauseList) {
+            	clause.setFalse();
+            	break;
+            }
+    	}
+    	else {
+        	boolean isFirst = true;
+        	boolean clauseFound = false;
+        	Clause runClause = new Clause("tempClause", false, false);
+    		Clause firstClause = new Clause("tempClause2", false, false);
+    		Clause lastSatClause = new Clause("tempClause3", false, false);
+			// Loop through clauses and re-unsatisfy each clause.
+            for(Clause clause : clauseList) {
+            	runClause = clause;
+            	if(isFirst) {
+            		firstClause = clause; 
+            		isFirst = false;
+            	}
+            	// If this clause is true and previous clause
+            	// was unsatisfied, then falsify and break loop
+            	if(clause.isTrue() && clauseFound) {
+            		clause.setFalse();
+            		break;
+            	}
+            	if(clause.isFalse() && !clauseFound) { 
+            		clause.setTrue();
+            		lastSatClause = clause;
+            		clauseFound = true;
+            	}
+            }
+            if(lastSatClause == runClause) { firstClause.setFalse(); } // Gaat dit goed???
+    	}
+		// Re-assign clause.
+		this.assignment = isSatisfied();
+    }
+    
+    /**
+     * Private method to generate a "normal form" formula if
+     * this clause was not based on a normal form formula
+     * already.
+     */
+    private LogicRule generateNf() {
+    	Disjunction conj = null;
+    	Clause firstClause = null, secondClause = null;
+    	
+        for(Clause clause : clauseList) {
+        	if(firstClause == null) { firstClause = clause; }
+        	if(secondClause == null) { secondClause = clause; }
+        	if(!(firstClause == null || secondClause == null)) {
+        		if(conj==null) {
+        			conj = new Disjunction(firstClause, secondClause);
+        		}
+        		else {
+        			conj = new Disjunction(conj, clause);
+        		}
+        	}
+        }
+        return conj;
+    }
+    
+    
+    private void generateDdnnf() {
+    	//TODO
+    }
+    
     
 	
 	/*
@@ -156,7 +326,8 @@ public class CnfFormula implements CnfLogicRule {
      */
     @Override
     public void setAssignment(boolean assignment) {
-        this.assignment = assignment;
+    	if(assignment) { satisfy(); }
+    	else { unsatisfy(); }
     }
     
     /**
@@ -165,7 +336,7 @@ public class CnfFormula implements CnfLogicRule {
      */
     @Override
     public boolean getAssignment() {
-        return assignment;
+        return this.assignment;
     }
     
     /**
@@ -174,7 +345,7 @@ public class CnfFormula implements CnfLogicRule {
      */
 	@Override
     public void setFalse() {
-        this.assignment = ;
+        unsatisfy();
     }
     
     /**
@@ -183,7 +354,7 @@ public class CnfFormula implements CnfLogicRule {
      */
     @Override
     public void setTrue() {
-        this.assignment = ;
+        satisfy();
     }
 
     /**
@@ -192,7 +363,7 @@ public class CnfFormula implements CnfLogicRule {
      */
     @Override
     public boolean isFalse() {
-        return !assignment;
+        return !this.assignment;
     }
 
     /**
@@ -201,7 +372,7 @@ public class CnfFormula implements CnfLogicRule {
      */
     @Override
     public boolean isTrue() {
-        return assignment;
+        return this.assignment;
     }
     
     /**
@@ -214,26 +385,22 @@ public class CnfFormula implements CnfLogicRule {
     }
     
     /**
-     * @return Returns this clause as a
+     * @return Returns this formula as a
      * string, using the names of the 
      * literals.
      */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        Set<LogicLiteral> allLiterals = getLiterals();
+        List<Clause> allClauses = getClauses();
 
         sb.append("(");
         String separator = "";
 
-        for (LogicLiteral literal : allLiterals) {
+        for(Clause clause : allClauses) {
             sb.append(separator);
-            separator = " OR ";
-
-            if (negativeLiteralSet.contains(literal)) {
-                sb.append("NOT ");
-            }
-            sb.append(literal.getName());
+            sb.append(clause.getCnfName());
+            separator = " AND ";
         }
         return sb.append(")").toString();
     }
@@ -246,19 +413,15 @@ public class CnfFormula implements CnfLogicRule {
     @Override
     public String toValueString() {
         StringBuilder sb = new StringBuilder();
-        Set<LogicLiteral> allLiterals = getLiterals();
+        List<Clause> allClauses = getClauses();
 
         sb.append("(");
         String separator = "";
 
-        for (LogicLiteral literal : allLiterals) {
+        for(Clause clause : allClauses) {
             sb.append(separator);
-            separator = " OR ";
-
-            if (negativeLiteralSet.contains(literal)) {
-                sb.append("NOT ");
-            }
-            sb.append(literal.getAssignment());
+            sb.append(clause.toValueString());
+            separator = " AND ";
         }
         return sb.append(")").toString();
     }
@@ -291,6 +454,24 @@ public class CnfFormula implements CnfLogicRule {
         LogicLiteralSet.addAll(negativeLiteralSet);
         
         return LogicLiteralSet;
+    }
+    
+    /**
+     * @return Returns all positive literals of this 
+     * clause in an ArrayList.
+     */
+    @Override
+    public Set<LogicLiteral> getPositiveLiterals() {
+        return this.positiveLiteralSet;
+    }
+    
+    /**
+     * @return Returns all negative literals of this 
+     * clause in an ArrayList.
+     */
+    @Override
+    public Set<LogicLiteral> getNegativeLiterals() {
+        return this.negativeLiteralSet;
     }
     
     /**
@@ -354,7 +535,7 @@ public class CnfFormula implements CnfLogicRule {
      */
     @Override
     public DdnnfGraph getDdnnfGraph() {
-    	return this.ddnnfGraph;
+    	return this.inDdnnf.getDdnnfGraph();
     }
     
 

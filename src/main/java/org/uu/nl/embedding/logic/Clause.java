@@ -45,53 +45,119 @@ public class Clause implements CnfLogicRule {
     private final Set<String> negativeNameSet = new TreeSet<>();
     
 
-  
-	public Clause(final LogicLiteral[] orderedLiterals, final boolean[] orderedValues) {
-		if(!(orderedLiterals.length == orderedValues.length)) {
+
+	
+	/**
+	 * Constructor method for the clause class
+	 * @param orderedLiterals The literals of this clause
+	 * , e.g. "p", or "isCar". In some arbitrary specific 
+	 * order.
+	 * @param negated The boolean truth value if the
+	 * literal in this clause should be negated or not.
+	 * In some arbitrary specific order.
+	 * @param nfRule The Normal Form formula this clause
+	 * is generated from.
+	 */
+	public Clause(final LogicLiteral[] orderedLiterals, final boolean[] orderedNegated, LogicRule nfRule) {
+		if(!(orderedLiterals.length == orderedNegated.length)) {
 			throw new IllegalArgumentException("The two arrays do not have the same length."); }
 		
 		for(int i = 0; i < orderedLiterals.length; i++) {
-			if(orderedValues[i]) { addPositiveLiteral(orderedLiterals[i]); }
+			if(orderedNegated[i]) { addPositiveLiteral(orderedLiterals[i]); }
 			else { addNegativeLiteral(orderedLiterals[i]); }
 		}
 		
 		this.cnfName = this.toString();
-		
+		if(nfRule == null) { nfRule = generateNf(); }
+		this.inNf = nfRule;
+		this.inDdnnf = nfRule.getDdnnfRule(); // Checken of dit goed gaat qua compile volgorde!!!!!!
+		this.ddnnfName = nfRule.getDdnnfName();
+		this.assignment = isSatisfied();
+	}
+
+	/**
+	 * Constructor method for the clause class, without
+	 * a source Normal Form formula.
+	 * @param orderedLiterals The literals of this clause
+	 * , e.g. "p", or "isCar". In some arbitrary specific 
+	 * order.
+	 * @param negated The boolean truth value if the
+	 * literal in this clause should be negated or not.
+	 * In some arbitrary specific order.
+	 */
+	public Clause(final LogicLiteral[] orderedLiterals, final boolean[] orderedNegated) {
+		this(orderedLiterals, orderedNegated, null);
 	}
 	
-    /**
+	/**
 	 * Constructor method for the clause class
-	 * @param name The name of the literal in this clause
-	 * , e.g. "p", or "isCar"
-	 * @param value The starting boolean truth value of 
-	 * the literal in this clause
+	 * @param literal The literal in this clause
+	 * , e.g. "p", or "isCar".
+	 * @param negated The boolean truth value if the
+	 * literal in this clause should be negated or not.
+	 * @param nfRule The Normal Form formula this clause
+	 * is generated from.
 	 */
-	public Clause(final LogicLiteral literal, boolean value) {
-		if(value) { addPositiveLiteral(literal); }
+	public Clause(final LogicLiteral literal, boolean negated, LogicRule nfRule) {
+		if(!negated) { addPositiveLiteral(literal); }
 		else { addNegativeLiteral(literal); }
-		
-		this.name = this.toString();
-		this.assignment = literal.getAssignment();
-		this.cnfName = literal.getCnfName();
-		this.ddnnfName = literal.getDdnnfName();
+
+		this.cnfName = this.toString();
+		if(nfRule == null) { nfRule = generateNf(); }
+		this.inNf = nfRule;
+		this.inDdnnf = nfRule.getDdnnfRule(); // Checken of dit goed gaat qua compile volgorde!!!!!!
+		this.ddnnfName = nfRule.getDdnnfName();
+		this.assignment = isSatisfied();
+	}
+	
+	/**
+	 * Constructor method for the clause class, without
+	 * a source Normal Form formula.
+	 * @param literal The literal in this clause
+	 * , e.g. "p", or "isCar".
+	 * @param negated The boolean truth value if the
+	 * literal in this clause should be negated or not.
+	 */
+	public Clause(final LogicLiteral literal, boolean negated) {
+		this(literal, negated, null);
 	}
 	
 	/**
 	 * Constructor method for the clause class
 	 * @param name The name of the literal in this clause
-	 * , e.g. "p", or "isCar"
+	 * , e.g. "p", or "isCar".
 	 * @param value The starting boolean truth value of 
-	 * the literal in this clause
+	 * the literal in this clause.
+	 * @param negated The boolean truth value if the
+	 * literal in this clause should be negated or not.
+	 * @param nfRule The Normal Form formula this clause
+	 * is generated from.
 	 */
-	public Clause(final String literalName, boolean value) {
+	public Clause(final String literalName, boolean value, boolean negated, LogicRule nfRule) {
 		LogicLiteral literal = new LogicLiteral(literalName, value);
-		if(value) { addPositiveLiteral(literal); }
+		if(!negated) { addPositiveLiteral(literal); }
 		else { addNegativeLiteral(literal); }
 		
-		this.name = this.toString();
-		this.assignment = literal.getAssignment();
-		this.cnfName = literal.getCnfName();
-		this.ddnnfName = literal.getDdnnfName();
+		this.cnfName = this.toString();
+		if(nfRule == null) { nfRule = generateNf(); }
+		this.inNf = nfRule;
+		this.inDdnnf = nfRule.getDdnnfRule(); // Checken of dit goed gaat qua compile volgorde!!!!!!
+		this.ddnnfName = nfRule.getDdnnfName();
+		this.assignment = isSatisfied();
+	}
+	
+	/**
+	 * Constructor method for the clause class, without
+	 * a source Normal Form formula.
+	 * @param name The name of the literal in this clause
+	 * , e.g. "p", or "isCar".
+	 * @param value The starting boolean truth value of 
+	 * the literal in this clause.
+	 * @param negated The boolean truth value if the
+	 * literal in this clause should be negated or not.
+	 */
+	public Clause(final String literalName, boolean value, boolean negated) {
+		this(literalName, value, negated, null);
 	}
 
     /**
@@ -100,8 +166,9 @@ public class Clause implements CnfLogicRule {
      * @param LogicLiteral the literal to add.
      */
     public void addPositiveLiteral(LogicLiteral literal) {
-    	 positiveLiteralSet.add(literal);
-    	 positiveNameSet.add(literal.getName());
+		positiveLiteralSet.add(literal);
+		positiveNameSet.add(literal.getName());
+ 		this.assignment = isSatisfied();
     }
 
     /**
@@ -112,6 +179,7 @@ public class Clause implements CnfLogicRule {
     public void addNegativeLiteral(LogicLiteral literal) {
     	negativeLiteralSet.add(literal);
     	negativeNameSet.add(literal.getName());
+		this.assignment = isSatisfied();
     }
 
     /**
@@ -124,6 +192,7 @@ public class Clause implements CnfLogicRule {
 		if(positiveLiteralSet.contains(literal)) { positiveLiteralSet.remove(literal);  }
 		else if(negativeLiteralSet.contains(literal)) { negativeLiteralSet.remove(literal); }
 		else { throw new IllegalArgumentException("Cannot remove given literal from either *LiteralSet."); }
+		this.assignment = isSatisfied();
 	}
 	
     /**
@@ -135,21 +204,24 @@ public class Clause implements CnfLogicRule {
      */
 	public void removeLiteral(String literalName) {
 		boolean removed = false;
-		for(LogicLiteral literal : positiveLiteralSet) {
-			if(literal.getName() == literalName) {
-				this.positiveLiteralSet.remove(literal);
-				removed = true;
-				break;
+		while(!removed) {
+			
+			for(LogicLiteral literal : positiveLiteralSet) {
+				if(literal.getName() == literalName) {
+					this.positiveLiteralSet.remove(literal);
+					removed = true;
+				}
 			}
-		}
-		if(!removed) {
 			for(LogicLiteral literal : negativeLiteralSet) {
 				if(literal.getName() == literalName) {
 					this.negativeLiteralSet.remove(literal);
-					break;
+					removed = true;
 				}
 			}
+			if(!removed) {throw new IllegalArgumentException("No literal with specified name in this clause.");}
+			removed = true;
 		}
+		this.assignment = isSatisfied();
 	}
 	
 	/**
@@ -190,7 +262,6 @@ public class Clause implements CnfLogicRule {
 			
 		}
 	}
-
 	
 	/**
 	 * Sets a new assignment of the literal.
@@ -239,27 +310,179 @@ public class Clause implements CnfLogicRule {
      *         {@code false} otherwise.
      */
     public boolean isSatisfied() {
-        for (LogicLiteral literal : positiveLiteralSet) {
-            if (literal.isTrue()) {
+        for(LogicLiteral literal : positiveLiteralSet) {
+            if(literal.isTrue()) {
                 return true;
             }
         }
 
-        for (LogicLiteral literal : negativeLiteralSet) {
-            if (literal.isFalse()) {
+        for(LogicLiteral literal : negativeLiteralSet) {
+            if(literal.isFalse()) {
                 return true;
             }
         }
 
         return false;
     }
-    
-    
-    private void generateNf() {
-    	TODO
+
+    /**
+     * Method to merge two CNF clauses to one.
+     * @param formula The other clause to merge this one with
+     * @return Returns the resulting clause from this clause and
+     * the given clause.
+     */
+    public Clause mergeWith(Clause clause) {
+    	ArrayList<LogicLiteral> litList = new ArrayList<LogicLiteral>();
+    	boolean[] boolArray = new boolean[(positiveLiteralSet.size() + negativeLiteralSet.size())];
+    	int counter = 0;
+    	// Loop through both positive and negative literal sets
+    	// and add them to the same list, while tracking their
+    	// negation value.
+    	for(LogicLiteral literal : positiveLiteralSet) {
+    		litList.add(literal);
+    		boolArray[counter] = true;
+    		counter++;
+    	}
+    	for(LogicLiteral literal : negativeLiteralSet) {
+    		litList.add(literal);
+    		boolArray[counter] = false;
+    		counter++;
+    	}
+    	// Convert the literal list to an array.
+    	LogicLiteral[] litArray = litList.toArray(new LogicLiteral[0]);
+    	// Make form the two NF rules a new disjunction for the resulting clause
+    	Disjunction combinedRules = new Disjunction(this.inNf, clause.getNfRule());
+    	
+    	return new Clause(litArray, boolArray, combinedRules);
     }
+    
+    /**
+     * Method for satisfying this clause.
+     */
+    private void satisfy() {
+    	
+    	// While no new assignment is set that satisfies the clause.
+    	boolean newlySatisfied = false;
+		while(!newlySatisfied) {
+	    	// If clause is already satisfied, satisfy clause with 
+	    	// other literal.
+	    	if(isSatisfied()) {
+	    		
+	    		boolean literalFound = false;
+	        	boolean isFirst = true;
+	        	LogicLiteral firstLit = new LogicLiteral("tempLit", false);
+	    			// Loop through positive literals.
+	                for(LogicLiteral literal : positiveLiteralSet) {
+	                	// Select first literal for potential use later.
+	                	if(isFirst) { 
+	                		firstLit = literal; 
+	                        // Set false after first iteration.
+	                        isFirst = false;
+	                        }
+	                	// If the previous literal was found and falsified,
+	                	// then set the current literal true and break loop.
+	                	if(literalFound) {
+	                		literal.setTrue();
+	                		newlySatisfied = true;
+	                	}
+	                	// If current literal is true, set it false.
+	                    if(literal.isTrue()) {
+	                    	literalFound = true;
+	                    	literal.setFalse();
+	                    }
+	                }
+	    			// Loop through negative literals, and do same as above.
+	                for(LogicLiteral literal : negativeLiteralSet) {
+	                	if(literalFound) {
+	                		literal.setFalse();
+	                		newlySatisfied = true;
+	                	}
+	                    if(literal.isFalse()) {
+	                    	literalFound = true;
+	                    	literal.setTrue();
+	                    }
+	                }
+	                /* When arrived here: the last negated literal
+	                 * was satisfied. As such, we set the first
+	                 * literal to satisfy.
+	                 */
+	                firstLit.setTrue();
+	    	}
+	    	else {
+	    		// Satisfy clause by setting first positive literal true.
+	            for(LogicLiteral literal : positiveLiteralSet) {
+	            	literal.setTrue();
+	            	newlySatisfied = true;
+	            }
+	    		// If no positive literal in clause: Satisfy clause by 
+	            // setting first positive literal true.
+                for(LogicLiteral literal : negativeLiteralSet) {
+            		literal.setFalse();
+            		newlySatisfied = true;
+                }
+	    	}
+	    	// Some weird stuff is happening here...
+	    	if(!newlySatisfied) { newlySatisfied = true; }
+	    }
+		// Re-assign clause.
+		this.assignment = isSatisfied();
+    }
+    
+    /**
+     * Method for unsatisfying this clause.
+     */
+    private void unsatisfy() {
+		// Unsatisfy clause by setting all positive literals false.
+        for(LogicLiteral literal : positiveLiteralSet) {
+        	literal.setFalse();
+        }
+		// Unsatisfy clause by setting all negative literals true.
+        for(LogicLiteral literal : negativeLiteralSet) {
+    		literal.setTrue();
+        }
+		// Re-assign clause.
+		this.assignment = isSatisfied();
+    }
+    
+    /**
+     * Private method to generate a "normal form" formula if
+     * this clause was not based on a normal form formula
+     * already.
+     */
+    private LogicRule generateNf() {
+    	Disjunction disj = null;
+    	LogicLiteral firstLit = null, secondLit = null;
+    	
+        for(LogicLiteral literal : positiveLiteralSet) {
+        	if(firstLit == null) { firstLit = literal; }
+        	if(secondLit == null) { secondLit = literal; }
+        	if(!(firstLit == null || secondLit == null)) {
+        		if(disj==null) {
+        			disj = new Disjunction(firstLit, secondLit);
+        		}
+        		else {
+        			disj = new Disjunction(disj, literal);
+        		}
+        	}
+        }
+        for(LogicLiteral literal : negativeLiteralSet) {
+        	if(firstLit == null) { firstLit = literal; }
+        	if(secondLit == null) { secondLit = literal; }
+        	if(!(firstLit == null || secondLit == null)) {
+        		if(disj==null) {
+        			disj = new Disjunction(firstLit, secondLit);
+        		}
+        		else {
+        			disj = new Disjunction(disj, literal);
+        		}
+        	}
+        }
+        return disj;
+    }
+    
+    
     private void generateDdnnf() {
-    	TODO
+    	//TODO
     }
 	
 	/*
@@ -272,9 +495,8 @@ public class Clause implements CnfLogicRule {
      */
     @Override
     public void setAssignment(boolean assignment) {
-        this.assignment = assignment;
-   	 //TODO: re-evaluate assignment of clause
-   	 TODO
+    	if(assignment) { satisfy(); }
+    	else { unsatisfy(); }
     }
     
     /**
@@ -283,7 +505,7 @@ public class Clause implements CnfLogicRule {
      */
     @Override
     public boolean getAssignment() {
-        return assignment;
+        return this.assignment;
     }
     
     /**
@@ -292,9 +514,7 @@ public class Clause implements CnfLogicRule {
      */
 	@Override
     public void setFalse() {
-        this.assignment = false;
-   	 //TODO: re-evaluate assignment of clause
-   	 TODO
+		unsatisfy();
     }
     
     /**
@@ -303,9 +523,7 @@ public class Clause implements CnfLogicRule {
      */
     @Override
     public void setTrue() {
-        this.assignment = true;
-   	 //TODO: re-evaluate assignment of clause
-   	 TODO
+    	satisfy();
     }
 
     /**
@@ -314,7 +532,7 @@ public class Clause implements CnfLogicRule {
      */
     @Override
     public boolean isFalse() {
-        return !assignment;
+        return !this.assignment;
     }
 
     /**
@@ -323,7 +541,7 @@ public class Clause implements CnfLogicRule {
      */
     @Override
     public boolean isTrue() {
-        return assignment;
+        return this.assignment;
     }
     
     /**
@@ -403,8 +621,8 @@ public class Clause implements CnfLogicRule {
     }
     
     /**
-     * @return Returns this literal in an 
-     * ArrayList
+     * @return Returns all literals of this clause 
+     * in an ArrayList.
      */
     @Override
     public Set<LogicLiteral> getLiterals() {
@@ -415,7 +633,26 @@ public class Clause implements CnfLogicRule {
     }
     
     /**
-     * @return Returns an empty ArrayList
+     * @return Returns all positive literals of this 
+     * clause in an ArrayList.
+     */
+    @Override
+    public Set<LogicLiteral> getPositiveLiterals() {
+        return this.positiveLiteralSet;
+    }
+    
+    /**
+     * @return Returns all negative literals of this 
+     * clause in an ArrayList.
+     */
+    @Override
+    public Set<LogicLiteral> getNegativeLiterals() {
+        return this.negativeLiteralSet;
+    }
+    
+    
+    /**
+     * @return Returns this clause in a list.
      */
     @Override
     public List<Clause> getClauses() {
@@ -423,7 +660,7 @@ public class Clause implements CnfLogicRule {
     }
     
     /**
-     * @return Returns this literal as 
+     * @return Returns this clause as 
      * precedent of this logic rule
      */
     @Override
@@ -432,7 +669,7 @@ public class Clause implements CnfLogicRule {
     }
     
     /**
-     * @return Returns this literal as 
+     * @return Returns this clause as 
      * antecedent of this logic rule
      */
     @Override
@@ -441,7 +678,7 @@ public class Clause implements CnfLogicRule {
     }
     
     /**
-     * @return Returns this literal as 
+     * @return Returns this clause as 
      * LogicRule in Normal Form
      */
     @Override
@@ -450,7 +687,7 @@ public class Clause implements CnfLogicRule {
     }
     
     /**
-     * @return Returns this literal as 
+     * @return Returns this clause as 
      * LogicRule in Conjunctive Normal Form
      */
     @Override
@@ -459,7 +696,7 @@ public class Clause implements CnfLogicRule {
     }
     
     /**
-     * @return Returns this literal as 
+     * @return Returns this clause as 
      * LogicRule in Deterministic 
      * Decomposable Negation Normal Form
      */
@@ -469,14 +706,13 @@ public class Clause implements CnfLogicRule {
     }
     
     /**
-     * @return Returns this literal's
+     * @return Returns this clause's
      * d-DNNF graph
      */
     @Override
     public DdnnfGraph getDdnnfGraph() {
-    	return this.ddnnfGraph;
+    	return this.inDdnnf.getDdnnfGraph();
     }
-    
 
     @Override
     public boolean equals(Object obj) {
