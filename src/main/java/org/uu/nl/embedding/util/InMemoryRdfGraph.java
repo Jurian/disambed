@@ -11,7 +11,7 @@ public class InMemoryRdfGraph extends InMemoryGrph {
     public InMemoryRdfGraph() {
         super();
         // Support up to 127 different predicate types
-        edgeTypeProperty = new NumericalProperty("Edge types",8, 0);
+        edgeTypeProperty = new NumericalProperty("Edge types",32, 0);
         // Weights are stored as floats
         edgeWeightProperty = new NumericalProperty("Edge weights",32, 0);
         // We only need to support 3 vertex types

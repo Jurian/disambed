@@ -59,7 +59,7 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 
 		final Map<Node, Map<Node, Integer>> predicateLiteralMap = new HashMap<>();
 		final Map<Node, Integer> vertexMap = new HashMap<>();
-		final Map<Node, Byte> edgeTypes = new HashMap<>();
+		final Map<Node, Integer> edgeTypes = new HashMap<>();
 
 		long skippedTriples = 0;
 		int s_i, o_i;
@@ -68,6 +68,7 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 		Node s, p, o;
 		Triple t ;
 
+		final Set<String> predicateSet = new HashSet<>();
 		final ExtendedIterator<Triple> triples = model.getGraph().find();
 
 		try(ProgressBar pb = Configuration.progressBar("Converting", model.size(), "triples")) {
@@ -79,7 +80,7 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 				o = t.getObject();
 
 				predicateString = p.toString();
-
+				predicateSet.add(predicateString);
 				// Ignore unweighted predicates
 				if(doPredicateWeighting && !predicateWeights.containsKey(predicateString)) {
 					// Adjust the total number of triples we are considering
@@ -92,8 +93,8 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 				// Only create a new ID if the vertex is not yet present
 				s_i = addVertex(g, p, s, vertexMap, predicateLiteralMap);
 				o_i = addVertex(g, p, o, vertexMap, predicateLiteralMap);
-				assert predicateWeights != null;
-				addEdge(g, p, s_i, o_i, edgeTypes, predicateWeights.get(predicateString));
+
+				addEdge(g, p, s_i, o_i, edgeTypes, doPredicateWeighting ? predicateWeights.get(predicateString) : 1f);
 
 				if(doSimilarityMatching) {
 					// Some similarity metrics require pre-processing
@@ -118,6 +119,7 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 					" unweighted triples (" + String.format("%.2f", (skippedTriples/(double)model.size()*100)) + " %)");
 		}
 
+		//predicateSet.stream().sorted().forEach(System.out::println);
 
 		if(!doSimilarityMatching) {
 			logger.info("Partial matching is disabled, no edges between similar literals are added");
@@ -233,12 +235,12 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 	 * 	However there are only a few types of edges (relationships)
 	 * 	So we also store a reference to a unique edge-type id
 	 */
-    private void addEdge(InMemoryRdfGraph g, Node p, int s_i, int o_i, Map<Node, Byte> edgeTypes, float weight) {
+    private void addEdge(InMemoryRdfGraph g, Node p, int s_i, int o_i, Map<Node, Integer> edgeTypes, float weight) {
     	// Create a unique id for this predicate given the subject-object pair
 		final int p_i = g.addDirectedSimpleEdge(s_i, o_i);
 		g.getEdgeLabelProperty().setValue(p_i, p.toString(false));
 		// If we have not encountered this edge-type before, give it a unique id
-		edgeTypes.putIfAbsent(p, (byte) (edgeTypes.size() + 1));
+		edgeTypes.putIfAbsent(p, (edgeTypes.size() + 1));
 		// Store the edge-type value for this new edge
 		g.getEdgeTypeProperty().setValue(p_i, edgeTypes.get(p));
 		g.getEdgeWeightProperty().setValue(p_i, weight);
