@@ -345,7 +345,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 				allDateVerts, allDateEdges, vertexLabels, edgeLabels,
 				dateRule, daysDifference, focusNodeOrder, counter, inOutVerts.length);
     	
-    	awareBcv = UndirectedWeighted.doWorkWithIgnore(graph, false, bcv, focusNodeOrder, removedMaps);
+    	//awareBcv = UndirectedWeighted.doWorkWithIgnore(graph, false, bcv, focusNodeOrder, removedMaps);
     	
 		return awareBcv;
 	}

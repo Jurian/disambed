@@ -103,7 +103,7 @@ public class LENSRModel {
 	ArrayList<Integer> orNodes;
 	ArrayList<Integer> andNodes;
 	DdnnfGraph logicGraph;
-	
+	/*
 	private void semanticRegularization(LogicRule F) {
 		
 		Matrix resLoss = new Matrix(Z[Z.length-1].getRowDimension(), 1);
@@ -237,5 +237,6 @@ public class LENSRModel {
 		Collections.sort(orNodes);
 		return (ArrayList<Integer>) orNodes;// Gaat dit goed?
 	}
+	*/
 
 }
