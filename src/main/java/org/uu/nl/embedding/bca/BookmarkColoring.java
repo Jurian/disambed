@@ -46,23 +46,25 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		for(int i = 0; i < verts.length; i++) {
 
 			final int vert = verts[i];
-			final NodeInfo nodeInfo = NodeInfo.fromByte(getType(vert));
+			final byte type = (byte) graph.getVertexTypeProperty().getValueAsInt(vert);
+			final String key = graph.getVertexLabelProperty().getValueAsString(vert);
+			final NodeInfo nodeInfo = NodeInfo.fromByte(type);
 
 			switch (nodeInfo) {
 				case URI:
-					if(!output.getUri().isEmpty() && output.getUri().stream().anyMatch(getKey(vert)::startsWith)) {
+					if(output.outputUriNodes() && !output.getUri().isEmpty() && output.getUri().stream().anyMatch(key::startsWith)) {
 						performBCA[i] = true;
 						notSkipped++;
 					}
 					break;
 				case BLANK:
-					if(!output.getBlank().isEmpty() && output.getBlank().stream().anyMatch(getKey(vert)::startsWith)) {
+					if(output.outputBlankNodes() && !output.getBlank().isEmpty() && output.getBlank().stream().anyMatch(key::startsWith)) {
 						performBCA[i] = true;
 						notSkipped++;
 					}
 					break;
 				case LITERAL:
-					if(!output.getLiteral().isEmpty() && output.getLiteral().stream().anyMatch(getKey(vert)::startsWith)) {
+					if(output.outputLiteralNodes() && !output.getLiteral().isEmpty() && output.getLiteral().stream().anyMatch(key::startsWith)) {
 						performBCA[i] = true;
 						notSkipped++;
 					}
@@ -212,6 +214,10 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	
 	private void setMax(double newMax) {
 		this.max = Math.max(max, newMax);
+	}
+
+	public int[] getProcessedNodes() {
+		return this.processedNodes;
 	}
 
 }
