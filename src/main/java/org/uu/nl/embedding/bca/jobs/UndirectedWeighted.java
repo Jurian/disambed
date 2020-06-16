@@ -1,12 +1,13 @@
 package org.uu.nl.embedding.bca.jobs;
 
 import org.uu.nl.embedding.bca.util.BCAJob;
+import org.uu.nl.embedding.bca.util.BCAJobStable;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 
 /**
  * @author Jurian Baas
  */
-public class UndirectedWeighted extends BCAJob {
+public class UndirectedWeighted extends BCAJobStable {
 
 	public UndirectedWeighted(
 			InMemoryRdfGraph graph, int bookmark,
