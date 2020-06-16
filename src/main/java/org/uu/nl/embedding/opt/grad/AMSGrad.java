@@ -48,12 +48,12 @@ public class AMSGrad extends Optimizer {
 	/**
 	 * Contains the maximum of the past first moments w.r.t. to all parameters
 	 */
-	private final float[] M1focus, M1context;
+	private final float[][] M1focus, M1context;
 	private final float[] M1fBias, M1cBias;
 	/**
 	 * Contains the maximum of the past second moments w.r.t. to all parameters
 	 */
-	private final float[] M2focus, M2context;
+	private final float[][] M2focus, M2context;
 	private final float[] M2fBias, M2cBias;
 	/**
 	 * Decay rate for first momentum
@@ -72,10 +72,10 @@ public class AMSGrad extends Optimizer {
 	public AMSGrad(CoOccurrenceMatrix coMatrix, Configuration config, CostFunction costFunction) {
 		super(coMatrix, config, costFunction);
 
-		this.M1focus = new float[focusVectors * dimension];
-		this.M2focus = new float[focusVectors * dimension];
-		this.M1context = new float[contextVectors * dimension];
-		this.M2context = new float[contextVectors * dimension];
+		this.M1focus = new float[focusVectors][dimension];
+		this.M2focus = new float[focusVectors][dimension];
+		this.M1context = new float[contextVectors][dimension];
+		this.M2context = new float[contextVectors][dimension];
 		this.M1fBias = new float[focusVectors];
 		this.M2fBias = new float[focusVectors];
 		this.M1cBias = new float[contextVectors];
@@ -121,20 +121,20 @@ public class AMSGrad extends Optimizer {
 					d2 = d + i_v; // Index of specific dimension in context vector
 
 					// Compute gradients
-					grad_u = weightedCost * context[d2];
-					grad_v = weightedCost * focus[d1];
+					grad_u = weightedCost * context[i_v][d];
+					grad_v = weightedCost * focus[i_u][d];
 
-					m = beta1 * M1focus[d1] + (1 - beta1) * grad_u;
-					v = FastMath.max(M2focus[d1], beta2 * M2focus[d1] + (1 - beta2) * (grad_u * grad_u));
-					focus[d1] -= learningRate / (FastMath.sqrt(v) + epsilon) * m;
-					M1focus[d1] = m;
-					M2focus[d1] = v;
+					m = beta1 * M1focus[i_u][d] + (1 - beta1) * grad_u;
+					v = FastMath.max(M2focus[i_u][d], beta2 * M2focus[i_u][d] + (1 - beta2) * (grad_u * grad_u));
+					focus[i_u][d] -= learningRate / (FastMath.sqrt(v) + epsilon) * m;
+					M1focus[i_u][d] = m;
+					M2focus[i_u][d] = v;
 
-					m = beta1 * M1context[d2] + (1 - beta1) * grad_v;
-					v = FastMath.max(M2context[d2], beta2 * M2context[d2] + (1 - beta2) * (grad_v * grad_v));
-					context[d2] -= learningRate / (FastMath.sqrt(v) + epsilon) * m;
-					M1context[d2] = m;
-					M2context[d2] = v;
+					m = beta1 * M1context[i_v][d] + (1 - beta1) * grad_v;
+					v = FastMath.max(M2context[i_v][d], beta2 * M2context[i_v][d] + (1 - beta2) * (grad_v * grad_v));
+					context[i_v][d] -= learningRate / (FastMath.sqrt(v) + epsilon) * m;
+					M1context[i_v][d] = m;
+					M2context[i_v][d] = v;
 				}
 
 				/*---------------------

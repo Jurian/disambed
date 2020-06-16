@@ -24,7 +24,7 @@ public abstract class Optimizer implements IOptimizer {
 	protected final int numThreads;
 	protected final int coCount;
 	protected final float learningRate = 0.05f;
-	protected final float[] focus, context;
+	protected final float[][] focus, context;
 	protected final float[] fBias, cBias;
 	protected final int[] linesPerThread;
 	protected final CostFunction costFunction;
@@ -43,8 +43,8 @@ public abstract class Optimizer implements IOptimizer {
 		this.coCount = coMatrix.coOccurrenceCount();
 		this.dimension = config.getDim();
 
-		this.focus = new float[focusVectors * dimension];
-		this.context = new float[contextVectors * dimension];
+		this.focus = new float[focusVectors][dimension];
+		this.context = new float[contextVectors][dimension];
 		this.fBias = new float[focusVectors];
 		this.cBias = new float[contextVectors];
 
@@ -52,7 +52,7 @@ public abstract class Optimizer implements IOptimizer {
 			fBias[i] = (float) (random.nextFloat() - 0.5) / dimension;
 
 			for (int d = 0; d < dimension; d++) {
-				focus[i * dimension + d] = (float) (random.nextFloat() - 0.5) / dimension;
+				focus[i * dimension][d] = (float) (random.nextFloat() - 0.5) / dimension;
 			}
 		}
 
@@ -60,7 +60,7 @@ public abstract class Optimizer implements IOptimizer {
 			cBias[i] = (float) (random.nextFloat() - 0.5) / dimension;
 
 			for (int d = 0; d < dimension; d++) {
-				context[i * dimension + d] = (float) (random.nextFloat() - 0.5) / dimension;
+				context[i * dimension][d] = (float) (random.nextFloat() - 0.5) / dimension;
 			}
 		}
 
@@ -146,7 +146,7 @@ public abstract class Optimizer implements IOptimizer {
 			final int i = focusIndex * dimension;
 			final int j = contextIndex * dimension;
 			for (int d = 0; d < dimension; d++) {
-				embedding[d + i] = (this.focus[d + i] + this.context[d + j]) / 2;
+				embedding[d + i] = (this.focus[i][d] + this.context[j][d]) / 2;
 			}
 		}
 		return embedding;

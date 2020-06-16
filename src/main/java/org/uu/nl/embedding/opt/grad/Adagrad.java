@@ -13,14 +13,14 @@ public class Adagrad extends Optimizer {
     /**
      * Contains the sum of the squares of the past gradients w.r.t. to all parameters
      */
-    private final float[] gradSqFocus, gradSqContext;
+    private final float[][] gradSqFocus, gradSqContext;
     private final float[] gradSqFBias, gradSqCBias;
 
     public Adagrad(CoOccurrenceMatrix coMatrix, Configuration config, CostFunction costFunction) {
         super(coMatrix, config, costFunction);
 
-        this.gradSqFocus = new float[focusVectors * dimension];
-        this.gradSqContext = new float[contextVectors * dimension];
+        this.gradSqFocus = new float[focusVectors][dimension];
+        this.gradSqContext = new float[contextVectors][dimension];
         this.gradSqFBias = new float[focusVectors];
         this.gradSqCBias = new float[contextVectors];
 
@@ -28,7 +28,7 @@ public class Adagrad extends Optimizer {
             gradSqCBias[i] = 1;
             for (int d = 0; d < dimension; d++) {
                 // So initial value of eta is equal to initial learning rate
-                 gradSqContext[i * dimension + d] = 1;
+                 gradSqContext[i * dimension][d] = 1;
             }
         }
 
@@ -36,7 +36,7 @@ public class Adagrad extends Optimizer {
             gradSqFBias[i] = 1;
             for (int d = 0; d < dimension; d++) {
                 // So initial value of eta is equal to initial learning rate
-                gradSqFocus[i * dimension + d] = 1;
+                gradSqFocus[i * dimension][d] = 1;
             }
         }
     }
@@ -74,18 +74,18 @@ public class Adagrad extends Optimizer {
                 // Compute for word vectors
                 for (d = 0; d < dimension; d++) {
 
-                    d1 = d + u; // Index of specific dimension in focus vector
-                    d2 = d + v; // Index of specific dimension in context vector
+                    //d1 = d + u; // Index of specific dimension in focus vector
+                    //d2 = d + v; // Index of specific dimension in context vector
 
                     // Compute gradients
-                    grad1 = weightedCost * context[d2];
-                    grad2 = weightedCost * focus[d1];
+                    grad1 = weightedCost * context[v][d];
+                    grad2 = weightedCost * focus[u][d];
                     // Compute and apply updates
-                    focus[d1] -= grad1 / FastMath.sqrt(gradSqFocus[d1]) * learningRate;
-                    context[d2] -= grad2 / FastMath.sqrt(gradSqContext[d2]) * learningRate;
+                    focus[v][d] -= grad1 / FastMath.sqrt(gradSqFocus[v][d]) * learningRate;
+                    context[u][d] -= grad2 / FastMath.sqrt(gradSqContext[u][d]) * learningRate;
                     // Store squared gradients
-                    gradSqFocus[d1] += grad1 * grad1;
-                    gradSqContext[d2] += grad2 * grad2;
+                    gradSqFocus[v][d] += grad1 * grad1;
+                    gradSqContext[u][d] += grad2 * grad2;
                 }
 
 				/*---------------------
