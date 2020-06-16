@@ -75,7 +75,7 @@ public class Adam extends Optimizer {
 	public OptimizeJob createJob(int id, int iteration) {
 		return () -> {
 
-			int i, d, i_u, i_v, bu, bv, d1, d2;
+			int i, d, i_u, i_v, bu, bv;
 			float Xij, m, v, grad_u, grad_v;
 			float cost = 0, innerCost, weightedCost;
 			final int offset = coCount / numThreads * id;
@@ -85,14 +85,14 @@ public class Adam extends Optimizer {
 
 			for (i = 0; i < linesPerThread[id]; i++) {
 
-				bu = coMatrix.cIdx_I(i + offset); // Index of focus bias
-				bv = coMatrix.cIdx_J(i + offset); // Index of context bias
-				i_u = bu * dimension; // Index of focus vector
-				i_v = bv * dimension; // Index of bias vector
+				i_u = coMatrix.cIdx_I(i + offset); // Index of focus bias
+				i_v = coMatrix.cIdx_J(i + offset); // Index of context bias
+				//i_u = bu * dimension; // Index of focus vector
+				//i_v = bv * dimension; // Index of bias vector
 				Xij = coMatrix.cIdx_C(i + offset); // Co-occurrence
 
 				/* Calculate cost, save diff for gradients */
-				innerCost = costFunction.innerCost(this, Xij, i_u, i_v, bu, bv);
+				innerCost = costFunction.innerCost(this, Xij, i_u, i_v);
 				weightedCost = costFunction.weightedCost(this, innerCost, Xij);
 				cost += 0.5 * weightedCost * innerCost; // weighted squared error
 
@@ -103,8 +103,8 @@ public class Adam extends Optimizer {
 				// Update the moments for the word vectors
 				for (d = 0; d < dimension; d++) {
 
-					d1 = d + i_u; // Index of specific dimension in focus vector
-					d2 = d + i_v; // Index of specific dimension in context vector
+					//d1 = d + i_u; // Index of specific dimension in focus vector
+					//d2 = d + i_v; // Index of specific dimension in context vector
 
 					// Compute gradients
 					grad_u = weightedCost * context[i_v][d];
@@ -130,17 +130,17 @@ public class Adam extends Optimizer {
 				 ---------------------*/
 
 				// Update the first, second moment for the biases
-				m = beta1 * M1fBias[bu] + (1 - beta1) * weightedCost;
-				v = beta2 * M2fBias[bu] + (1 - beta2) * (weightedCost * weightedCost);
-				fBias[bu] -= correction * m / (FastMath.sqrt(v) + epsilon);
-				M1fBias[bu] = m;
-				M2fBias[bu] = v;
+				m = beta1 * M1fBias[i_u] + (1 - beta1) * weightedCost;
+				v = beta2 * M2fBias[i_u] + (1 - beta2) * (weightedCost * weightedCost);
+				fBias[i_u] -= correction * m / (FastMath.sqrt(v) + epsilon);
+				M1fBias[i_u] = m;
+				M2fBias[i_u] = v;
 
-				m = beta1 * M1cBias[bv] + (1 - beta1) * weightedCost;
-				v = beta2 * M2cBias[bv] + (1 - beta2) * (weightedCost * weightedCost);
-				cBias[bv] -= correction * m / (FastMath.sqrt(v) + epsilon);
-				M1cBias[bv] = m;
-				M2cBias[bv] = v;
+				m = beta1 * M1cBias[i_v] + (1 - beta1) * weightedCost;
+				v = beta2 * M2cBias[i_v] + (1 - beta2) * (weightedCost * weightedCost);
+				cBias[i_v] -= correction * m / (FastMath.sqrt(v) + epsilon);
+				M1cBias[i_v] = m;
+				M2cBias[i_v] = v;
 			}
 			return cost;
 		};

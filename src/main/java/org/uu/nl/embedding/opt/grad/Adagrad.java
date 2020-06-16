@@ -28,7 +28,7 @@ public class Adagrad extends Optimizer {
             gradSqCBias[i] = 1;
             for (int d = 0; d < dimension; d++) {
                 // So initial value of eta is equal to initial learning rate
-                 gradSqContext[i * dimension][d] = 1;
+                 gradSqContext[i][d] = 1;
             }
         }
 
@@ -36,7 +36,7 @@ public class Adagrad extends Optimizer {
             gradSqFBias[i] = 1;
             for (int d = 0; d < dimension; d++) {
                 // So initial value of eta is equal to initial learning rate
-                gradSqFocus[i * dimension][d] = 1;
+                gradSqFocus[i][d] = 1;
             }
         }
     }
@@ -50,20 +50,20 @@ public class Adagrad extends Optimizer {
     public OptimizeJob createJob(int id, int iteration) {
         return () -> {
 
-            int i, d, u, v, bu, bv, d1, d2;
+            int i, d, u, v;
             float cost = 0, Xij, innerCost, weightedCost, grad1, grad2;
             final int offset = coCount / numThreads * id;
 
             for (i = 0; i < linesPerThread[id]; i++) {
 
-                bu = coMatrix.cIdx_I(i + offset); // Index of focus bias
-                bv = coMatrix.cIdx_J(i + offset); // Index of context bias
-                u = bu * dimension; // Index of focus vector
-                v = bv * dimension; // Index of bias vector
+                u = coMatrix.cIdx_I(i + offset); // Index of focus bias
+                v = coMatrix.cIdx_J(i + offset); // Index of context bias
+                //u = bu;// * dimension; // Index of focus vector
+                //v = bv;// * dimension; // Index of bias vector
                 Xij = coMatrix.cIdx_C(i + offset); // Co-occurrence
 
                 /* Calculate cost, save diff for gradients */
-                innerCost = costFunction.innerCost(this, Xij, u, v, bu, bv);
+                innerCost = costFunction.innerCost(this, Xij, u, v);
                 weightedCost = costFunction.weightedCost(this, innerCost, Xij);
                 cost += 0.5 * weightedCost * innerCost; // weighted squared error
 
@@ -81,11 +81,11 @@ public class Adagrad extends Optimizer {
                     grad1 = weightedCost * context[v][d];
                     grad2 = weightedCost * focus[u][d];
                     // Compute and apply updates
-                    focus[v][d] -= grad1 / FastMath.sqrt(gradSqFocus[v][d]) * learningRate;
-                    context[u][d] -= grad2 / FastMath.sqrt(gradSqContext[u][d]) * learningRate;
+                    focus[u][d] -= grad1 / FastMath.sqrt(gradSqFocus[u][d]) * learningRate;
+                    context[v][d] -= grad2 / FastMath.sqrt(gradSqContext[v][d]) * learningRate;
                     // Store squared gradients
-                    gradSqFocus[v][d] += grad1 * grad1;
-                    gradSqContext[u][d] += grad2 * grad2;
+                    gradSqFocus[u][d] += grad1 * grad1;
+                    gradSqContext[v][d] += grad2 * grad2;
                 }
 
 				/*---------------------
@@ -93,12 +93,12 @@ public class Adagrad extends Optimizer {
 				 ---------------------*/
 
                 // Compute updates (gradient of bias is the weighted cost)
-                fBias[bu] -= weightedCost / FastMath.sqrt(gradSqFBias[bu]);
-                cBias[bv] -= weightedCost / FastMath.sqrt(gradSqCBias[bv]);
+                fBias[u] -= weightedCost / FastMath.sqrt(gradSqFBias[u]);
+                cBias[v] -= weightedCost / FastMath.sqrt(gradSqCBias[v]);
                 weightedCost *= weightedCost;
                 // Store squared gradients
-                gradSqFBias[bu] += weightedCost;
-                gradSqCBias[bv] += weightedCost;
+                gradSqFBias[u] += weightedCost;
+                gradSqCBias[v] += weightedCost;
 
             }
             return cost;

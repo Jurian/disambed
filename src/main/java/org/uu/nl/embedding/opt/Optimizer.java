@@ -52,7 +52,7 @@ public abstract class Optimizer implements IOptimizer {
 			fBias[i] = (float) (random.nextFloat() - 0.5) / dimension;
 
 			for (int d = 0; d < dimension; d++) {
-				focus[i * dimension][d] = (float) (random.nextFloat() - 0.5) / dimension;
+				focus[i][d] = (float) (random.nextFloat() - 0.5) / dimension;
 			}
 		}
 
@@ -60,7 +60,7 @@ public abstract class Optimizer implements IOptimizer {
 			cBias[i] = (float) (random.nextFloat() - 0.5) / dimension;
 
 			for (int d = 0; d < dimension; d++) {
-				context[i * dimension][d] = (float) (random.nextFloat() - 0.5) / dimension;
+				context[i][d] = (float) (random.nextFloat() - 0.5) / dimension;
 			}
 		}
 
@@ -143,10 +143,8 @@ public abstract class Optimizer implements IOptimizer {
 		float[] embedding = new float[focusVectors * dimension];
 		for (int focusIndex = 0; focusIndex < focusVectors; focusIndex++) {
 			final int contextIndex = this.coMatrix.focusIndex2Context(focusIndex);
-			final int i = focusIndex * dimension;
-			final int j = contextIndex * dimension;
 			for (int d = 0; d < dimension; d++) {
-				embedding[d + i] = (this.focus[i][d] + this.context[j][d]) / 2;
+				embedding[d + focusIndex * dimension] = (this.focus[focusIndex][d] + this.context[contextIndex][d]) / 2;
 			}
 		}
 		return embedding;
