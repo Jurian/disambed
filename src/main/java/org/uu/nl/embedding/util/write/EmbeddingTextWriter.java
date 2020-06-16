@@ -75,10 +75,10 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 		Files.createDirectories(outputFolder);
 
 		byte type;
-		final int vocabSize = coMatrix.vocabSize();
+		final int vocabSize = coMatrix.nrOfFocusVectors();
 		final int dimension = config.getDim();
 		final String[] out = new String[dimension];
-		final double[] result = optimum.getResult();
+		final float[] result = optimum.getResult();
 
 		// Create a tab-separated file
 		final String delimiter = "\t";
@@ -95,40 +95,12 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 
 			Configuration.Output output = config.getOutput();
 
-			long skipped = 0;
-
 			for (int i = 0; i < vocabSize; i++) {
 
 				type = coMatrix.getType(i);
 
-				if(!writeNodeTypes[type]) {
-					pb.maxHint(pb.getMax()-1);
-					skipped++;
-					pb.setExtraMessage("Skipped " + skipped);
-					continue;
-				}
-
 				final String key = coMatrix.getKey(i);
 				final NodeInfo nodeInfo = NodeInfo.fromByte(type);
-				boolean skip = false;
-				switch (nodeInfo) {
-					case URI:
-						if(!output.getUri().isEmpty()) skip = output.getUri().stream().noneMatch(key::startsWith);
-						break;
-					case BLANK:
-						if(!output.getBlank().isEmpty()) skip = output.getBlank().stream().noneMatch(key::startsWith);
-						break;
-					case LITERAL:
-						if(!output.getLiteral().isEmpty()) skip = output.getLiteral().stream().noneMatch(key::startsWith);
-						break;
-				}
-
-				if(skip)  {
-					pb.maxHint(pb.getMax()-1);
-					skipped++;
-					pb.setExtraMessage("Skipped " + skipped);
-					continue;
-				}
 
 				for (int d = 0; d < out.length; d++)
 					out[d] = String.format("%11.6E", result[d + i * dimension]);

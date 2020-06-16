@@ -5,7 +5,10 @@ package org.uu.nl.embedding.util;
  */
 public interface CoOccurrenceMatrix {
 
-	int vocabSize();
+	int contextIndex2Focus(int i);
+	int focusIndex2Context(int i);
+	int nrOfContextVectors();
+	int nrOfFocusVectors();
 	double max();
 	String getKey(int index);
 	byte getType(int index);

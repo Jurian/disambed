@@ -6,6 +6,7 @@ import org.uu.nl.embedding.bca.jobs.HybridWeighted;
 import org.uu.nl.embedding.bca.jobs.UndirectedWeighted;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.convert.util.InEdgeNeighborhoodAlgorithm;
+import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.convert.util.OutEdgeNeighborhoodAlgorithm;
 import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
@@ -13,6 +14,8 @@ import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.Permutation;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
 
@@ -25,23 +28,62 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	private final ArrayList<Integer> coOccurrenceIdx_J;
 	private final ArrayList<Float> coOccurrenceValues;
 	private double max;
-	private final int vocabSize;
+	private final int focusVectors, contextVectors;
 	private int coOccurrenceCount;
 	private Permutation permutation;
 	private final InMemoryRdfGraph graph;
+	private final Map<Integer, Integer> context2focus;
+	private final Map<Integer, Integer> focus2context;
 
 	public BookmarkColoring(final InMemoryRdfGraph graph, final Configuration config) {
 
 		final double alpha = config.getBca().getAlpha();
 		final double epsilon = config.getBca().getEpsilon();
-		final int[] jobs = graph.getVertices().toIntArray();
+		final int[] verts = graph.getVertices().toIntArray();
+		final boolean[] performBCA = new boolean[verts.length];
+
+		final Configuration.Output output = config.getOutput();
+
+		this.context2focus = new HashMap<>();
+		this.focus2context = new HashMap<>();
+
+		int notSkipped = 0;
+
+		for(int i = 0; i < verts.length; i++) {
+
+			final int vert = verts[i];
+			final byte type = (byte) graph.getVertexTypeProperty().getValueAsInt(vert);
+			final String key = graph.getVertexLabelProperty().getValueAsString(vert);
+			final NodeInfo nodeInfo = NodeInfo.fromByte(type);
+
+			switch (nodeInfo) {
+				case URI:
+					if(output.outputUriNodes() && !output.getUri().isEmpty() && output.getUri().stream().anyMatch(key::startsWith)) {
+						performBCA[i] = true;
+						notSkipped++;
+					}
+					break;
+				case BLANK:
+					if(output.outputBlankNodes() && !output.getBlank().isEmpty() && output.getBlank().stream().anyMatch(key::startsWith)) {
+						performBCA[i] = true;
+						notSkipped++;
+					}
+					break;
+				case LITERAL:
+					if(output.outputLiteralNodes() && !output.getLiteral().isEmpty() && output.getLiteral().stream().anyMatch(key::startsWith)) {
+						performBCA[i] = true;
+						notSkipped++;
+					}
+					break;
+			}
+		}
 
 		this.graph = graph;
-		this.vocabSize = jobs.length;
-
-		this.coOccurrenceIdx_I = new ArrayList<>(vocabSize);
-		this.coOccurrenceIdx_J = new ArrayList<>(vocabSize);
-		this.coOccurrenceValues = new ArrayList<>(vocabSize);
+		this.focusVectors = notSkipped;
+		this.contextVectors = verts.length;
+		this.coOccurrenceIdx_I = new ArrayList<>(notSkipped);
+		this.coOccurrenceIdx_J = new ArrayList<>(notSkipped);
+		this.coOccurrenceValues = new ArrayList<>(notSkipped);
 
 		final int numThreads = config.getThreads();
 
@@ -52,40 +94,47 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		final int[][] inEdge = new InEdgeNeighborhoodAlgorithm(config).compute(graph);
 		final int[][] outEdge = new OutEdgeNeighborhoodAlgorithm(config).compute(graph);
 
-		try(ProgressBar pb = Configuration.progressBar("BCA", jobs.length, "nodes")) {
+		CompletionService<BCV> completionService = new ExecutorCompletionService<>(es);
 
-			CompletionService<BCV> completionService = new ExecutorCompletionService<>(es);
+		for(int i = 0, j = 0; i < verts.length; i++) {
 
-			for(int bookmark : jobs) {
+			if(!performBCA[i]) continue;
 
-				// Choose a graph neighborhood algorithm
-				switch (config.getBca().getTypeEnum()){
+			final int bookmark = verts[i];
+			context2focus.put(bookmark, j);
+			focus2context.put(j, bookmark);
+			j++;
 
-					case DIRECTED:
-						completionService.submit(new DirectedWeighted(
-								graph, bookmark,
-								alpha, epsilon,
-								inVertex, outVertex, inEdge, outEdge));
-						break;
-					case UNDIRECTED:
-						completionService.submit(new UndirectedWeighted(
-								graph, bookmark,
-								alpha, epsilon,
-								inVertex, outVertex, inEdge, outEdge));
-						break;
-					case HYBRID:
-						completionService.submit(new HybridWeighted(
-								graph, bookmark,
-								alpha, epsilon,
-								inVertex, outVertex, inEdge, outEdge));
-						break;
-				}
+			// Choose a graph neighborhood algorithm
+			switch (config.getBca().getTypeEnum()){
+
+				case DIRECTED:
+					completionService.submit(new DirectedWeighted(
+							graph, bookmark,
+							alpha, epsilon,
+							inVertex, outVertex, inEdge, outEdge));
+					break;
+				case UNDIRECTED:
+					completionService.submit(new UndirectedWeighted(
+							graph, bookmark,
+							alpha, epsilon,
+							inVertex, outVertex, inEdge, outEdge));
+					break;
+				case HYBRID:
+					completionService.submit(new HybridWeighted(
+							graph, bookmark,
+							alpha, epsilon,
+							inVertex, outVertex, inEdge, outEdge));
+					break;
 			}
-			
+		}
+
+		try(ProgressBar pb = Configuration.progressBar("BCA", notSkipped, "nodes")) {
+
 			//now retrieve the futures after computation (auto wait for it)
 			int received = 0;
 
-			while(received < jobs.length) {
+			while(received < notSkipped) {
 
 				try {
 
@@ -136,7 +185,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	}
 	
 	public int cIdx_I(int i) {
-		return this.coOccurrenceIdx_I.get(permutation.randomAccess(i));
+		return contextIndex2Focus(coOccurrenceIdx_I.get(permutation.randomAccess(i)));
 	}
 	
 	public int cIdx_J(int j) {
@@ -148,18 +197,34 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	}
 	
 	public byte getType(int index) {
-		return (byte) this.graph.getVertexTypeProperty().getValueAsInt(index);
+		return (byte) this.graph.getVertexTypeProperty().getValueAsInt(focusIndex2Context(index));
 	}
 	
 	public int coOccurrenceCount() {
 		return this.coOccurrenceCount;
 	}
-	
+
+
 	@Override
-	public int vocabSize() {
-		return this.vocabSize;
+	public int contextIndex2Focus(int i) {
+		return context2focus.get(i);
 	}
-	
+
+	@Override
+	public int focusIndex2Context(int i) {
+		return focus2context.get(i);
+	}
+
+	@Override
+	public int nrOfContextVectors() {
+		return contextVectors;
+	}
+
+	@Override
+	public int nrOfFocusVectors() {
+		return focusVectors;
+	}
+
 	@Override
 	public double max() {
 		return this.max;
@@ -167,11 +232,10 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	
 	@Override
 	public String getKey(int index) {
-		return this.graph.getVertexLabelProperty().getValueAsString(index);
+		return this.graph.getVertexLabelProperty().getValueAsString(focusIndex2Context(index));
 	}
 	
 	private void setMax(double newMax) {
 		this.max = Math.max(max, newMax);
 	}
-
 }

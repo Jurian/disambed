@@ -20,11 +20,11 @@ public abstract class Optimizer implements IOptimizer {
 
 	protected final CoOccurrenceMatrix coMatrix;
 	protected final int dimension;
-	protected final int vocabSize;
+	protected final int contextVectors, focusVectors;
 	protected final int numThreads;
 	protected final int coCount;
 	protected final float learningRate = 0.05f;
-	protected final float[] focus, context;
+	protected final float[][] focus, context;
 	protected final float[] fBias, cBias;
 	protected final int[] linesPerThread;
 	protected final CostFunction costFunction;
@@ -37,22 +37,30 @@ public abstract class Optimizer implements IOptimizer {
 		this.coMatrix = coMatrix;
 		this.maxIterations = config.getOpt().getMaxiter();
 		this.tolerance = config.getOpt().getTolerance();
-		this.vocabSize = coMatrix.vocabSize();
+		this.contextVectors = coMatrix.nrOfContextVectors();
+		this.focusVectors = coMatrix.nrOfFocusVectors();
 		this.numThreads = config.getThreads();
 		this.coCount = coMatrix.coOccurrenceCount();
 		this.dimension = config.getDim();
 
-		this.focus = new float[vocabSize * dimension];
-		this.context = new float[vocabSize * dimension];
-		this.fBias = new float[vocabSize];
-		this.cBias = new float[vocabSize];
+		this.focus = new float[focusVectors][dimension];
+		this.context = new float[contextVectors][dimension];
+		this.fBias = new float[focusVectors];
+		this.cBias = new float[contextVectors];
 
-		for (int i = 0; i < vocabSize; i++) {
+		for (int i = 0; i < focusVectors; i++) {
 			fBias[i] = (float) (random.nextFloat() - 0.5) / dimension;
-			cBias[i] = (float) (random.nextFloat() - 0.5) / dimension;
+
 			for (int d = 0; d < dimension; d++) {
-				focus[i * dimension + d] = (float) (random.nextFloat() - 0.5) / dimension;
-				context[i * dimension + d] = (float) (random.nextFloat() - 0.5) / dimension;
+				focus[i][d] = (float) (random.nextFloat() - 0.5) / dimension;
+			}
+		}
+
+		for (int i = 0; i < contextVectors; i++) {
+			cBias[i] = (float) (random.nextFloat() - 0.5) / dimension;
+
+			for (int d = 0; d < dimension; d++) {
+				context[i][d] = (float) (random.nextFloat() - 0.5) / dimension;
 			}
 		}
 
@@ -130,13 +138,13 @@ public abstract class Optimizer implements IOptimizer {
 	 * Create a new double array containing the averaged values between the focus and context vectors
 	 */
 	@Override
-	public double[] extractResult() {
-		double[] embedding = new double[vocabSize * dimension];
-		for (int a = 0; a < vocabSize; a++) {
-			final int i = a * dimension;
+	public float[] extractResult() {
+
+		float[] embedding = new float[focusVectors * dimension];
+		for (int focusIndex = 0; focusIndex < focusVectors; focusIndex++) {
+			final int contextIndex = this.coMatrix.focusIndex2Context(focusIndex);
 			for (int d = 0; d < dimension; d++) {
-				// For each node, take the average between the focus and context value
-				embedding[d + i] = (focus[d + i] + context[d + i]) / 2;
+				embedding[d + focusIndex * dimension] = (this.focus[focusIndex][d] + this.context[contextIndex][d]) / 2;
 			}
 		}
 		return embedding;
