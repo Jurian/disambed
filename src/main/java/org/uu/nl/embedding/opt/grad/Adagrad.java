@@ -19,16 +19,24 @@ public class Adagrad extends Optimizer {
     public Adagrad(CoOccurrenceMatrix coMatrix, Configuration config, CostFunction costFunction) {
         super(coMatrix, config, costFunction);
 
-        this.gradSqFocus = new float[vocabSize * dimension];
-        this.gradSqContext = new float[vocabSize * dimension];
-        this.gradSqFBias = new float[vocabSize];
-        this.gradSqCBias = new float[vocabSize];
+        this.gradSqFocus = new float[focusVectors * dimension];
+        this.gradSqContext = new float[contextVectors * dimension];
+        this.gradSqFBias = new float[focusVectors];
+        this.gradSqCBias = new float[contextVectors];
 
-        for (int i = 0; i < vocabSize; i++) {
-            gradSqCBias[i] = gradSqFBias[i] = 1;
+        for (int i = 0; i < contextVectors; i++) {
+            gradSqCBias[i] = 1;
             for (int d = 0; d < dimension; d++) {
                 // So initial value of eta is equal to initial learning rate
-                gradSqFocus[i * dimension + d] = gradSqContext[i * dimension + d] = 1;
+                 gradSqContext[i * dimension + d] = 1;
+            }
+        }
+
+        for (int i = 0; i < focusVectors; i++) {
+            gradSqFBias[i] = 1;
+            for (int d = 0; d < dimension; d++) {
+                // So initial value of eta is equal to initial learning rate
+                gradSqFocus[i * dimension + d] = 1;
             }
         }
     }

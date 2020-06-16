@@ -20,7 +20,7 @@ public abstract class Optimizer implements IOptimizer {
 
 	protected final CoOccurrenceMatrix coMatrix;
 	protected final int dimension;
-	protected final int vocabSize;
+	protected final int contextVectors, focusVectors;
 	protected final int numThreads;
 	protected final int coCount;
 	protected final float learningRate = 0.05f;
@@ -37,21 +37,29 @@ public abstract class Optimizer implements IOptimizer {
 		this.coMatrix = coMatrix;
 		this.maxIterations = config.getOpt().getMaxiter();
 		this.tolerance = config.getOpt().getTolerance();
-		this.vocabSize = coMatrix.vocabSize();
+		this.contextVectors = coMatrix.nrOfContextVectors();
+		this.focusVectors = coMatrix.nrOfFocusVectors();
 		this.numThreads = config.getThreads();
 		this.coCount = coMatrix.coOccurrenceCount();
 		this.dimension = config.getDim();
 
-		this.focus = new float[vocabSize * dimension];
-		this.context = new float[vocabSize * dimension];
-		this.fBias = new float[vocabSize];
-		this.cBias = new float[vocabSize];
+		this.focus = new float[focusVectors * dimension];
+		this.context = new float[contextVectors * dimension];
+		this.fBias = new float[focusVectors];
+		this.cBias = new float[contextVectors];
 
-		for (int i = 0; i < vocabSize; i++) {
+		for (int i = 0; i < focusVectors; i++) {
 			fBias[i] = (float) (random.nextFloat() - 0.5) / dimension;
-			cBias[i] = (float) (random.nextFloat() - 0.5) / dimension;
+
 			for (int d = 0; d < dimension; d++) {
 				focus[i * dimension + d] = (float) (random.nextFloat() - 0.5) / dimension;
+			}
+		}
+
+		for (int i = 0; i < contextVectors; i++) {
+			cBias[i] = (float) (random.nextFloat() - 0.5) / dimension;
+
+			for (int d = 0; d < dimension; d++) {
 				context[i * dimension + d] = (float) (random.nextFloat() - 0.5) / dimension;
 			}
 		}
@@ -131,12 +139,12 @@ public abstract class Optimizer implements IOptimizer {
 	 */
 	@Override
 	public double[] extractResult() {
-		double[] embedding = new double[vocabSize * dimension];
-		for (int a = 0; a < vocabSize; a++) {
+		double[] embedding = new double[focusVectors * dimension];
+		for (int a = 0; a < focusVectors; a++) {
 			final int i = a * dimension;
 			for (int d = 0; d < dimension; d++) {
 				// For each node, take the average between the focus and context value
-				embedding[d + i] = (focus[d + i] + context[d + i]) / 2;
+				embedding[d + i] = (focus[d + i]);
 			}
 		}
 		return embedding;

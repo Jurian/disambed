@@ -75,7 +75,7 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 		Files.createDirectories(outputFolder);
 
 		byte type;
-		final int vocabSize = coMatrix.vocabSize();
+		final int vocabSize = coMatrix.nrOfFocusVectors();
 		final int dimension = config.getDim();
 		final String[] out = new String[dimension];
 		final double[] result = optimum.getResult();

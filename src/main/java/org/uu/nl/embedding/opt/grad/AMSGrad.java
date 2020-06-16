@@ -72,14 +72,14 @@ public class AMSGrad extends Optimizer {
 	public AMSGrad(CoOccurrenceMatrix coMatrix, Configuration config, CostFunction costFunction) {
 		super(coMatrix, config, costFunction);
 
-		this.M1focus = new float[vocabSize * dimension];
-		this.M2focus = new float[vocabSize * dimension];
-		this.M1context = new float[vocabSize * dimension];
-		this.M2context = new float[vocabSize * dimension];
-		this.M1fBias = new float[vocabSize];
-		this.M2fBias = new float[vocabSize];
-		this.M1cBias = new float[vocabSize];
-		this.M2cBias = new float[vocabSize];
+		this.M1focus = new float[focusVectors * dimension];
+		this.M2focus = new float[focusVectors * dimension];
+		this.M1context = new float[contextVectors * dimension];
+		this.M2context = new float[contextVectors * dimension];
+		this.M1fBias = new float[focusVectors];
+		this.M2fBias = new float[focusVectors];
+		this.M1cBias = new float[contextVectors];
+		this.M2cBias = new float[contextVectors];
 	}
 	
 	@Override

@@ -26,7 +26,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	private final ArrayList<Integer> coOccurrenceIdx_J;
 	private final ArrayList<Float> coOccurrenceValues;
 	private double max;
-	private final int vocabSize;
+	private final int focusVectors, contextVectors;
 	private int coOccurrenceCount;
 	private int[] processedNodes;
 	private Permutation permutation;
@@ -73,11 +73,12 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		}
 
 		this.graph = graph;
-		this.vocabSize = notSkipped;
+		this.focusVectors = notSkipped;
+		this.contextVectors = verts.length;
 		this.processedNodes = new int[notSkipped];
-		this.coOccurrenceIdx_I = new ArrayList<>(vocabSize);
-		this.coOccurrenceIdx_J = new ArrayList<>(vocabSize);
-		this.coOccurrenceValues = new ArrayList<>(vocabSize);
+		this.coOccurrenceIdx_I = new ArrayList<>(notSkipped);
+		this.coOccurrenceIdx_J = new ArrayList<>(notSkipped);
+		this.coOccurrenceValues = new ArrayList<>(notSkipped);
 
 		final int numThreads = config.getThreads();
 
@@ -196,12 +197,18 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	public int coOccurrenceCount() {
 		return this.coOccurrenceCount;
 	}
-	
+
+
 	@Override
-	public int vocabSize() {
-		return this.vocabSize;
+	public int nrOfContextVectors() {
+		return contextVectors;
 	}
-	
+
+	@Override
+	public int nrOfFocusVectors() {
+		return focusVectors;
+	}
+
 	@Override
 	public double max() {
 		return this.max;
