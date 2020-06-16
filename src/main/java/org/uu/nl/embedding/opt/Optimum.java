@@ -9,7 +9,7 @@ import java.util.List;
 public class Optimum {
 
 	private double finalCost;
-	private double[] result;
+	private float[] result;
 	private final List<Double> costHistory = new ArrayList<>();
 
 	public void addIntermediaryResult(double result) {
@@ -22,11 +22,11 @@ public class Optimum {
 		}
 	}
 
-	public double[] getResult() {
+	public float[] getResult() {
 		return result;
 	}
 
-	public void setResult(double[] result) {
+	public void setResult(float[] result) {
 		this.result = result;
 	}
 
