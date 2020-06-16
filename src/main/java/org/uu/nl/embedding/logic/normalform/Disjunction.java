@@ -1,7 +1,8 @@
-package org.uu.nl.embedding.logic;
+package org.uu.nl.embedding.logic.normalform;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.uu.nl.embedding.lensr.DdnnfGraph;
+import org.uu.nl.embedding.logic.LogicRule;
 
 /**
  * Class for disjunction logic formulae.
@@ -13,7 +14,7 @@ import org.uu.nl.embedding.lensr.DdnnfGraph;
  * @version 1.1
  * @since 12-05-2020
  */
-public class Disjunction implements LogicRule {
+public class Disjunction  {
 
 	protected LogicRule firstTerm;
 	protected LogicRule secondTerm;
@@ -25,7 +26,7 @@ public class Disjunction implements LogicRule {
 	private String nameDdnnf;
 	private DdnnfGraph ddnnfGraph;
 
-
+	/*
 	
 	/**
 	 * Constructor method with user-given name declaration.
@@ -33,7 +34,7 @@ public class Disjunction implements LogicRule {
 	 * @param firstTerm A LogicTerm class representing the first logic formula
 	 * @param secondTerm A LogicTerm class representing the second logic formula
 	 * @param name The given name of this logic formula defined by the user
-	 */
+	 *
 	protected Disjunction(LogicRule firstTerm, LogicRule secondTerm, String name) {
 		super();
 		this.firstTerm = firstTerm;
@@ -52,14 +53,14 @@ public class Disjunction implements LogicRule {
 	 * 
 	 * @param firstTerm A LogicTerm class representing the first logic formula
 	 * @param secondTerm A LogicTerm class representing the second logic formula
-	 */
+	 *
 	protected Disjunction(LogicRule firstTerm, LogicRule secondTerm) {
 		this(firstTerm, secondTerm, null);
 	}
 	
 	/**
 	 * Sets the Boolean finalValue of this conjunctive logic formula.
-	 */
+	 *
 	private void createFinalValue() {
 		boolean finalVal;
 		finalVal = (this.firstTerm.getAssignment() || this.secondTerm.getAssignment()); // A OR B
@@ -69,7 +70,7 @@ public class Disjunction implements LogicRule {
 
 	/**
 	 * Convert the disjunction to its CNF equivalent
-	 */
+	 *
 	private void createCnfRule() {
 		this.inCnf = new Disjunction(this.firstTerm.getCnfRule(), this.secondTerm.getCnfRule());
 	}
@@ -111,7 +112,7 @@ public class Disjunction implements LogicRule {
 	 * @param term The LogicRule to be checked
 	 * @return Returns a negation if term was not a negation,
 	 * 			else it returns the only the term of the negation
-	 */
+	 *
 	private LogicRule generateNegation(LogicRule term) {
 		
 		if(term instanceof Negation) { return term.getAntecedent(); }
@@ -121,7 +122,7 @@ public class Disjunction implements LogicRule {
 	/**
 	 * Sets the String represented name of the conjunction 
 	 * 		in standard first-order logic form
-	 */
+	 *
 	private void createNameSimple() {
 		this.nameSimple = ("(" + this.firstTerm.getName() + " OR " + this.secondTerm.getName() + ")");
 	}
@@ -129,7 +130,7 @@ public class Disjunction implements LogicRule {
 	/**
 	 * Sets the String represented name of the conjunction 
 	 * 		in Conjunctive Normal Form (CNF)
-	 */
+	 *
 	private void createNameCNF() {
 		this.nameCNF = ("(" + this.firstTerm.getName() + " OR " + this.secondTerm.getName() + ")");
 	}
@@ -138,7 +139,7 @@ public class Disjunction implements LogicRule {
 	 * Sets the String represented name of the conjunction 
 	 * 		in Deterministic Decomposable Negation 
 	 * 		Normal Form (d-DNNF)
-	 */
+	 *
 	private void createNameDdnnf() {
 		this.nameDdnnf = ("(" + this.inDdnnf.getName() + ")");
 	}
@@ -146,7 +147,7 @@ public class Disjunction implements LogicRule {
 	/**
 	 * This method generates the d-DNNF graph
 	 * of this LogicRule
-	 */
+	 *
 	private void generateDdnnfGraph() {
 		DdnnfGraph leftGraph = this.firstTerm.getDdnnfGraph();
 		DdnnfGraph rightGraph = this.secondTerm.getDdnnfGraph();
@@ -156,11 +157,11 @@ public class Disjunction implements LogicRule {
 	
 	/*
 	 * All interface methods implemented
-	 */
+	 *
 	
 	/**
 	 * @return Returns the Boolean value of the logic term
-	 */
+	 *
 	@Override
 	public boolean getAssignment() {
 		return this.finalValue;
@@ -168,7 +169,7 @@ public class Disjunction implements LogicRule {
 	
 	/**
 	 * @return Returns the name of the logic term (given or generated)
-	 */
+	 *
 	@Override
 	public String getName() {
 		return this.nameSimple;
@@ -176,7 +177,7 @@ public class Disjunction implements LogicRule {
 
 	/**
 	 * @return Returns the string of the logic term in CNF
-	 */
+	 *
 	@Override
 	public String getNameCNF() {
 		return this.nameCNF;
@@ -184,7 +185,7 @@ public class Disjunction implements LogicRule {
 
 	/**
 	 * @return Returns the string of the logic term in d-DNNF
-	 */
+	 *
 	@Override
 	public String getNameDdnnf() {
 		return this.nameDdnnf;
@@ -195,7 +196,7 @@ public class Disjunction implements LogicRule {
 	 * 		without any logical operator; 
 	 * 			In this case it returns all the basic 
 	 * 			logic terms this.firstTerm is comprised of
-	 */
+	 *
 	@Override
 	public LogicRule[] getAllTerms() {
 		LogicRule[] allTerms = this.firstTerm.getAllTerms();
@@ -205,7 +206,7 @@ public class Disjunction implements LogicRule {
 	
 	/**
 	 * @return Returns this LogicRule as Precedent
-	 */
+	 *
 	@Override
 	public LogicRule getPrecedent() {
 		return this.firstTerm;
@@ -213,7 +214,7 @@ public class Disjunction implements LogicRule {
 
 	/**
 	 * @return Returns this LogicRule as Antecedent
-	 */
+	 *
 	@Override
 	public LogicRule getAntecedent() {
 		return this.secondTerm;
@@ -221,7 +222,7 @@ public class Disjunction implements LogicRule {
 
 	/**
 	 * Returns this LogicRule in its CNF
-	 */
+	 *
 	@Override
 	public LogicRule getCnfRule() {
 		return this.inCnf;
@@ -229,7 +230,7 @@ public class Disjunction implements LogicRule {
 
 	/**
 	 * Returns this LogicRule in its d-DNNF
-	 */
+	 *
 	@Override
 	public LogicRule getDdnnfRule() {
 		return this.inDdnnf;
@@ -237,11 +238,11 @@ public class Disjunction implements LogicRule {
 
 	/**
 	 * Returns the logic graph of the d-DNNF
-	 */
+	 *
 	@Override
 	public DdnnfGraph getDdnnfGraph() {
 		return this.ddnnfGraph;
 	}
-
+	*/
 	
 }

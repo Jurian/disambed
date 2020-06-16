@@ -1,38 +1,26 @@
-package org.uu.nl.embedding.logic;
+package org.uu.nl.embedding.logic.ddnnf;
 
-import org.uu.nl.embedding.lensr.DdnnfGraph;
-import org.uu.nl.embedding.logic.Clause;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-/**
- * Interface class for logic literals 
- * to be used in CNF.
- * 
- * DISCLAIMER: This class is partly based 
- * on the code by Rodion "rodde" Efremov.
- * 
- * @author Euan Westenbroek
- * @version 1.0
- * @since 07-06-2020
- */
-public class LogicLiteral implements CnfLogicRule {
+import org.uu.nl.embedding.lensr.DdnnfGraph;
+import org.uu.nl.embedding.logic.LogicRule;
+import org.uu.nl.embedding.logic.cnf.CnfLogicRule;
+import org.uu.nl.embedding.logic.cnf.LogicLiteral;
+
+public class DdnnfLiteral implements DdnnfLogicRule {
 
 	private boolean assignment;
 	private boolean negated;
 
-	private LogicRule inNf;
-	private LogicRule inCnf;
-	private LogicRule inDdnnf;
+	private CnfLogicRule sourceRule;
 	
 	private String name = null;
 	private String cnfName;
 	private String ddnnfName;
-	
-	private DdnnfGraph ddnnfGraph;
 	
 	
 	/**
@@ -44,13 +32,17 @@ public class LogicLiteral implements CnfLogicRule {
 	 * @param negated The boolean value stating if this
 	 * literal should, or shouldn't be negated.
 	 */
-	public LogicLiteral(final String name, boolean value, boolean negated) {
+	public DdnnfLiteral(final String name, boolean value) {
+		super();
 		this.name = name;
 		this.assignment = value;
-		this.negated = negated;
+		//this.negated = isNegated;
+		//this.sourceRule = sourceRule;
 		
 		this.cnfName = name;
 		this.ddnnfName = name;
+		
+		//generateGraph();
 	}
 	
 	/**
@@ -62,9 +54,32 @@ public class LogicLiteral implements CnfLogicRule {
 	 * @param value The starting boolean truth value of 
 	 * this literal.
 	 */
-	public LogicLiteral(final String name, boolean value) {
-		this(name, value, !value);
+	/*
+	public DdnnfLiteral(final String name, final boolean value, final CnfLogicRule sourceRule) {
+		this(name, value, !value, sourceRule);
 	}
+	*/
+	
+	public CnfLogicRule getSourceRule() {
+		return this.sourceRule;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public boolean isNegated() {
+		return this.negated;
+	}
+	
+	/**
+	 * 
+	 * @param newVal
+	 */
+	public void setNegated(final boolean newVal) {
+		this.negated = newVal;
+	}
+	
 	
 	
 	
@@ -114,7 +129,7 @@ public class LogicLiteral implements CnfLogicRule {
      */
     @Override
     public boolean isFalse() {
-        return !assignment;
+        return !this.assignment;
     }
 
     /**
@@ -123,7 +138,7 @@ public class LogicLiteral implements CnfLogicRule {
      */
     @Override
     public boolean isTrue() {
-        return assignment;
+        return this.assignment;
     }
     
     /**
@@ -149,7 +164,10 @@ public class LogicLiteral implements CnfLogicRule {
      */
 	@Override
 	public String toValueString() {
-    	return String.valueOf(this.assignment);
+		String negatedStr = "";
+		if(negated) { negatedStr = "NOT "; }
+		
+    	return negatedStr + String.valueOf(this.assignment);
 	}
     
     /**
@@ -172,22 +190,13 @@ public class LogicLiteral implements CnfLogicRule {
     
     /**
      * @return Returns this literal in an 
-     * ArrayList
-     */
-    @Override
-    public Set<LogicLiteral> getLiterals() {
-    	return new TreeSet<LogicLiteral>( Arrays.asList(this) );
-    }
-    
-    /**
-     * @return Returns this literal in an 
      * ArrayList if this literal should be positive,
      * else it returns an empty list.
      */
     @Override
-    public Set<LogicLiteral> getPositiveLiterals() {
-    	if(!negated) { new TreeSet<LogicLiteral>( Arrays.asList(this) ); }
-    	return new TreeSet<LogicLiteral>(/*Empty set*/); 
+    public Set<DdnnfLiteral> getPositiveLiterals() {
+    	if(!negated) { new TreeSet<DdnnfLiteral>( Arrays.asList(this) ); }
+    	return new TreeSet<DdnnfLiteral>(/*Empty set*/); 
     }
     
     /**
@@ -196,17 +205,9 @@ public class LogicLiteral implements CnfLogicRule {
      * else it returns an empty list.
      */
     @Override
-    public Set<LogicLiteral> getNegativeLiterals() {
-    	if(negated) { return new TreeSet<LogicLiteral>( Arrays.asList(this) ); }
-    	return  new TreeSet<LogicLiteral>(/*Empty set*/); 
-    }
-    
-    /**
-     * @return Returns an empty ArrayList
-     */
-    @Override
-    public List<Clause> getClauses() {
-    	return new ArrayList<Clause>(/*Empty list*/);
+    public Set<DdnnfLiteral> getNegativeLiterals() {
+    	if(negated) { return new TreeSet<DdnnfLiteral>( Arrays.asList(this) ); }
+    	return  new TreeSet<DdnnfLiteral>(/*Empty set*/); 
     }
     
     /**
@@ -227,43 +228,7 @@ public class LogicLiteral implements CnfLogicRule {
     	return this;
     }
     
-    /**
-     * @return Returns this literal as 
-     * LogicRule in Normal Form
-     */
-    @Override
-    public LogicRule getNfRule() {
-    	return this.inNf;
-    }
-    
-    /**
-     * @return Returns this literal as 
-     * LogicRule in Conjunctive Normal Form
-     */
-    @Override
-    public LogicRule getCnfRule() {
-    	return this.inCnf;
-    }
-    
-    /**
-     * @return Returns this literal as 
-     * LogicRule in Deterministic 
-     * Decomposable Negation Normal Form
-     */
-    @Override
-    public LogicRule getDdnnfRule() {
-    	return this.inDdnnf;
-    }
-    
-    /**
-     * @return Returns this literal's
-     * d-DNNF graph
-     */
-    @Override
-    public DdnnfGraph getDdnnfGraph() {
-    	return this.ddnnfGraph;
-    }
-    
+
 
     @Override
     public boolean equals(Object obj) {
@@ -279,7 +244,47 @@ public class LogicLiteral implements CnfLogicRule {
             return false;
         }
 
-        return this.name == ((LogicLiteral) obj).getName();
+        return this.getName() == ((DdnnfLiteral) obj).getName();
     }
+
+    @Override 
+    public int hashCode() {
+		int hash = 7;
+		for (int i = 0; i < this.name.length(); i++) {
+			hash = hash*31 + this.name.charAt(i);
+		}
+		return hash;
+    }
+
+    @Override 
+    public int compareTo(LogicRule other) {
+
+      if (this.hashCode() < other.hashCode()) {
+        return -1;
+      }
+      return this.hashCode() == other.hashCode() ? 0 : 1;
+    }
+
+    
+    /**
+     * @return Returns this literal in an 
+     * ArrayList
+     */
+	@Override
+	public ArrayList<DdnnfLiteral> getLiterals() {
+		return new ArrayList<DdnnfLiteral>( Arrays.asList(this) );
+	}
+
+	@Override
+	public List<DdnnfLogicRule> getRules() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void negate() {
+		this.negated = !this.negated;
+		
+	}
 
 }

@@ -5,6 +5,8 @@ package org.uu.nl.embedding.logic;
 
 import java.util.Set;
 import org.uu.nl.embedding.lensr.DdnnfGraph;
+import org.uu.nl.embedding.logic.cnf.CnfLogicRule;
+import org.uu.nl.embedding.logic.normalform.NormalLogicRule;
 
 /**
  * Interface class for logic rules
@@ -13,8 +15,8 @@ import org.uu.nl.embedding.lensr.DdnnfGraph;
  * @version 1.3
  * @since 12-05-2020
  */
-public interface LogicRule {
-
+public interface LogicRule extends Comparable<LogicRule> {
+	
 	abstract boolean getAssignment();
 	abstract void setAssignment(boolean value);
 	abstract void setFalse();
@@ -25,15 +27,15 @@ public interface LogicRule {
 
 	abstract String getName();
 	abstract String toString();
+	abstract String toValueString();
 	abstract String getCnfName();
 	abstract String getDdnnfName();
 	
 	abstract LogicRule getPrecedent();
 	abstract LogicRule getAntecedent();
+	int compareTo(LogicRule other);
 	
-	abstract LogicRule getNfRule();
-	abstract LogicRule getCnfRule();
-	abstract LogicRule getDdnnfRule();
-
-	abstract DdnnfGraph getDdnnfGraph();
+	//abstract NormalLogicRule getNfRule();
+	//abstract CnfLogicRule getCnfRule();
+	//abstract LogicRule getDdnnfRule();
 }

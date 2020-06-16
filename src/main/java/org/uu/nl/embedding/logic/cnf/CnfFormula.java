@@ -1,12 +1,12 @@
-package org.uu.nl.embedding.logic;
+package org.uu.nl.embedding.logic.cnf;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.uu.nl.embedding.lensr.DdnnfGraph;
+import org.uu.nl.embedding.logic.LogicRule;
 
 /**
  * Interface class for logic CNF formulae 
@@ -23,9 +23,6 @@ public class CnfFormula implements CnfLogicRule {
 
 	private boolean assignment;
 
-	private LogicRule inNf;
-	private LogicRule inCnf;
-	private LogicRule inDdnnf;
 	
 	private String name = null;
 	private String cnfName;
@@ -34,7 +31,7 @@ public class CnfFormula implements CnfLogicRule {
 	/**
 	 * The list of clauses that belong to this formula.
 	 */
-	private final List<Clause> clauseList = new ArrayList<>();
+	private final ArrayList<Clause> clauseList = new ArrayList<>();
 	
     /**
      * The set of positive literals present in this clause.
@@ -48,33 +45,55 @@ public class CnfFormula implements CnfLogicRule {
             new TreeSet<>();
 
     
+    
+    /**
+     * Constructor method for this class.
+     * @param cnfFormula The CnfFormula that make up this formula.
+	 * @param nfRule The Normal Form formula this CNF formula
+	 * is generated from.
+    public CnfFormula(CnfFormula cnfFormula, NormalLogicRule nfRule) {
+    	super();
+    	if(cnfFormula instanceof CnfFormula) {
+    		ArrayList<Clause> clauses = cnfFormula.getClauses();
+        	for(Clause clause : clauses) { addClause(clause); }
+        	
+    		this.name = this.toString();
+    		this.cnfName = this.name;
+    		
+    		/*
+    		if(nfRule == null) { nfRule = generateNf(); }
+    		this.inNf = nfRule;
+    		this.inCnf = this;
+    		this.inDdnnf = nfRule.getDdnnfRule(); // Checken of dit goed gaat qua compile volgorde!!!!!!
+    		this.ddnnfName = nfRule.getDdnnfName();
+    		
+    		this.assignment = isSatisfied();
+    	}
+    }
+    */
+    
     /**
      * Constructor method for this class.
      * @param clauses The clauses that make up this formula.
 	 * @param nfRule The Normal Form formula this CNF formula
 	 * is generated from.
 	 */
-    public CnfFormula(Clause[] clauses, LogicRule nfRule) {
+    public CnfFormula(Clause[] clauses) {
+		super();
     	for(Clause clause : clauses) { addClause(clause); }
     	
 		this.name = this.toString();
 		this.cnfName = this.name;
 		
+		/*
 		if(nfRule == null) { nfRule = generateNf(); }
 		this.inNf = nfRule;
 		this.inCnf = this;
 		this.inDdnnf = nfRule.getDdnnfRule(); // Checken of dit goed gaat qua compile volgorde!!!!!!
 		this.ddnnfName = nfRule.getDdnnfName();
+		*/
 		this.assignment = isSatisfied();
 	}
-
-    /**
-     * Constructor method for this class.
-     * @param clauses The clauses that make up this formula.
-	 */
-    public CnfFormula(Clause[] clauses) {
-    	this(clauses, null);
-    }
 
     /**
      * Constructor method for this class.
@@ -82,27 +101,22 @@ public class CnfFormula implements CnfLogicRule {
 	 * @param nfRule The Normal Form formula this CNF formula
 	 * is generated from.
 	 */
-	public CnfFormula(Clause clause, LogicRule nfRule) {
+	public CnfFormula(Clause clause) {
+		super();
 		addClause(clause);
 		
 		this.name = this.toString();
 		this.cnfName = this.name;
 		
+		/*
 		if(nfRule == null) { nfRule = generateNf(); }
 		this.inNf = nfRule;
 		this.inCnf = this;
 		this.inDdnnf = nfRule.getDdnnfRule(); // Checken of dit goed gaat qua compile volgorde!!!!!!
 		this.ddnnfName = nfRule.getDdnnfName();
+		*/
 		this.assignment = isSatisfied();
 	}
-
-    /**
-     * Constructor method for this class.
-     * @param clause The clause that makes up this formula.
-	 */
-    public CnfFormula(Clause clause) {
-    	this(clause, null);
-    }
 	
 	/**
 	 * Method to add a clause to the formula.
@@ -204,15 +218,10 @@ public class CnfFormula implements CnfLogicRule {
     		}
     	}
     	Clause[] resClauses = uniqueClauses.toArray(new Clause[0]);
-    	Conjunction combinedRules = new Conjunction(this.inNf, formula.getNfRule());
-    	CnfFormula resForm = new CnfFormula(resClauses, combinedRules);
+    	CnfFormula resForm = new CnfFormula(resClauses);
     	//resForm.cleanClauses();
     	
     	return resForm;
-    }
-    
-    public void cleanClauses() {
-    	
     }
 
     /**
@@ -287,8 +296,7 @@ public class CnfFormula implements CnfLogicRule {
      * Private method to generate a "normal form" formula if
      * this clause was not based on a normal form formula
      * already.
-     */
-    private LogicRule generateNf() {
+    private NormalLogicRule generateNf() {
     	Disjunction conj = null;
     	Clause firstClause = null, secondClause = null;
     	
@@ -306,6 +314,7 @@ public class CnfFormula implements CnfLogicRule {
         }
         return conj;
     }
+    */
     
     
     private void generateDdnnf() {
@@ -479,7 +488,7 @@ public class CnfFormula implements CnfLogicRule {
      * clauses of this formula.
      */
     @Override
-    public List<Clause> getClauses() {
+    public ArrayList<Clause> getClauses() {
     	return this.clauseList;
     }
     
@@ -501,43 +510,6 @@ public class CnfFormula implements CnfLogicRule {
     	return this;
     }
     
-    /**
-     * @return Returns this formula as 
-     * LogicRule in Normal Form
-     */
-    @Override
-    public LogicRule getNfRule() {
-    	return this.inNf;
-    }
-    
-    /**
-     * @return Returns this formula as 
-     * LogicRule in Conjunctive Normal Form
-     */
-    @Override
-    public LogicRule getCnfRule() {
-    	return this;
-    }
-    
-    /**
-     * @return Returns this formula as 
-     * LogicRule in Deterministic 
-     * Decomposable Negation Normal Form
-     */
-    @Override
-    public LogicRule getDdnnfRule() {
-    	return this.inDdnnf;
-    }
-    
-    /**
-     * @return Returns this formula's
-     * d-DNNF graph
-     */
-    @Override
-    public DdnnfGraph getDdnnfGraph() {
-    	return this.inDdnnf.getDdnnfGraph();
-    }
-    
 
     @Override
     public boolean equals(Object obj) {
@@ -553,7 +525,26 @@ public class CnfFormula implements CnfLogicRule {
             return false;
         }
 
-        return this.name == ((LogicLiteral) obj).getName();
+        return this.getName() == ((CnfFormula) obj).getName();
     }
+
+    @Override 
+    public int hashCode() {
+		int hash = 7;
+		for (int i = 0; i < this.name.length(); i++) {
+			hash = hash*31 + this.name.charAt(i);
+		}
+		return hash;
+    }
+
+    @Override 
+    public int compareTo(LogicRule other) {
+
+      if (this.hashCode() < other.hashCode()) {
+        return -1;
+      }
+      return this.hashCode() == other.hashCode() ? 0 : 1;
+    }
+
 }
 

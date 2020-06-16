@@ -1,10 +1,11 @@
 /**
  * 
  */
-package org.uu.nl.embedding.logic;
+package org.uu.nl.embedding.logic.normalform;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.uu.nl.embedding.lensr.DdnnfGraph;
+import org.uu.nl.embedding.logic.LogicRule;
 
 /**
  * Class for bicondition logic formulae.
@@ -17,7 +18,7 @@ import org.uu.nl.embedding.lensr.DdnnfGraph;
  * @version 1.0
  * @since 12-05-2020
  */
-public class Bicondition implements LogicRule {
+public class Bicondition  {
 	
 	protected LogicRule firstTerm;
 	protected LogicRule secondTerm;
@@ -32,14 +33,14 @@ public class Bicondition implements LogicRule {
 	
 	private DdnnfGraph ddnnfGraph;
 
-	
+	/*
 	/**
 	 * Constructor method.
 	 * 
 	 * @param firstTerm A LogicTerm class representing the first logic formula
 	 * @param secondTerm A LogicTerm class representing the second logic formula
 	 * @param name The given name of this logic formula defined by the user
-	 */
+	 
 	protected Bicondition(LogicTerm firstTerm, LogicTerm secondTerm) {
 		super();
 		this.firstTerm = firstTerm;
@@ -54,7 +55,7 @@ public class Bicondition implements LogicRule {
 	
 	/**
 	 * Sets the Boolean finalValue of this biconditional logic formula.
-	 */
+	 
 	private void createFinalValue() {
 		boolean finalVal;
 		
@@ -68,7 +69,7 @@ public class Bicondition implements LogicRule {
 	/**
 	 * Sets the String represented name of the bicondition 
 	 * 		in standard first-order logic form
-	 */
+	 
 	private void createNameSimple() {
 		this.nameSimple = ("(IF AND ONLY IF " + this.firstTerm.getName() + " THEN " + this.secondTerm.getName() + ")");
 	}
@@ -76,7 +77,7 @@ public class Bicondition implements LogicRule {
 	/**
 	 * Sets the String represented name of the bicondition 
 	 * 		in Conjunctive Normal Form (CNF)
-	 */
+	 
 	private void createNameCNF() {
 		String firstDist = ("(NOT " + this.firstTerm.getName() + " AND NOT " + this.secondTerm.getName() + ")");
 		String secondDist = ("( " + this.firstTerm.getName() + " AND " + this.secondTerm.getName() + ")");
@@ -87,7 +88,7 @@ public class Bicondition implements LogicRule {
 	/**
 	 * @return Returns the standard first-order logic name of this logic 
 	 * 		formula (generated)
-	 */
+	 
 	public String getNameSimple() {
 		return this.nameSimple;
 	}
@@ -95,7 +96,7 @@ public class Bicondition implements LogicRule {
 
 	/**
 	 * Convert the bicondition to its CNF equivalent
-	 */
+	 
 	private void createCnfRule() {
 		
 		LogicRule notPrecedent = generateNegation(this.firstTerm.getCnfRule());
@@ -109,7 +110,7 @@ public class Bicondition implements LogicRule {
 
 	/**
 	 * Convert the bicondition to its d-DNNF equivalent
-	 */
+	 
 	private void createDdnnfRule() {
 		
 		Conjunction resConj;
@@ -142,7 +143,7 @@ public class Bicondition implements LogicRule {
 	 * @param term The LogicRule to be checked
 	 * @return Returns a negation if term was not a negation,
 	 * 			else it returns the only the term of the negation
-	 */
+	 
 	private LogicRule generateNegation(LogicRule term) {
 		
 		if(term instanceof Negation) { return term.getAntecedent(); }
@@ -152,11 +153,11 @@ public class Bicondition implements LogicRule {
 	
 	/*
 	 * All interface methods implemented
-	 */
+	 
 	
 	/**
 	 * @return Returns the Boolean value of the logic term
-	 */
+	 
 	@Override
 	public boolean getAssignment() {
 		return this.finalValue;
@@ -164,7 +165,7 @@ public class Bicondition implements LogicRule {
 	
 	/**
 	 * @return Returns the name of the logic term (given or generated)
-	 */
+	 
 	@Override
 	public String getName() {
 		return this.nameSimple;
@@ -172,7 +173,7 @@ public class Bicondition implements LogicRule {
 
 	/**
 	 * @return Returns the string of the logic term in CNF
-	 */
+	 
 	@Override
 	public String getNameCNF() {
 		return this.nameCNF;
@@ -180,7 +181,7 @@ public class Bicondition implements LogicRule {
 
 	/**
 	 * @return Returns the string of the logic term in d-DNNF
-	 */
+	 
 	@Override
 	public String getNameDdnnf() {
 		return this.nameDdnnf;
@@ -193,7 +194,7 @@ public class Bicondition implements LogicRule {
 	 * 			logic terms this.firstTerm is comprised of,
 	 * 			as well as, all the basic logic terms
 	 * 			this.secondTerm is comprised of
-	 */
+	 *
 	public LogicRule[] getAllTerms() {
 		LogicRule[] allTerms = this.firstTerm.getAllTerms(); 
 		allTerms = ArrayUtils.addAll(allTerms,  this.secondTerm.getAllTerms());
@@ -202,7 +203,7 @@ public class Bicondition implements LogicRule {
 	
 	/**
 	 * @return Returns this LogicRule as Precedent
-	 */
+	 *
 	@Override
 	public LogicRule getPrecedent() {
 		return this.firstTerm;
@@ -210,7 +211,7 @@ public class Bicondition implements LogicRule {
 	
 	/**
 	 * @return Returns this LogicRule as Antecedent
-	 */
+	 *
 	@Override
 	public LogicRule getAntecedent() {
 		return this.secondTerm;
@@ -218,7 +219,7 @@ public class Bicondition implements LogicRule {
 
 	/**
 	 * Returns this LogicRule in its CNF
-	 */
+	 *
 	@Override
 	public LogicRule getCnfRule() {
 		return this.inCnf;
@@ -226,7 +227,7 @@ public class Bicondition implements LogicRule {
 
 	/**
 	 * Returns this LogicRule in its d-DNNF
-	 */
+	 *
 	@Override
 	public LogicRule getDdnnfRule() {
 		return this.inDdnnf;
@@ -234,11 +235,59 @@ public class Bicondition implements LogicRule {
 
 	/**
 	 * Returns the logic graph of the d-DNNF
-	 */
+	 *
 	@Override
 	public DdnnfGraph getDdnnfGraph() {
 		return this.ddnnfGraph;
 	}
-	
+
+	@Override
+	public void setAssignment(boolean value) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setFalse() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setTrue() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean isFalse() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isTrue() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public String toValueString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getCnfName() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getDdnnfName() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	*/
 	
 }

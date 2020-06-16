@@ -45,7 +45,7 @@ public class DateLogic implements LogicRule {
 		this.str = ("DATE(" + date + ")");
 		createCnfRule();
 		createDdnnfRule();
-		generateDdnnfGraph();
+		//generateDdnnfGraph();
 	}
 	
 	/**
@@ -73,7 +73,7 @@ public class DateLogic implements LogicRule {
 		this.str = ("DATE(" + date.toString() + ")");
 		createCnfRule();
 		createDdnnfRule();
-		generateDdnnfGraph();
+	//	generateDdnnfGraph();
 	}
 	
 	/**
@@ -290,7 +290,7 @@ public class DateLogic implements LogicRule {
 			return false;
 		}
 	}
-	
+	/*
 	private void generateDdnnfGraph() {
 		ddnnfGraph = new DdnnfGraph(this);
 	}
@@ -332,22 +332,6 @@ public class DateLogic implements LogicRule {
 	}
 
 	/**
-	 * @return Returns the string of the logic term in CNF
-	 */
-	@Override
-	public String getNameCNF() {
-		return this.nameCNF;
-	}
-
-	/**
-	 * @return Returns the string of the logic term in d-DNNF
-	 */
-	@Override
-	public String getNameDdnnf() {
-		return this.nameDdnnf;
-	}
-
-	/**
 	 * @return Returns an array with the logic date itself; 
 	 * 		In this case it return "[this]" (i.e. self)
 	 */
@@ -373,28 +357,59 @@ public class DateLogic implements LogicRule {
 		return this;
 	}
 
-	/**
-	 * Returns this LogicRule in its CNF
-	 */
+
 	@Override
-	public LogicRule getCnfRule() {
-		return this.inCnf;
+	public void setAssignment(boolean value) {
+		// TODO Auto-generated method stub
+		
 	}
 
-	/**
-	 * Returns this LogicRule in its d-DNNF
-	 */
 	@Override
-	public LogicRule getDdnnfRule() {
-		return this.inDdnnf;
+	public void setFalse() {
+		// TODO Auto-generated method stub
+		
 	}
 
-	/**
-	 * Returns the logic graph of the d-DNNF
-	 */
 	@Override
-	public DdnnfGraph getDdnnfGraph() {
-		return this.ddnnfGraph;
+	public void setTrue() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean isFalse() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isTrue() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public String toValueString() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getCnfName() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getDdnnfName() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int compareTo(LogicRule o) {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 
 }

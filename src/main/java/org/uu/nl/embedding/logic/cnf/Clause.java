@@ -1,6 +1,7 @@
-package org.uu.nl.embedding.logic;
+package org.uu.nl.embedding.logic.cnf;
 
 import org.uu.nl.embedding.lensr.DdnnfGraph;
+import org.uu.nl.embedding.logic.LogicRule;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,15 +24,9 @@ public class Clause implements CnfLogicRule {
 
 	private boolean assignment;
 
-	private LogicRule inNf;
-	private LogicRule inCnf;
-	private LogicRule inDdnnf;
-	
 	private String name = null;
 	private String cnfName;
 	private String ddnnfName;
-	
-	private DdnnfGraph ddnnfGraph;
 	
     /**
      * The set of positive literals present in this clause.
@@ -45,8 +40,42 @@ public class Clause implements CnfLogicRule {
     private final Set<String> negativeNameSet = new TreeSet<>();
     
 
-
-	
+   
+	/**
+	 * Constructor method for the clause class
+	 * @param cnfRule The cnfRule that should be a clause.
+	 * @param isNegated The boolean truth value if the
+	 * literal in this clause should be negated or not.
+	 * In some arbitrary specific order.
+	 * @param nfRule The Normal Form formula this clause
+	 * is generated from.
+    public Clause(final CnfLogicRule cnfRule, final boolean isNegated, NormalLogicRule nfRule) {
+    	super();
+    	if(cnfRule instanceof CnfFormula) {
+    		throw new IllegalArgumentException("CNF formula cannot implicitly be converted to a Clause."); }
+    	
+    	else if(cnfRule instanceof Clause) {
+    		for(LogicLiteral literal : cnfRule.getPositiveLiterals()) {
+        		this.addPositiveLiteral(literal);
+    		}
+			for(LogicLiteral literal : cnfRule.getNegativeLiterals()) {
+				this.addNegativeLiteral(literal);
+			}
+			
+			this.cnfName = this.toString();
+			
+			/*
+			if(nfRule == null) { nfRule = generateNf(); }
+			this.inNf = nfRule;
+			this.inDdnnf = nfRule.getDdnnfRule(); // Checken of dit goed gaat qua compile volgorde!!!!!!
+			this.ddnnfName = nfRule.getDdnnfName();
+			
+			this.assignment = isSatisfied();
+    	}
+    	// else Literal constructor is used for instantiation.
+    }
+    */
+    
 	/**
 	 * Constructor method for the clause class
 	 * @param orderedLiterals The literals of this clause
@@ -58,7 +87,8 @@ public class Clause implements CnfLogicRule {
 	 * @param nfRule The Normal Form formula this clause
 	 * is generated from.
 	 */
-	public Clause(final LogicLiteral[] orderedLiterals, final boolean[] orderedNegated, LogicRule nfRule) {
+	public Clause(final LogicLiteral[] orderedLiterals, final boolean[] orderedNegated) {
+		super();
 		if(!(orderedLiterals.length == orderedNegated.length)) {
 			throw new IllegalArgumentException("The two arrays do not have the same length."); }
 		
@@ -68,25 +98,14 @@ public class Clause implements CnfLogicRule {
 		}
 		
 		this.cnfName = this.toString();
+		
+		/*
 		if(nfRule == null) { nfRule = generateNf(); }
 		this.inNf = nfRule;
 		this.inDdnnf = nfRule.getDdnnfRule(); // Checken of dit goed gaat qua compile volgorde!!!!!!
 		this.ddnnfName = nfRule.getDdnnfName();
+		*/
 		this.assignment = isSatisfied();
-	}
-
-	/**
-	 * Constructor method for the clause class, without
-	 * a source Normal Form formula.
-	 * @param orderedLiterals The literals of this clause
-	 * , e.g. "p", or "isCar". In some arbitrary specific 
-	 * order.
-	 * @param negated The boolean truth value if the
-	 * literal in this clause should be negated or not.
-	 * In some arbitrary specific order.
-	 */
-	public Clause(final LogicLiteral[] orderedLiterals, final boolean[] orderedNegated) {
-		this(orderedLiterals, orderedNegated, null);
 	}
 	
 	/**
@@ -98,28 +117,20 @@ public class Clause implements CnfLogicRule {
 	 * @param nfRule The Normal Form formula this clause
 	 * is generated from.
 	 */
-	public Clause(final LogicLiteral literal, boolean negated, LogicRule nfRule) {
+	public Clause(final LogicLiteral literal, boolean negated) {
+		super();
 		if(!negated) { addPositiveLiteral(literal); }
 		else { addNegativeLiteral(literal); }
 
 		this.cnfName = this.toString();
+
+		/*
 		if(nfRule == null) { nfRule = generateNf(); }
 		this.inNf = nfRule;
 		this.inDdnnf = nfRule.getDdnnfRule(); // Checken of dit goed gaat qua compile volgorde!!!!!!
 		this.ddnnfName = nfRule.getDdnnfName();
+		*/
 		this.assignment = isSatisfied();
-	}
-	
-	/**
-	 * Constructor method for the clause class, without
-	 * a source Normal Form formula.
-	 * @param literal The literal in this clause
-	 * , e.g. "p", or "isCar".
-	 * @param negated The boolean truth value if the
-	 * literal in this clause should be negated or not.
-	 */
-	public Clause(final LogicLiteral literal, boolean negated) {
-		this(literal, negated, null);
 	}
 	
 	/**
@@ -133,31 +144,21 @@ public class Clause implements CnfLogicRule {
 	 * @param nfRule The Normal Form formula this clause
 	 * is generated from.
 	 */
-	public Clause(final String literalName, boolean value, boolean negated, LogicRule nfRule) {
+	public Clause(final String literalName, boolean value, boolean negated) {
+		super();
 		LogicLiteral literal = new LogicLiteral(literalName, value);
 		if(!negated) { addPositiveLiteral(literal); }
 		else { addNegativeLiteral(literal); }
 		
 		this.cnfName = this.toString();
+
+		/*
 		if(nfRule == null) { nfRule = generateNf(); }
 		this.inNf = nfRule;
 		this.inDdnnf = nfRule.getDdnnfRule(); // Checken of dit goed gaat qua compile volgorde!!!!!!
 		this.ddnnfName = nfRule.getDdnnfName();
+		*/
 		this.assignment = isSatisfied();
-	}
-	
-	/**
-	 * Constructor method for the clause class, without
-	 * a source Normal Form formula.
-	 * @param name The name of the literal in this clause
-	 * , e.g. "p", or "isCar".
-	 * @param value The starting boolean truth value of 
-	 * the literal in this clause.
-	 * @param negated The boolean truth value if the
-	 * literal in this clause should be negated or not.
-	 */
-	public Clause(final String literalName, boolean value, boolean negated) {
-		this(literalName, value, negated, null);
 	}
 
     /**
@@ -350,10 +351,10 @@ public class Clause implements CnfLogicRule {
     	}
     	// Convert the literal list to an array.
     	LogicLiteral[] litArray = litList.toArray(new LogicLiteral[0]);
-    	// Make form the two NF rules a new disjunction for the resulting clause
-    	Disjunction combinedRules = new Disjunction(this.inNf, clause.getNfRule());
     	
-    	return new Clause(litArray, boolArray, combinedRules);
+    	// Return a new clause using the literal and boolean arrays
+    	// as parameters.
+    	return new Clause(litArray, boolArray);
     }
     
     /**
@@ -448,8 +449,7 @@ public class Clause implements CnfLogicRule {
      * Private method to generate a "normal form" formula if
      * this clause was not based on a normal form formula
      * already.
-     */
-    private LogicRule generateNf() {
+    private NormalLogicRule generateNf() {
     	Disjunction disj = null;
     	LogicLiteral firstLit = null, secondLit = null;
     	
@@ -479,11 +479,9 @@ public class Clause implements CnfLogicRule {
         }
         return disj;
     }
+    */
     
     
-    private void generateDdnnf() {
-    	//TODO
-    }
 	
 	/*
 	 * Below are all interface methods implemented
@@ -680,18 +678,16 @@ public class Clause implements CnfLogicRule {
     /**
      * @return Returns this clause as 
      * LogicRule in Normal Form
-     */
     @Override
-    public LogicRule getNfRule() {
+    public NormalLogicRule getNfRule() {
     	return this.inNf;
     }
     
     /**
      * @return Returns this clause as 
      * LogicRule in Conjunctive Normal Form
-     */
     @Override
-    public LogicRule getCnfRule() {
+    public CnfLogicRule getCnfRule() {
     	return this.inCnf;
     }
     
@@ -699,21 +695,13 @@ public class Clause implements CnfLogicRule {
      * @return Returns this clause as 
      * LogicRule in Deterministic 
      * Decomposable Negation Normal Form
-     */
     @Override
     public LogicRule getDdnnfRule() {
     	return this.inDdnnf;
     }
+    */
     
-    /**
-     * @return Returns this clause's
-     * d-DNNF graph
-     */
-    @Override
-    public DdnnfGraph getDdnnfGraph() {
-    	return this.inDdnnf.getDdnnfGraph();
-    }
-
+	
     @Override
     public boolean equals(Object obj) {
         if (obj == null) {
@@ -728,6 +716,24 @@ public class Clause implements CnfLogicRule {
             return false;
         }
 
-        return this.name == ((LogicLiteral) obj).getName();
+        return this.name == ((Clause) obj).getName();
+    }
+
+    @Override 
+    public int hashCode() {
+		int hash = 7;
+		for (int i = 0; i < this.name.length(); i++) {
+			hash = hash*31 + this.name.charAt(i);
+		}
+		return hash;
+    }
+
+    @Override 
+    public int compareTo(LogicRule other) {
+
+      if (this.hashCode() < other.hashCode()) {
+        return -1;
+      }
+      return this.hashCode() == other.hashCode() ? 0 : 1;
     }
 }

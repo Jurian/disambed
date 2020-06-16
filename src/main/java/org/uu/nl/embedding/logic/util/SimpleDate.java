@@ -3,6 +3,8 @@
  */
 package org.uu.nl.embedding.logic.util;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -28,7 +30,7 @@ public class SimpleDate {
 	private int[] intDate = new int[3];
 
     public SimpleDate(final String pattern) {
-    	this.date = null;
+    	this.date = pattern;
     	isDate = checkDateFormat(this.date);
     	checkForException();
     	setDateAsIntArray();
@@ -66,53 +68,25 @@ public class SimpleDate {
     }
     
     public boolean checkDateFormat(String pattern) {
-    	try {
-	    	switch(pattern) {
-	    		// Check for universal date format
-				case "\\0[1-9]-\\0[1-9]-\\d{4}":
-	            	this.date = pattern;
-	    			return true;
-				case "\\[1-2][0-9]-\\0[1-9]-\\d{4}":
-	            	this.date = pattern;
-	    			return true;
-	    		case "\\3[0-2]-\\0[1-9]-\\d{4}":
-	            	this.date = pattern;
-	    			return true;
-				case "\\0[1-9]-\\1[0-9]-\\d{4}":
-	            	this.date = pattern;
-	    			return true;
-				case "\\[1-2][0-9]-\\1[0-9]-\\d{4}":
-	            	this.date = pattern;
-	    			return true;
-	    		case "\\3[0-2]-\\1[0-9]-\\d{4}":
-	            	this.date = pattern;
-	    			return true;
-	    	}
-	    	    	
-	    } catch(DateTimeParseException e) {
-                logger.warn("Could not covert to date: " + e.getMessage());
-	    	}
-		return false;
-    }
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+            dateFormat.setLenient(false);
+            try {
+                dateFormat.parse(pattern.trim());
+            } catch (ParseException pe) {
+                return false;
+            }
+            return true;
+        }
     
     public static boolean isDateFormat(String pattern) {
-    	switch(pattern) {
-    		// Check for universal date format
-			case "\\0[1-9]-\\0[1-9]-\\d{4}":
-    			return true;
-			case "\\[1-2][0-9]-\\0[1-9]-\\d{4}":
-    			return true;
-    		case "\\3[0-2]-\\0[1-9]-\\d{4}":
-    			return true;
-			case "\\0[1-9]-\\1[0-9]-\\d{4}":
-    			return true;
-			case "\\[1-2][0-9]-\\1[0-9]-\\d{4}":
-    			return true;
-    		case "\\3[0-2]-\\1[0-9]-\\d{4}":
-    			return true;
-    		default:
-    			return false;
-    	}
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
+        dateFormat.setLenient(false);
+        try {
+            dateFormat.parse(pattern.trim());
+        } catch (ParseException pe) {
+            return false;
+        }
+        return true;
     }
 
 
