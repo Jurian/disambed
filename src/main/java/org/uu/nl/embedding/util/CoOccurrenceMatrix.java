@@ -5,6 +5,8 @@ package org.uu.nl.embedding.util;
  */
 public interface CoOccurrenceMatrix {
 
+	int contextIndex2Focus(int i);
+	int focusIndex2Context(int i);
 	int nrOfContextVectors();
 	int nrOfFocusVectors();
 	double max();

@@ -78,7 +78,7 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 		final int vocabSize = coMatrix.nrOfFocusVectors();
 		final int dimension = config.getDim();
 		final String[] out = new String[dimension];
-		final double[] result = optimum.getResult();
+		final float[] result = optimum.getResult();
 
 		// Create a tab-separated file
 		final String delimiter = "\t";

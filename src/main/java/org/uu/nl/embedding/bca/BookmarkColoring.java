@@ -32,7 +32,8 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	private int coOccurrenceCount;
 	private Permutation permutation;
 	private final InMemoryRdfGraph graph;
-	private final Map<Integer, Integer> focusIndexMap;
+	private final Map<Integer, Integer> context2focus;
+	private final Map<Integer, Integer> focus2context;
 
 	public BookmarkColoring(final InMemoryRdfGraph graph, final Configuration config) {
 
@@ -43,7 +44,9 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 
 		final Configuration.Output output = config.getOutput();
 
-		this.focusIndexMap = new HashMap<>();
+		this.context2focus = new HashMap<>();
+		this.focus2context = new HashMap<>();
+
 		int notSkipped = 0;
 
 		for(int i = 0; i < verts.length; i++) {
@@ -98,7 +101,8 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 			if(!performBCA[i]) continue;
 
 			final int bookmark = verts[i];
-			focusIndexMap.put(bookmark, j);
+			context2focus.put(bookmark, j);
+			focus2context.put(j, bookmark);
 			j++;
 
 			// Choose a graph neighborhood algorithm
@@ -181,7 +185,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	}
 	
 	public int cIdx_I(int i) {
-		return this.focusIndexMap.get(coOccurrenceIdx_I.get(permutation.randomAccess(i)));
+		return contextIndex2Focus(coOccurrenceIdx_I.get(permutation.randomAccess(i)));
 	}
 	
 	public int cIdx_J(int j) {
@@ -193,13 +197,23 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	}
 	
 	public byte getType(int index) {
-		return (byte) this.graph.getVertexTypeProperty().getValueAsInt(this.focusIndexMap.get(index));
+		return (byte) this.graph.getVertexTypeProperty().getValueAsInt(focusIndex2Context(index));
 	}
 	
 	public int coOccurrenceCount() {
 		return this.coOccurrenceCount;
 	}
 
+
+	@Override
+	public int contextIndex2Focus(int i) {
+		return context2focus.get(i);
+	}
+
+	@Override
+	public int focusIndex2Context(int i) {
+		return focus2context.get(i);
+	}
 
 	@Override
 	public int nrOfContextVectors() {
@@ -218,7 +232,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	
 	@Override
 	public String getKey(int index) {
-		return this.graph.getVertexLabelProperty().getValueAsString(this.focusIndexMap.get(index));
+		return this.graph.getVertexLabelProperty().getValueAsString(focusIndex2Context(index));
 	}
 	
 	private void setMax(double newMax) {
