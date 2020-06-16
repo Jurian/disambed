@@ -15,7 +15,7 @@ public class BCV extends HashMap<Integer, Float> {
 
 	private static final ExtendedRandom random = Configuration.getThreadLocalRandom();
 	private static final long serialVersionUID = 1L;
-	
+
 	private final int rootNode;
 
 	public int getRootNode() {
