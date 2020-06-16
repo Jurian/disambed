@@ -138,13 +138,15 @@ public abstract class Optimizer implements IOptimizer {
 	 * Create a new double array containing the averaged values between the focus and context vectors
 	 */
 	@Override
-	public double[] extractResult() {
-		double[] embedding = new double[focusVectors * dimension];
-		for (int a = 0; a < focusVectors; a++) {
-			final int i = a * dimension;
+	public float[] extractResult() {
+
+		float[] embedding = new float[focusVectors * dimension];
+		for (int focusIndex = 0; focusIndex < focusVectors; focusIndex++) {
+			final int contextIndex = this.coMatrix.focusIndex2Context(focusIndex);
+			final int i = focusIndex * dimension;
+			final int j = contextIndex * dimension;
 			for (int d = 0; d < dimension; d++) {
-				// For each node, take the average between the focus and context value
-				embedding[d + i] = (focus[d + i]);
+				embedding[d + i] = (this.focus[d + i] + this.context[d + j]) / 2;
 			}
 		}
 		return embedding;
