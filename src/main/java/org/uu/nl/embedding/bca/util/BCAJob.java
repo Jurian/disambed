@@ -44,7 +44,6 @@ public abstract class BCAJob implements Callable<BCV> {
 
 	protected BCV doWork(final boolean reverse) {
 		final NumericalProperty edgeWeights = graph.getEdgeWeightProperty();
-		final NumericalProperty edgeTypes = graph.getEdgeTypeProperty();
 
 		final TreeMap<Integer, PaintedNode> nodeTree = new TreeMap<>();
 		final BCV bcv = new BCV(bookmark);
@@ -53,7 +52,7 @@ public abstract class BCAJob implements Callable<BCV> {
 
 		int[] neighbors, edges;
 		int focusNode;
-		double wetPaint, partialWetPaint;
+		double wetPaint, partialWetPaint, totalWeight;
 		PaintedNode node;
 
 		while (!nodeTree.isEmpty()) {
@@ -71,10 +70,7 @@ public abstract class BCAJob implements Callable<BCV> {
 			neighbors = getNeighbors(reverse, focusNode);
 			edges = getEdges(reverse, focusNode);
 
-			float totalWeight = 0;
-			for (int i = 0; i < neighbors.length; i++) {
-				totalWeight += edgeWeights.getValueAsFloat(edges[i]);
-			}
+			totalWeight = getTotalWeight(neighbors, edges);
 
 			for (int i = 0; i < neighbors.length; i++) {
 
@@ -93,11 +89,18 @@ public abstract class BCAJob implements Callable<BCV> {
 		return bcv;
 	}
 
-	private int[] getNeighbors(final boolean reverse, final int focusNode) {
+	protected double getTotalWeight(int[] neighbors, int[] edges) {
+		double totalWeight = 0f;
+		for (int i = 0; i < neighbors.length; i++)
+			totalWeight += graph.getEdgeWeightProperty().getValueAsFloat(edges[i]);
+		return totalWeight;
+	}
+
+	protected int[] getNeighbors(final boolean reverse, final int focusNode) {
 		return getIndexes(reverse, focusNode, vertexIn, vertexOut);
 	}
 
-	private int[] getEdges(final boolean reverse, final int focusNode) {
+	protected int[] getEdges(final boolean reverse, final int focusNode) {
 		return getIndexes(reverse, focusNode, edgeIn, edgeOut);
 	}
 
