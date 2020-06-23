@@ -122,6 +122,9 @@ public class DdnnfRun {
 		System.out.print(totalGraph.printString());
 		totalGraph.printMap();
 		totalGraph.printMapWithValues();
+
+		System.out.print(cnfFormula1.trueAssignmentsToString());
+		System.out.print(cnfFormula1.falseAssignmentsToString());
 	}
 	
 	// A d-DNNF formula stating the following in NF:
@@ -214,6 +217,9 @@ public class DdnnfRun {
 		System.out.print(totalGraph.printString());
 		totalGraph.printMap();
 		totalGraph.printMapWithValues();
+
+		System.out.print(cnfFormula1.trueAssignmentsToString());
+		System.out.print(cnfFormula1.falseAssignmentsToString());
 	}
 	
 	// A d-DNNF formula stating the following in NF:
@@ -306,6 +312,9 @@ public class DdnnfRun {
 		System.out.print(totalGraph.printString());
 		totalGraph.printMap();
 		totalGraph.printMapWithValues();
+		
+		System.out.print(cnfFormula1.trueAssignmentsToString());
+		System.out.print(cnfFormula1.falseAssignmentsToString());
 	}
 	
 	public static void printCnf(final String datum1, final String datum2, final boolean[] assignments) {
@@ -348,5 +357,8 @@ public class DdnnfRun {
 		System.out.println(cnfFormula.toString());
 		System.out.println(cnfFormula.toValueString());
 		System.out.println(String.valueOf(cnfFormula.isSatisfied()));
+		
+		System.out.print(cnfFormula.trueAssignmentsToString());
+		System.out.print(cnfFormula.falseAssignmentsToString());
 	}
 }
