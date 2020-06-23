@@ -1,18 +1,13 @@
 package org.uu.nl.embedding.lensr;
 
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.uu.nl.embedding.logic.ddnnf.DdnnfClause;
 import org.uu.nl.embedding.logic.ddnnf.DdnnfFormula;
 import org.uu.nl.embedding.logic.ddnnf.DdnnfLiteral;
 import org.uu.nl.embedding.logic.ddnnf.DdnnfLogicRule;
 
-
 import java.util.HashMap;
-
-import grph.in_memory.InMemoryGrph;
-import grph.properties.NumericalProperty;
 
 /**
  * 
@@ -27,6 +22,7 @@ public class DdnnfGraph {
 	
     int parent;
     int root;
+    int leftInt, rightInt;
 	String logicType;
 	HashMap<Integer, String> operatorMap = new HashMap<Integer, String>();
 	HashMap<DdnnfLogicRule, String> logicMap = new HashMap<DdnnfLogicRule, String>();
@@ -61,15 +57,18 @@ public class DdnnfGraph {
 
 		if(this.leftChild != null) {
 			this.leftChild.setChildInts(vertNumber+1);
+			this.leftInt = vertNumber+1;
 			this.leftChild.setParent(this.root);
 			if(this.rightChild != null) { 
 				this.rightChild.setChildInts(vertNumber+2);
-				this.leftChild.setParent(this.root);
+				this.rightInt = vertNumber+1;
+				this.rightChild.setParent(this.root);
 				}
 			
 		} else if (this.rightChild != null) {
 			this.rightChild.setChildInts(vertNumber+1);
-			this.leftChild.setParent(this.root);
+			this.rightInt = vertNumber+1;
+			this.rightChild.setParent(this.root);
 		}
 	}
 	
@@ -95,6 +94,34 @@ public class DdnnfGraph {
 	
 	public int getParent() {
 		return this.parent;
+	}
+	
+	public int getLeftInt() {
+		return this.leftInt;
+	}
+	
+	public int getRightInt() {
+		return this.rightInt;
+	}
+	
+	public DdnnfGraph getLeftChild() {
+		return this.leftChild;
+	}
+	
+	public DdnnfGraph getRightChild() {
+		return this.rightChild;
+	}
+	
+	public boolean hasLeftChild() {
+		return this.leftChild != null ? true : false;
+	}
+	
+	public boolean hasRightChild() {
+		return this.rightChild != null ? true : false;
+	}
+	
+	public DdnnfGraph getNode(final int nodeId) {
+		return this.intGraphMap.get(nodeId);
 	}
 
 	private void addRootToGraph() {
@@ -139,20 +166,24 @@ public class DdnnfGraph {
     	}
 	}
 	
-	private HashMap<Integer, DdnnfGraph> getIntGraphMap() {
+	private HashMap<Integer, DdnnfGraph> getIntGraphMaps() {
 		HashMap<Integer, DdnnfGraph> resMap = new HashMap<Integer, DdnnfGraph>();
 		if(this.leftChild != null) {
-			for(Map.Entry<Integer, DdnnfGraph> entry : this.leftChild.getIntGraphMap().entrySet()) {
+			for(Map.Entry<Integer, DdnnfGraph> entry : this.leftChild.getIntGraphMaps().entrySet()) {
 				resMap.put(entry.getKey(), entry.getValue());
 			}
 		}
 		if(this.rightChild != null) {
-			for(Map.Entry<Integer, DdnnfGraph> entry : this.rightChild.getIntGraphMap().entrySet()) {
+			for(Map.Entry<Integer, DdnnfGraph> entry : this.rightChild.getIntGraphMaps().entrySet()) {
 				resMap.put(entry.getKey(), entry.getValue());
 			}
 		}
 		resMap.put(root, this);
 		return resMap;
+	}
+
+	public HashMap<Integer, DdnnfGraph> getIntGraphMap() {
+		return this.intGraphMap;
 	}
 	
 	/*
