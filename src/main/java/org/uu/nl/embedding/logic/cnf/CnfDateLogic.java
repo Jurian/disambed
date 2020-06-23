@@ -1,9 +1,7 @@
 package org.uu.nl.embedding.logic.cnf;
 
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
 
 import org.apache.log4j.Logger;
 import org.uu.nl.embedding.logic.LogicRule;
@@ -16,8 +14,8 @@ public class CnfDateLogic extends LogicLiteral {
 
 	private boolean assignment;
 	private SimpleDate date;
-	private String dateStr;
-	private String string;
+	private String dateString;
+	private String logicString;
 	private String name;
 	
 	
@@ -32,7 +30,7 @@ public class CnfDateLogic extends LogicLiteral {
 		}
 		this.assignment = assignment;
 		this.date = new SimpleDate(date);
-		this.dateStr = date;
+		this.dateString = date;
 		this.name = ("DATE(" + date + ")");
 	}
 
@@ -45,9 +43,9 @@ public class CnfDateLogic extends LogicLiteral {
 
 		this.assignment = assignment;
 		this.date = date;
-		this.dateStr = date.toString();
+		this.dateString = date.toString();
 		this.name = name;
-		this.string = ("DATE(" + date.toString() + ")");
+		this.logicString = ("DATE(" + date.toString() + ")");
 	}
 	
 	/**
@@ -212,40 +210,37 @@ public class CnfDateLogic extends LogicLiteral {
 	 */
 	public long differenceWith(final String otherDate, final String intervalType) {
 		// Check if otherDate is in date format.
+		if(!SimpleDate.isDateFormat(this.dateString)) {
+            logger.warn("Could not covert otherDate string to date");
+            return -999;
+		}// Check if otherDate is in date format.
 		if(!SimpleDate.isDateFormat(otherDate)) {
             logger.warn("Could not covert otherDate string to date");
             return -999;
 		}
 		
 		// Return 0 if dates are exactly the same.
-        if(this.dateStr.equals(otherDate)) return 0;
+        if(this.dateString.equals(otherDate)) return 0;
         
         // Calculate the difference between the two dates.
         try {
         	long res;
-            final LocalDate d1 = LocalDate.parse(this.dateStr, formatter);
-            final LocalDate d2 = LocalDate.parse(otherDate, formatter);
-            boolean isBefore = d1.isBefore(d2);
+        	SimpleDate date2 = new SimpleDate(otherDate);
     		
             // Calculate the difference in terms of provided time interval.
     		if(intervalType == "mm") {
-               res = (long) Math.abs(ChronoUnit.MONTHS.between(d1, d2));
-               if(isBefore) { return res; }
-               return -1*res;
+               res = (long) SimpleDate.monthsToDate(this.date, date2);
     			
     		} else if(intervalType == "yyyy") {
-                res = (long) Math.abs(ChronoUnit.YEARS.between(d1, d2));
-                if(isBefore) { return res; }
-                return -1*res;
+                res = (long) SimpleDate.yearsToDate(this.date, date2);
     			
     		} else {
     			// if interval == "dd"
     			// if interval == any other input: assume "dd"
     			if(intervalType != "dd") { logger.warn("Not valid input for interval, therefore 'dd' was assumed"); }
-                res = (long) Math.abs(ChronoUnit.DAYS.between(d1, d2));
-                if(isBefore) { return res; }
-                return -1*res;
+                res = (long) SimpleDate.daysToDate(this.date, date2);
     		}
+    		return res;
 
         } catch (DateTimeParseException e) {
             logger.warn("Could not compare dates: " + e.getMessage());

@@ -66,7 +66,7 @@ public class DateLogic implements LogicRule {
 	 */
 	public DateLogic(SimpleDate date, String name) {
 		super();
-		this.isDate = this.firstDay.checkDateFormat(date.toString());
+		//this.isDate = this.firstDay.checkDateFormat(date.toString());
 		
 		this.firstDay = new SimpleDate(date.toString());
 		this.name = name;

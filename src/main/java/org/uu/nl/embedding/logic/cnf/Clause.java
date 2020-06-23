@@ -1,11 +1,15 @@
 package org.uu.nl.embedding.logic.cnf;
 
+import org.apache.log4j.Logger;
 import org.uu.nl.embedding.lensr.DdnnfGraph;
 import org.uu.nl.embedding.logic.LogicRule;
+import org.uu.nl.embedding.logic.ddnnf.DdnnfLogicRule;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -22,11 +26,16 @@ import java.util.TreeSet;
  */
 public class Clause implements CnfLogicRule {
 
+    private final static Logger logger = Logger.getLogger(Clause.class);
+
 	private boolean assignment;
 
 	private String name = null;
 	private String cnfName;
 	private String ddnnfName;
+
+	private DdnnfGraph ddnnfGraph;
+	private DdnnfLogicRule ddnnfRule;
 	
     /**
      * The set of positive literals present in this clause.
@@ -445,6 +454,59 @@ public class Clause implements CnfLogicRule {
 		this.assignment = isSatisfied();
     }
     
+    public List<HashMap<LogicLiteral, Boolean>> getTrueAssignments() {
+    	List<HashMap<LogicLiteral, Boolean>> assignMapList = new ArrayList<HashMap<LogicLiteral, Boolean>>();
+    	HashMap<LogicLiteral, Boolean> assignMap;
+    	ArrayList<LogicLiteral> passedLits = new ArrayList<LogicLiteral>();
+    	int firstLit = getLiterals().size();
+    	
+    	int counter = 0;
+    	for (LogicLiteral lit : getLiterals()) {
+    		while(firstLit >= 0) {
+        		//Initialize new map.
+        		assignMap = new HashMap<LogicLiteral, Boolean>();
+        		// Decrement first literal to get true value.
+        		firstLit--;
+        		counter = 0;
+        		
+        		for (LogicLiteral lit2 : positiveLiteralSet) {
+        			
+        			if (counter == firstLit) { passedLits.add(lit2); }
+        			
+        			if (passedLits.contains(lit2)) { assignMap.put(lit2, true); }
+        			else { assignMap.put(lit2, false); }
+        			counter++;
+            	}
+        		for (LogicLiteral lit2 : negativeLiteralSet) {
+        			
+        			if (counter == firstLit) { passedLits.add(lit2); }
+        			
+        			if (passedLits.contains(lit2)) { assignMap.put(lit2, false); }
+        			else { assignMap.put(lit2, true); }
+        			counter++;
+            	}
+        		// Add the generated map to list of maps.
+        		assignMapList.add(assignMap);
+    		}
+    	}
+    	return assignMapList;
+    }
+    
+    public List<HashMap<LogicLiteral, Boolean>> getFalseAssignments() {
+    	HashMap<LogicLiteral, Boolean> assignMap = new HashMap<LogicLiteral, Boolean>();
+    	
+    	for (LogicLiteral lit : positiveLiteralSet) {
+    		assignMap.put(lit, false);
+    	}
+    	for (LogicLiteral lit : negativeLiteralSet) {
+    		assignMap.put(lit, true);
+    	}
+    	ArrayList<HashMap<LogicLiteral, Boolean>> assignMapList = new ArrayList<HashMap<LogicLiteral, Boolean>>();
+    	assignMapList.add(assignMap);
+    	
+    	return assignMapList;
+    }
+    
     /**
      * Private method to generate a "normal form" formula if
      * this clause was not based on a normal form formula
@@ -656,6 +718,29 @@ public class Clause implements CnfLogicRule {
     public List<Clause> getClauses() {
     	return new ArrayList<Clause>(Arrays.asList(this));
     }
+
+	@Override
+	public DdnnfGraph getDdnnfGraph() {
+		if(this.ddnnfRule == null) { logger.warn("No d-DNNF graph to return."); }
+		return this.ddnnfGraph;
+	}
+
+	@Override
+	public DdnnfLogicRule getDdnnfRule() {
+		if(this.ddnnfRule == null) { logger.warn("No d-DNNF rule to return."); }
+		return this.ddnnfRule;
+	}
+
+	@Override
+	public void setDdnnfGraph(DdnnfGraph graph) {
+		this.ddnnfGraph = graph;
+		
+	}
+
+	@Override
+	public void setDdnnfRule(DdnnfLogicRule rule) {
+		this.ddnnfRule = rule;
+	}
     
     /**
      * @return Returns this clause as 

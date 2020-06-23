@@ -1,8 +1,9 @@
 package org.uu.nl.embedding.logic.cnf;
 
+import org.apache.log4j.Logger;
 import org.uu.nl.embedding.lensr.DdnnfGraph;
 import org.uu.nl.embedding.logic.LogicRule;
-import org.uu.nl.embedding.logic.normalform.NormalLogicRule;
+import org.uu.nl.embedding.logic.ddnnf.DdnnfLogicRule;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +23,8 @@ import java.util.TreeSet;
  * @since 07-06-2020
  */
 public class LogicLiteral implements CnfLogicRule {
+
+    private final static Logger logger = Logger.getLogger(LogicLiteral.class);
 	
 	private boolean assignment;
 	private boolean negated;
@@ -29,6 +32,9 @@ public class LogicLiteral implements CnfLogicRule {
 	private String name = null;
 	private String cnfName;
 	private String ddnnfName;
+
+	private DdnnfGraph ddnnfGraph;
+	private DdnnfLogicRule ddnnfRule;
 	
 	
 	/**
@@ -224,6 +230,29 @@ public class LogicLiteral implements CnfLogicRule {
     public List<Clause> getClauses() {
     	return new ArrayList<Clause>(/*Empty list*/);
     }
+
+	@Override
+	public DdnnfGraph getDdnnfGraph() {
+		if(this.ddnnfRule == null) { logger.warn("No d-DNNF graph to return."); }
+		return this.ddnnfGraph;
+	}
+
+	@Override
+	public DdnnfLogicRule getDdnnfRule() {
+		if(this.ddnnfRule == null) { logger.warn("No d-DNNF rule to return."); }
+		return this.ddnnfRule;
+	}
+
+	@Override
+	public void setDdnnfGraph(DdnnfGraph graph) {
+		this.ddnnfGraph = graph;
+		
+	}
+
+	@Override
+	public void setDdnnfRule(DdnnfLogicRule rule) {
+		this.ddnnfRule = rule;
+	}
     
     /**
      * @return Returns this literal as 

@@ -36,8 +36,28 @@ public class CnfDateComparer extends LogicLiteral {
 		
 	}
 	
-	public void setComparison(final String comp) {
-		this.comparison = comp;
+	public void setComparisonExact() {
+		this.assignment = exactSameAs();
+		
+	}
+	
+	public void setComparisonBefore() {
+		this.assignment = isBefore();
+		
+	}
+	
+	public void setComparisonAfter() {
+		this.assignment = isAfter();
+		
+	}
+	
+	public void setComparisonBefore(final String intervalType, final long intervalSize) {
+		this.assignment = isMaxBefore(intervalType, intervalSize);
+		
+	}
+	
+	public void setComparisonAfter(final String intervalType, final long intervalSize) {
+		this.assignment = isMaxAfter(intervalType, intervalSize);
 		
 	}
 	
@@ -76,7 +96,7 @@ public class CnfDateComparer extends LogicLiteral {
 	 */
 	public boolean isBefore() {
 		comparison = "before";
-		if(differenceWith("dd") > 0) { return true; }
+		if(differenceWith("dd") < 0) { return true; }
 		else { return false; }
 	}
 	
@@ -89,7 +109,7 @@ public class CnfDateComparer extends LogicLiteral {
 	 */
 	public boolean isAfter() {
 		comparison = "after";
-		if(differenceWith("dd") < 0) { return true; }
+		if(differenceWith("dd") > 0) { return true; }
 		else { return false; }
 	}
 	/**
@@ -108,7 +128,7 @@ public class CnfDateComparer extends LogicLiteral {
 	public boolean isMaxBefore(final String intervalType, final long intervalSize) {
 		comparison = "maxBefore";
 		long difference = differenceWith(intervalType);
-		if(difference > 0 && difference <= intervalSize) { return true; }
+		if(difference < 0 && difference >= intervalSize) { return true; }
 		else { return false; }
 	}
 	
@@ -128,7 +148,7 @@ public class CnfDateComparer extends LogicLiteral {
 	public boolean isMaxAfter(final String intervalType, final long intervalSize) {
 		comparison = "maxAfter";
 		long difference = differenceWith(intervalType);
-		if(difference < 0 && difference >= intervalSize) { return true; }
+		if(difference > 0 && difference <= intervalSize) { return true; }
 		else { return false; }
 	}
 	
@@ -159,29 +179,21 @@ public class CnfDateComparer extends LogicLiteral {
         // Calculate the difference between the two dates.
         try {
         	long res;
-            final LocalDate d1 = LocalDate.parse(this.dateString1, formatter);
-            final LocalDate d2 = LocalDate.parse(this.dateString2, formatter);
-            boolean isBefore = d1.isBefore(d2);
     		
             // Calculate the difference in terms of provided time interval.
     		if(intervalType == "mm") {
-               res = (long) Math.abs(ChronoUnit.MONTHS.between(d1, d2));
-               if(isBefore) { return res; }
-               return -1*res;
+               res = (long) SimpleDate.monthsToDate(this.date1, this.date2);
     			
     		} else if(intervalType == "yyyy") {
-                res = (long) Math.abs(ChronoUnit.YEARS.between(d1, d2));
-                if(isBefore) { return res; }
-                return -1*res;
+                res = (long) SimpleDate.yearsToDate(this.date1, this.date2);
     			
     		} else {
     			// if interval == "dd"
     			// if interval == any other input: assume "dd"
     			if(intervalType != "dd") { logger.warn("Not valid input for interval, therefore 'dd' was assumed"); }
-                res = (long) Math.abs(ChronoUnit.DAYS.between(d1, d2));
-                if(isBefore) { return res; }
-                return -1*res;
+                res = (long) SimpleDate.daysToDate(this.date1, this.date2);
     		}
+    		return res;
 
         } catch (DateTimeParseException e) {
             logger.warn("Could not compare dates: " + e.getMessage());
@@ -203,19 +215,19 @@ public class CnfDateComparer extends LogicLiteral {
 
 	@Override
 	public void setAssignment(boolean assignment) {
-		this.assignment = assignment;
+		//this.assignment = assignment;
 		
 	}
 
 	@Override
 	public void setFalse() {
-		this.assignment = false;
+		//this.assignment = false;
 		
 	}
 
 	@Override
 	public void setTrue() {
-		this.assignment = true;
+		//this.assignment = true;
 		
 	}
 
