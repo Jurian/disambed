@@ -6,9 +6,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeSet;
 
 import org.apache.jena.graph.Graph;
 import org.uu.nl.embedding.logic.LogicRule;
+import org.uu.nl.embedding.logic.cnf.CnfLogicRule;
+import org.uu.nl.embedding.logic.ddnnf.DdnnfLogicRule;
 import org.uu.nl.embedding.util.OpsMatrix;
 
 import Jama.Matrix;
@@ -103,8 +106,8 @@ public class LENSRModel {
 	ArrayList<Integer> orNodes;
 	ArrayList<Integer> andNodes;
 	DdnnfGraph logicGraph;
-	/*
-	private void semanticRegularization(LogicRule F) {
+	
+	private void semanticRegularization(CnfLogicRule F) {
 		
 		Matrix resLoss = new Matrix(Z[Z.length-1].getRowDimension(), 1);
 		Matrix subSum  = new Matrix(Z[Z.length-1].getRowDimension(), 1);
@@ -115,14 +118,14 @@ public class LENSRModel {
 		orNodes = getOrNodes(F);
 		andNodes = getAndNodes(F);
 		logicGraph = F.getDdnnfGraph();
-		LogicRule rule;
+		DdnnfLogicRule rule;
 		
 		
 		// OR-nodes regularization
 		for(int v : orNodes) {
 			subSum  = new Matrix(Z[Z.length-1].getRowDimension(), 1);
 			rule = logicGraph.getIntLogicMap().get(v);
-			allTerms = rule.getAllTerms();
+			allTerms = new DdnnfLogicRule[] {rule.getLeftChild, rule.getRightChild};
 			for(LogicRule vj : allTerms) {
 				subSum = subSum.plus(embedLogic(vj) - 1);
 			}
@@ -210,7 +213,37 @@ public class LENSRModel {
 		return resList;
 	}
 	
-	private ArrayList<Integer> getAndNodes(LogicRule F) {
+	private ArrayList<Integer> getChildNodes(final CnfLogicRule F, final int node) {
+		List<Integer> childNodes = new ArrayList<Integer>();
+		TreeSet<Integer> otherNodes = new TreeSet<Integer>();
+		
+		DdnnfGraph nodeGraph = F.getDdnnfGraph().getNode(node);
+		String nodeType = nodeGraph.getLogicType();
+
+		otherNodes.add(node);
+		int next;
+		DdnnfGraph nextGraph;
+		while (!otherNodes.isEmpty()) {
+			next = otherNodes.first();
+			nextGraph = nodeGraph.getNode(next);
+			if (nextGraph.getLogicType() == nodeType) {
+				if (nextGraph.hasLeftChild()) { 
+					otherNodes.add(nextGraph.getLeftInt()); }
+				if (nextGraph.hasRightChild()) { 
+					otherNodes.add(nextGraph.getRightInt()); }
+			}
+			else {
+				childNodes.add(next);
+			}
+			
+			otherNodes.remove(next);
+		}
+		// Sorting
+		Collections.sort(childNodes);
+		return (ArrayList<Integer>) childNodes;// Gaat dit goed?
+	}
+	
+	private ArrayList<Integer> getAndNodes(CnfLogicRule F) {
 		List<Integer> andNodes = new ArrayList<Integer>();
 		DdnnfGraph logicGraph = F.getDdnnfGraph();
 		
@@ -224,7 +257,7 @@ public class LENSRModel {
 		return (ArrayList<Integer>) andNodes;// Gaat dit goed?
 	}
 
-	private ArrayList<Integer> getOrNodes(LogicRule F) {
+	private ArrayList<Integer> getOrNodes(CnfLogicRule F) {
 		List<Integer> orNodes = new ArrayList<Integer>();
 		DdnnfGraph logicGraph = F.getDdnnfGraph();
 		
@@ -237,6 +270,6 @@ public class LENSRModel {
 		Collections.sort(orNodes);
 		return (ArrayList<Integer>) orNodes;// Gaat dit goed?
 	}
-	*/
+	
 
 }
