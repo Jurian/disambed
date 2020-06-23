@@ -238,6 +238,24 @@ public class CnfFormula implements CnfLogicRule {
     	return resForm;
     }
     
+    public String trueAssignmentsToString() {
+    	String result = " - TRUE ASSIGNMENTS - \n";
+    	List<HashMap<LogicLiteral, Boolean>> assignList = (ArrayList) getTrueAssignments();
+    	HashMap<LogicLiteral, Boolean> map;
+    	
+    	for (int i = 0; i < assignList.size(); i++) {
+
+    		result += "No. of assignment: " + i + "\n";
+    		map = assignList.get(i);
+    		for (Map.Entry<LogicLiteral, Boolean> entry : map.entrySet()) {
+    			result += (entry.getKey().toString() + ": " + entry.getValue().toString() + "\n");
+    		}
+    		result += "\n\n";
+    	}
+    	
+    	return result;
+    }
+    
     public List<HashMap<LogicLiteral, Boolean>> getTrueAssignments() {
     	return this.trueAssignments;
     }
@@ -399,6 +417,25 @@ public class CnfFormula implements CnfLogicRule {
     	return newList;
     	
     }
+
+    
+    public String falseAssignmentsToString() {
+    	String result = " - FALSE ASSIGNMENTS - \n";
+    	List<HashMap<LogicLiteral, Boolean>> assignList = (ArrayList) getFalseAssignments();
+    	HashMap<LogicLiteral, Boolean> map;
+    	
+    	for (int i = 0; i < assignList.size(); i++) {
+
+    		result += "No. of assignment: " + i + "\n";
+    		map = assignList.get(i);
+    		for (Map.Entry<LogicLiteral, Boolean> entry : map.entrySet()) {
+    			result += (entry.getKey().toString() + ": " + entry.getValue().toString() + "\n");
+    		}
+    		result += "\n\n";
+    	}
+    	
+    	return result;
+    }
     
     public List<HashMap<LogicLiteral, Boolean>> getFalseAssignments() {
     	return this.falseAssignments;
@@ -427,17 +464,13 @@ public class CnfFormula implements CnfLogicRule {
 		List<HashMap<LogicLiteral, Boolean>> clause1MapList, clause2MapList;
     	// The currently constructed assignment mapping.
     	HashMap<LogicLiteral, Boolean> clause1Map, clause2Map, subResultMap;
-    	// The clauses that remain true.
-    	ArrayList<Integer> remainsTrue = new ArrayList<Integer>();
-    	// The clauses that will be assigned true in current iteration.
-    	ArrayList<Integer> getsTrue = new ArrayList<Integer>();
     	// Counter for the first true clause in current iteration and
     	// a variable to hold the listSize.
     	int firstTrueClause, listSize;
     	
     	for (int i = 0; i < this.clauseList.size(); i++) {
     		
-    		passedClauseAssignmentsLists.set(i, this.clauseList.get(i).getFalseAssignments());
+    		passedClauseAssignmentsLists.add(this.clauseList.get(i).getFalseAssignments());
     		firstTrueClause = getLiterals().size();
     		
 			while (firstTrueClause > i) {
@@ -445,10 +478,14 @@ public class CnfFormula implements CnfLogicRule {
 				for (int j = i+1; j < this.clauseList.size(); j++) {
     				
     				if (j >= firstTrueClause) {
-    					iterationClauseAssignmentsLists.set(j, this.clauseList.get(j).getTrueAssignments());
+    					iterationClauseAssignmentsLists.set(j-1, this.clauseList.get(j).getTrueAssignments());
         				
         			} else {
-    					iterationClauseAssignmentsLists.set(j, this.clauseList.get(j).getFalseAssignments());
+        				if (iterationClauseAssignmentsLists.size() >= j) {
+        					iterationClauseAssignmentsLists.set(j-1, this.clauseList.get(j).getFalseAssignments());
+        				} else {
+        					iterationClauseAssignmentsLists.add(this.clauseList.get(j).getFalseAssignments()); }
+
         			}
     			}
 				
@@ -459,7 +496,7 @@ public class CnfFormula implements CnfLogicRule {
 					if (j <= i) {
 						clause1MapList = passedClauseAssignmentsLists.get(j);
 					} else {
-						clause1MapList = iterationClauseAssignmentsLists.get(j); }
+						clause1MapList = iterationClauseAssignmentsLists.get(j-1); }
 					
 					// Reset the previous new list to fill it with new values.
 					clauseAssignMapsListNew.clear();
