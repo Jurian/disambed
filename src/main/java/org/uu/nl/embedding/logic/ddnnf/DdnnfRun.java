@@ -18,6 +18,7 @@ public class DdnnfRun {
 		//printCnf("01-01-1800", "01-03-1801", new boolean[] {true, true, true});
 		
 		runBirthDateBeforeDeathDateRule("01-01-1800", "01-03-1880", "after");
+		/*
 		runBirthDateBeforeBaptisedRule("01-01-1800", "06-01-1800", "after");
 		runBaptisedBeforeDeathRule("06-01-1800", "01-03-1880", "after");
 		System.out.println();
@@ -30,6 +31,7 @@ public class DdnnfRun {
 		runBirthDateBeforeDeathDateRule("01-03-1880", "01-01-1800", "before");
 		runBirthDateBeforeBaptisedRule("06-01-1800", "01-01-1800", "before");
 		runBaptisedBeforeDeathRule("01-03-1880", "06-01-1800", "before");
+		*/
 	}
 	
 	// A d-DNNF formula stating the following in NF:

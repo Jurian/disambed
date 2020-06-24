@@ -269,6 +269,7 @@ public class CnfFormula implements CnfLogicRule {
     	
     	// Check for contradicting literals in the different clauses.
     	for (int i = 0; i < this.clauseList.size(); i++) {
+
     		clause1 = this.clauseList.get(i);
 	    	list1 = clause1.getTrueAssignments();
     		for (int j = i+1; j < this.clauseList.size(); j++) {
@@ -285,6 +286,7 @@ public class CnfFormula implements CnfLogicRule {
     	    	
     			if (intersectContra.size() != 0) {
     				for (Map.Entry<LogicLiteral, Boolean> entry : intersectContra.entrySet()) {
+
     					if (clause1.getPositiveLiterals().contains(entry.getKey()) && 
     							clause2.getNegativeLiterals().contains(entry.getKey())) {
     						intersectContra.put(entry.getKey(), true);
@@ -322,6 +324,7 @@ public class CnfFormula implements CnfLogicRule {
     		// skip the rest to the next iteration.
     		if (i == 0) {
     			for (HashMap<LogicLiteral, Boolean> map : clause1.getTrueAssignments()) {
+
     				desectMap = new HashMap<LogicLiteral, Boolean>();
     				for (Map.Entry<LogicLiteral, Boolean> entry : map.entrySet()) {
     					if (!intersectContraAll.containsKey(entry.getKey())) {
@@ -351,7 +354,7 @@ public class CnfFormula implements CnfLogicRule {
     			// newList has all combinations of oldMaps looped over new maps
     		}
     		// Update the oldList with all expanded maps.
-    		oldList = newList;
+    		oldList = new ArrayList<HashMap<LogicLiteral, Boolean>>(newList);
     	}
 
     	/*
@@ -412,9 +415,11 @@ public class CnfFormula implements CnfLogicRule {
 					newList.add(newLitsMap);
 				}
 			}
+    		// Update the oldList with all expanded maps.
+    		oldList = new ArrayList<HashMap<LogicLiteral, Boolean>>(newList);
 		}
 		// Finally return the generated complete list of maps.
-    	return newList;
+    	return oldList;
     	
     }
 
@@ -509,8 +514,8 @@ public class CnfFormula implements CnfLogicRule {
 							clauseAssignMapsListNew.add(clause1Map);
 							
 						} else {
-							for (int kc = 0; kc < clauseAssignMapsListOld.size(); kc++) {
-								subResultMap = clauseAssignMapsListOld.get(kc);
+							for (int floeps = 0; floeps < clauseAssignMapsListOld.size(); floeps++) {
+								subResultMap = clauseAssignMapsListOld.get(floeps);
 								subResultMap.putAll(clause1Map);
 								clauseAssignMapsListNew.add(subResultMap);
 								
@@ -518,7 +523,7 @@ public class CnfFormula implements CnfLogicRule {
 						}
 					}
 					// Save the new list in the old one.
-					clauseAssignMapsListOld = clauseAssignMapsListNew;
+					clauseAssignMapsListOld = new ArrayList<HashMap<LogicLiteral, Boolean>>(clauseAssignMapsListNew);
 
 					for (int k = j+1; k < this.clauseList.size(); k++) {
 
@@ -533,6 +538,7 @@ public class CnfFormula implements CnfLogicRule {
 						for (int kc = 0; kc < listSize; kc++) {
 							clause2Map = clause2MapList.get(kc);
 							for (int jc = 0; jc < clauseAssignMapsListOld.size(); jc++) {
+
 								subResultMap = clauseAssignMapsListOld.get(jc);
 								subResultMap.putAll(clause2Map);
 								clauseAssignMapsListNew.add(subResultMap);
@@ -540,7 +546,7 @@ public class CnfFormula implements CnfLogicRule {
 							}
 						}
 						// Save the new list in the old one.
-						clauseAssignMapsListOld = clauseAssignMapsListNew;
+						clauseAssignMapsListOld = new ArrayList<HashMap<LogicLiteral, Boolean>>(clauseAssignMapsListNew);
 					}
 				}
 				// Decrement the first true clause and go to next iteration if
@@ -550,12 +556,11 @@ public class CnfFormula implements CnfLogicRule {
     		}
     		
     		// Remove the false assignments and add true assignments.
-    		passedClauseAssignmentsLists.remove(i);
     		passedClauseAssignmentsLists.set(i, this.clauseList.get(i).getTrueAssignments());
     		
     	}
     	
-    	resultList = clauseAssignMapsListOld;
+    	resultList = new ArrayList<HashMap<LogicLiteral, Boolean>>(clauseAssignMapsListOld);
     	return resultList;
     }
 

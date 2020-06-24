@@ -487,6 +487,7 @@ public class Clause implements CnfLogicRule {
             	}
         		// Add the generated map to list of maps.
         		assignMapList.add(assignMap);
+        		//System.out.println("assignMap (True) = " + assignMap.toString());
     		}
     	}
     	return assignMapList;
@@ -503,6 +504,7 @@ public class Clause implements CnfLogicRule {
     	}
     	ArrayList<HashMap<LogicLiteral, Boolean>> assignMapList = new ArrayList<HashMap<LogicLiteral, Boolean>>();
     	assignMapList.add(assignMap);
+		//System.out.println("assignMap (False) = " + assignMap.toString());
     	
     	return assignMapList;
     }
