@@ -3,12 +3,10 @@
  */
 package org.uu.nl.embedding.logic.util;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 
@@ -53,10 +51,12 @@ public class SimpleDate {
 	 */
     public static int[] getDateAsIntArray(final String dateString) {
     	int[] resInts = new int[3];
-    	String[] tokens = dateString.split("-");
-    	for(int i = 0; i < tokens.length; i++) {
-    		try { 
-    			resInts[i] = Integer.parseInt(tokens[i]); 
+    	List<String> tokens = Arrays.asList(dateString.split("-"));
+    	
+    	for(int i = 0; i < tokens.size(); i++) {
+			resInts[i] = Integer.parseInt(tokens.get(i)); 
+    		try {
+    			resInts[i] = (int) Integer.parseInt(tokens.get(i));
     			if (i == 0 && (resInts[i] < 1 || resInts[i] > 31)) {
     				throw new IllegalArgumentException("Invalid date format: " + dateString);
     			} else if (i == 1 && (resInts[i] < 1 || resInts[i] > 12)) {
@@ -64,7 +64,7 @@ public class SimpleDate {
     			} else if (i == 2 && resInts[i] < 0) {
     				throw new IllegalArgumentException("Invalid date format: " + dateString);
     			}
-    			} catch (NumberFormatException e) { break; }
+    		} catch (NumberFormatException e) { break; }
     	}
     	return resInts;
     }
@@ -94,6 +94,8 @@ public class SimpleDate {
 
         	int[] firstDateInts = getDateAsIntArray(firstDate.toString());
         	int[] secondDateInts = getDateAsIntArray(secondDate.toString());
+    		long diff = calculateDaysBetween(firstDateInts, secondDateInts);
+
         	return calculateDaysBetween(firstDateInts, secondDateInts);
         	
         } catch (DateTimeParseException e) {
@@ -112,11 +114,15 @@ public class SimpleDate {
 		
 		// date2 is before date1
 		if (date1[2] > date2[2]) { date1IsEarlier = false; }
-		else if (date1[1] > date2[1]) { date1IsEarlier = false; }
-		else if (date1[0] > date2[0]) { date1IsEarlier = false; }
 		// date2 is after date1
 		else if (date1[2] < date2[2]) { date1IsEarlier = true; }
+		// date2 is before date1
+		else if (date1[1] > date2[1]) { date1IsEarlier = false; }
+		// date2 is after date1
 		else if (date1[1] < date2[1]) { date1IsEarlier = true; }
+		// date2 is before date1
+		else if (date1[0] > date2[0]) { date1IsEarlier = false; }
+		// date2 is after date1
 		else if (date1[0] < date2[0]) { date1IsEarlier = true; }
 		// Dates are exactly the same, thus return 0.
 		else { return res; }
@@ -126,24 +132,26 @@ public class SimpleDate {
 		// Initialize variables correspondingly.
 		if (date1IsEarlier) {
 			day1=date1[0]; mon1=date1[1]; year1=date1[2];
+			
 			day2=date2[0]; mon2=date2[1]; year2=date2[2];
 		} else {
 			day1=date2[0]; mon1=date2[1]; year1=date2[2];
 			day2=date1[0]; mon2=date1[1]; year2=date1[2];
 		}
 		
+		
 		//days 
 		if (day1 > day2) { 
-			res += daysInMonth(mon1, year1) - day1;
+			res += daysInMonth(mon1, year1) - day1 + day2;
 			mon1++;
 		} else if (day1 < day2) {
 			res += day2 - day1;
 		}
 		//months
 		while (mon1 != mon2) {
-			if (mon1 == 13) { mon1 = 1; year1++; }
 			res += daysInMonth(mon1, year1);
 			mon1++;
+			if (mon1 == 13) { mon1 = 1; year1++; }
 		}
 		// years
 		while (year1 != year2) {

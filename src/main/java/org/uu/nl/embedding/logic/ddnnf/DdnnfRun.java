@@ -18,7 +18,6 @@ public class DdnnfRun {
 		//printCnf("01-01-1800", "01-03-1801", new boolean[] {true, true, true});
 		
 		runBirthDateBeforeDeathDateRule("01-01-1800", "01-03-1880", "after");
-		/*
 		runBirthDateBeforeBaptisedRule("01-01-1800", "06-01-1800", "after");
 		runBaptisedBeforeDeathRule("06-01-1800", "01-03-1880", "after");
 		System.out.println();
@@ -31,7 +30,7 @@ public class DdnnfRun {
 		runBirthDateBeforeDeathDateRule("01-03-1880", "01-01-1800", "before");
 		runBirthDateBeforeBaptisedRule("06-01-1800", "01-01-1800", "before");
 		runBaptisedBeforeDeathRule("01-03-1880", "06-01-1800", "before");
-		*/
+		
 	}
 	
 	// A d-DNNF formula stating the following in NF:
@@ -119,11 +118,11 @@ public class DdnnfRun {
 		System.out.println(cnfFormula1.toValueString());
 		System.out.println(String.valueOf(cnfFormula1.isSatisfied()));
 		System.out.println();
-		
+		/*
 		System.out.println("d-DNNF graph:");
 		System.out.print(totalGraph.printString());
 		totalGraph.printMap();
-		totalGraph.printMapWithValues();
+		totalGraph.printMapWithValues();*/
 
 		System.out.print(cnfFormula1.trueAssignmentsToString());
 		System.out.print(cnfFormula1.falseAssignmentsToString());
@@ -215,10 +214,11 @@ public class DdnnfRun {
 		System.out.println(String.valueOf(cnfFormula1.isSatisfied()));
 		System.out.println();
 		
+		/*
 		System.out.println("d-DNNF graph:");
 		System.out.print(totalGraph.printString());
 		totalGraph.printMap();
-		totalGraph.printMapWithValues();
+		totalGraph.printMapWithValues();*/
 
 		System.out.print(cnfFormula1.trueAssignmentsToString());
 		System.out.print(cnfFormula1.falseAssignmentsToString());
@@ -227,7 +227,7 @@ public class DdnnfRun {
 	// A d-DNNF formula stating the following in NF:
 	// IF( BirthDate(Date(01-01-1800)) )THEN( DeathDate(Date(03-03-1880) )AND( Date(01-01-1800) >= Date(03-03-1880)) )
 	public static void runBaptisedBeforeDeathRule(final String datum1, final String datum2, final String comparison) {
-		
+
 		// Create SimpleDate classes.
 		SimpleDate date1 = new SimpleDate(datum1);
 		SimpleDate date2 = new SimpleDate(datum2);
@@ -309,11 +309,11 @@ public class DdnnfRun {
 		System.out.println(cnfFormula1.toValueString());
 		System.out.println(String.valueOf(cnfFormula1.isSatisfied()));
 		System.out.println();
-		
+		/*
 		System.out.println("d-DNNF graph:");
 		System.out.print(totalGraph.printString());
 		totalGraph.printMap();
-		totalGraph.printMapWithValues();
+		totalGraph.printMapWithValues();*/
 		
 		System.out.print(cnfFormula1.trueAssignmentsToString());
 		System.out.print(cnfFormula1.falseAssignmentsToString());

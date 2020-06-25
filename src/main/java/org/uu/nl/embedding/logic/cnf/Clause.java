@@ -105,9 +105,9 @@ public class Clause implements CnfLogicRule {
 			if(orderedNegated[i]) { addPositiveLiteral(orderedLiterals[i]); }
 			else { addNegativeLiteral(orderedLiterals[i]); }
 		}
-		
+
 		this.cnfName = this.toString();
-		
+		this.name = this.toString();
 		/*
 		if(nfRule == null) { nfRule = generateNf(); }
 		this.inNf = nfRule;
@@ -132,6 +132,7 @@ public class Clause implements CnfLogicRule {
 		else { addNegativeLiteral(literal); }
 
 		this.cnfName = this.toString();
+		this.name = this.toString();
 
 		/*
 		if(nfRule == null) { nfRule = generateNf(); }
@@ -160,6 +161,7 @@ public class Clause implements CnfLogicRule {
 		else { addNegativeLiteral(literal); }
 		
 		this.cnfName = this.toString();
+		this.name = this.toString();
 
 		/*
 		if(nfRule == null) { nfRule = generateNf(); }
@@ -232,6 +234,20 @@ public class Clause implements CnfLogicRule {
 			removed = true;
 		}
 		this.assignment = isSatisfied();
+	}
+	
+	public Set<String> getNameSet() {
+		Set<String> allNames = new TreeSet<String>(getPositiveNameSet());
+		allNames.addAll(getNegativeNameSet());
+		return allNames;
+	}
+	
+	public Set<String> getPositiveNameSet() {
+		return this.positiveNameSet;
+	}
+	
+	public Set<String> getNegativeNameSet() {
+		return this.negativeNameSet;
 	}
 	
 	/**
@@ -454,59 +470,156 @@ public class Clause implements CnfLogicRule {
 		this.assignment = isSatisfied();
     }
     
-    public List<HashMap<LogicLiteral, Boolean>> getTrueAssignments() {
-    	List<HashMap<LogicLiteral, Boolean>> assignMapList = new ArrayList<HashMap<LogicLiteral, Boolean>>();
-    	HashMap<LogicLiteral, Boolean> assignMap;
-    	ArrayList<LogicLiteral> passedLits = new ArrayList<LogicLiteral>();
-    	int firstLit = getLiterals().size();
+    public List<HashMap<String, Boolean>> getTrueAssignments() {
+    	List<HashMap<String, Boolean>> assignMapList = new ArrayList<HashMap<String, Boolean>>();
     	
-    	int counter = 0;
-    	for (LogicLiteral lit : getLiterals()) {
-    		while(firstLit >= 0) {
-        		//Initialize new map.
-        		assignMap = new HashMap<LogicLiteral, Boolean>();
-        		// Decrement first literal to get true value.
-        		firstLit--;
-        		counter = 0;
-        		
-        		for (LogicLiteral lit2 : positiveLiteralSet) {
-        			
-        			if (counter == firstLit) { passedLits.add(lit2); }
-        			
-        			if (passedLits.contains(lit2)) { assignMap.put(lit2, true); }
-        			else { assignMap.put(lit2, false); }
-        			counter++;
-            	}
-        		for (LogicLiteral lit2 : negativeLiteralSet) {
-        			
-        			if (counter == firstLit) { passedLits.add(lit2); }
-        			
-        			if (passedLits.contains(lit2)) { assignMap.put(lit2, false); }
-        			else { assignMap.put(lit2, true); }
-        			counter++;
-            	}
-        		// Add the generated map to list of maps.
-        		assignMapList.add(assignMap);
-        		//System.out.println("assignMap (True) = " + assignMap.toString());
-    		}
+    	int totalNumberLiterals = getLiterals().size();
+    	boolean[] isPosLit = new boolean[totalNumberLiterals];
+    	
+    	ArrayList<String> allLiteralNames = new ArrayList<String>(getNameSet());
+    	
+    	for (int i = 0; i < totalNumberLiterals; i++) {
+    		if (this.positiveNameSet.contains(allLiteralNames.get(i))) { 
+    			isPosLit[i] = true;
+    		} else { isPosLit[i] = false; }
     	}
+    	
+    	assignMapList = assignTrueCombinationUtil(assignMapList, allLiteralNames, isPosLit, 0, totalNumberLiterals);
+    	
     	return assignMapList;
     }
     
-    public List<HashMap<LogicLiteral, Boolean>> getFalseAssignments() {
-    	HashMap<LogicLiteral, Boolean> assignMap = new HashMap<LogicLiteral, Boolean>();
+    public List<HashMap<String, Boolean>> getFalseAssignments() {
+    	HashMap<String, Boolean> assignMap = new HashMap<String, Boolean>();
     	
     	for (LogicLiteral lit : positiveLiteralSet) {
-    		assignMap.put(lit, false);
+    		assignMap.put(lit.toString(), false);
     	}
     	for (LogicLiteral lit : negativeLiteralSet) {
-    		assignMap.put(lit, true);
+    		assignMap.put(lit.toString(), true);
     	}
-    	ArrayList<HashMap<LogicLiteral, Boolean>> assignMapList = new ArrayList<HashMap<LogicLiteral, Boolean>>();
+    	ArrayList<HashMap<String, Boolean>> assignMapList = new ArrayList<HashMap<String, Boolean>>();
     	assignMapList.add(assignMap);
-		//System.out.println("assignMap (False) = " + assignMap.toString());
     	
     	return assignMapList;
+    }
+    
+
+    private List<HashMap<String, Boolean>> assignTrueCombinationUtil(List<HashMap<String, Boolean>> mapList, List<String> allLiterals,
+    																	final boolean[] isPosLit, int curLiteral, final int totalNoLiterals) {
+    	// The resulting list.
+    	List<HashMap<String, Boolean>> newCurMapList = new ArrayList<HashMap<String, Boolean>>();
+    	List<HashMap<String, Boolean>> resultMapList;
+    	// Initialization of iteration map.
+    	HashMap<String, Boolean> thisMap;
+    	
+    	// Edge case 1: first and last literal.
+    	if (curLiteral == 0 && totalNoLiterals == 1) {
+    		// Add both true and false assignment to 
+    		// list of mappings.
+			thisMap = new HashMap<String, Boolean>();
+			
+			if (isPosLit[curLiteral]) { thisMap.put(allLiterals.get(curLiteral), true); }
+			else { thisMap.put(allLiterals.get(curLiteral), false); }
+			
+			newCurMapList.add(thisMap);
+			
+			
+			resultMapList = new ArrayList<HashMap<String, Boolean>>(assignTrueCombinationUtil(newCurMapList, allLiterals, isPosLit, curLiteral+1, totalNoLiterals));
+    		return resultMapList;
+    	}
+    	// Edge case 2: first literal.
+    	else if (curLiteral == 0) {
+
+    		// Add both true and false assignment to 
+    		// list of mappings.
+			thisMap = new HashMap<String, Boolean>();
+			thisMap.put(allLiterals.get(curLiteral), true);
+			newCurMapList.add(thisMap);
+			
+			
+			thisMap = new HashMap<String, Boolean>();
+			thisMap.put(allLiterals.get(curLiteral), false);
+			newCurMapList.add(thisMap);
+
+			
+			resultMapList = new ArrayList<HashMap<String, Boolean>>(assignTrueCombinationUtil(newCurMapList, allLiterals, isPosLit, curLiteral+1, totalNoLiterals));
+    		return resultMapList;
+    	}
+    	//Edge case 3: last literal.
+    	else if (curLiteral == totalNoLiterals-1) {
+    		// Add both true and false assignment to 
+    		// list of mappings.
+    		boolean onlyFalseLits = true;
+			for (HashMap<String, Boolean> map : mapList) {
+				
+				for (Map.Entry<String, Boolean> entry : map.entrySet()) {
+					for (int i = 0; i <= curLiteral; i++) {
+						if( (entry.getKey() == allLiterals.get(curLiteral)) && 
+								entry.getValue() == isPosLit[curLiteral]) {
+							onlyFalseLits = false;
+						}
+					}
+				}
+				
+				if (isPosLit[curLiteral]) {
+
+					thisMap = new HashMap<String, Boolean>(map);
+					thisMap.put(allLiterals.get(curLiteral), true);
+	    			newCurMapList.add(thisMap);
+	    			
+	    			/*
+	    			 * Add to all except to the case where all literals are already false.
+	    			 */
+					if (!onlyFalseLits) {
+						thisMap = new HashMap<String, Boolean>(map);
+						thisMap.put(allLiterals.get(curLiteral), false);
+		    			newCurMapList.add(thisMap);
+					}
+				}
+				else {
+
+					thisMap = new HashMap<String, Boolean>(map);
+					thisMap.put(allLiterals.get(curLiteral), false);
+	    			newCurMapList.add(thisMap);
+	    			
+	    			/*
+	    			 * Add to all except to the case where all literals are already false.
+	    			 */
+					if (!onlyFalseLits) {
+						thisMap = new HashMap<String, Boolean>(map);
+						thisMap.put(allLiterals.get(curLiteral), true);
+		    			newCurMapList.add(thisMap);
+					}
+					
+				}
+			}
+			
+			resultMapList = new ArrayList<HashMap<String, Boolean>>(assignTrueCombinationUtil(newCurMapList, allLiterals, isPosLit, curLiteral+1, totalNoLiterals));
+    		return resultMapList;
+        }
+    	// Edge case 4: passed last literal.
+    	else if (curLiteral >= totalNoLiterals) {
+    		return mapList;
+    		
+    	} else {
+    		// Add both true and false assignment to 
+    		// list of mappings.
+			for (HashMap<String, Boolean> map : mapList) {
+
+				thisMap = new HashMap<String, Boolean>(map);
+				thisMap.put(allLiterals.get(curLiteral), true);
+    			newCurMapList.add(thisMap);
+
+				thisMap = new HashMap<String, Boolean>(map);
+				thisMap.put(allLiterals.get(curLiteral), false);
+    			newCurMapList.add(thisMap);
+				
+			}
+			
+			resultMapList = new ArrayList<HashMap<String, Boolean>>(assignTrueCombinationUtil(newCurMapList, allLiterals, isPosLit, curLiteral+1, totalNoLiterals));
+    		return resultMapList;
+    	}
     }
     
     /**

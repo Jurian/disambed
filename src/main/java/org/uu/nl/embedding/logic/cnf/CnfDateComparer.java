@@ -42,6 +42,7 @@ public class CnfDateComparer extends LogicLiteral {
 	}
 	
 	public void setComparisonBefore() {
+
 		this.assignment = isBefore();
 		
 	}

@@ -28,7 +28,7 @@ public class CnfFormula implements CnfLogicRule {
     private final static Logger logger = Logger.getLogger(CnfFormula.class);
 
 	private boolean assignment;
-	private List<HashMap<LogicLiteral, Boolean>> trueAssignments, falseAssignments;
+	private List<HashMap<String, Boolean>> trueAssignments, falseAssignments;
 	
 	private String name = null;
 	private String cnfName;
@@ -240,14 +240,14 @@ public class CnfFormula implements CnfLogicRule {
     
     public String trueAssignmentsToString() {
     	String result = " - TRUE ASSIGNMENTS - \n";
-    	List<HashMap<LogicLiteral, Boolean>> assignList = (ArrayList) getTrueAssignments();
-    	HashMap<LogicLiteral, Boolean> map;
+    	List<HashMap<String, Boolean>> assignList = (ArrayList) getTrueAssignments();
+    	HashMap<String, Boolean> map;
     	
     	for (int i = 0; i < assignList.size(); i++) {
 
-    		result += "No. of assignment: " + i + "\n";
+    		result += "No.: " + i + " of TRUE assignment\n";
     		map = assignList.get(i);
-    		for (Map.Entry<LogicLiteral, Boolean> entry : map.entrySet()) {
+    		for (Map.Entry<String, Boolean> entry : map.entrySet()) {
     			result += (entry.getKey().toString() + ": " + entry.getValue().toString() + "\n");
     		}
     		result += "\n\n";
@@ -256,14 +256,14 @@ public class CnfFormula implements CnfLogicRule {
     	return result;
     }
     
-    public List<HashMap<LogicLiteral, Boolean>> getTrueAssignments() {
+    public List<HashMap<String, Boolean>> getTrueAssignments() {
     	return this.trueAssignments;
     }
 
-    private List<HashMap<LogicLiteral, Boolean>> fetchTrueAssignments() {
-    	List<HashMap<LogicLiteral, Boolean>> list1, list2;
-    	HashMap<LogicLiteral, Boolean> intersectContra, intersectContraAll;
-    	intersectContraAll = new HashMap<LogicLiteral, Boolean>();
+    private List<HashMap<String, Boolean>> fetchTrueAssignments() {
+    	List<HashMap<String, Boolean>> list1, list2;
+    	HashMap<String, Boolean> intersectContra, intersectContraAll;
+    	intersectContraAll = new HashMap<String, Boolean>();
     	
     	Clause clause1, clause2;
     	
@@ -280,20 +280,19 @@ public class CnfFormula implements CnfLogicRule {
     	    	list2 = clause2.getTrueAssignments();
     	    	
     	    	// Check if there is no intersection of literals between clauses.
-    	    	intersectContra = new HashMap<LogicLiteral, Boolean>(list1.get(0));
+    	    	intersectContra = new HashMap<String, Boolean>(list1.get(0));
     	    	intersectContra.keySet().retainAll(list2.get(0).keySet());
     	    	boolean allContra = true;
     	    	
     			if (intersectContra.size() != 0) {
-    				for (Map.Entry<LogicLiteral, Boolean> entry : intersectContra.entrySet()) {
-
-    					if (clause1.getPositiveLiterals().contains(entry.getKey()) && 
-    							clause2.getNegativeLiterals().contains(entry.getKey())) {
+    				for (Map.Entry<String, Boolean> entry : intersectContra.entrySet()) {
+    					if (clause1.getPositiveNameSet().contains(entry.getKey()) && 
+    							clause2.getNegativeNameSet().contains(entry.getKey())) {
     						intersectContra.put(entry.getKey(), true);
     						intersectContraAll.put(entry.getKey(), true);
     						
-    					} else if (clause1.getNegativeLiterals().contains(entry.getKey()) && 
-    							clause2.getPositiveLiterals().contains(entry.getKey())) {
+    					} else if (clause1.getNegativeNameSet().contains(entry.getKey()) && 
+    							clause2.getPositiveNameSet().contains(entry.getKey())) {
     						intersectContra.put(entry.getKey(), true);
     						intersectContraAll.put(entry.getKey(), true);
     						
@@ -305,7 +304,7 @@ public class CnfFormula implements CnfLogicRule {
 
         			// Check for all contradictions and if sizes are the same as any of the literal sets
         			if (allContra && (intersectContra.size() == list1.get(0).size() || intersectContra.size() == list2.get(0).size())) {
-        				return new ArrayList<HashMap<LogicLiteral, Boolean>>(); 
+        				return new ArrayList<HashMap<String, Boolean>>(); 
         			}
     			}
     		}
@@ -314,37 +313,40 @@ public class CnfFormula implements CnfLogicRule {
     	/*
     	 * Add all literals unless they are an intersecting literal.
     	 */
-    	List<HashMap<LogicLiteral, Boolean>> oldList, newList, curMapList;
-    	oldList = new ArrayList<HashMap<LogicLiteral, Boolean>>(); 
-    	HashMap<LogicLiteral, Boolean> oldLitsMap, newLitsMap, desectMap;
+    	List<HashMap<String, Boolean>> oldList, newList, curMapList;
+    	oldList = new ArrayList<HashMap<String, Boolean>>(); 
+    	HashMap<String, Boolean> oldLitsMap, newLitsMap;
     	for (int i = 0; i < this.clauseList.size(); i++) {
     		
     		clause1 = this.clauseList.get(i);
     		// if it is the first clause, get the assignments and
     		// skip the rest to the next iteration.
     		if (i == 0) {
-    			for (HashMap<LogicLiteral, Boolean> map : clause1.getTrueAssignments()) {
+    			for (HashMap<String, Boolean> map : clause1.getTrueAssignments()) {
 
-    				desectMap = new HashMap<LogicLiteral, Boolean>();
-    				for (Map.Entry<LogicLiteral, Boolean> entry : map.entrySet()) {
+    				newLitsMap = new HashMap<String, Boolean>();
+    				for (Map.Entry<String, Boolean> entry : map.entrySet()) {
+    					
     					if (!intersectContraAll.containsKey(entry.getKey())) {
-    	    				desectMap.put(entry.getKey(), entry.getValue());
-    					} 
+        					newLitsMap.put(entry.getKey(), entry.getValue());
+    					} else {
+    					}
     				}
+    				oldList.add(newLitsMap);
     			}
     			// Skip over rest of loop; go to next iteration.
     			continue;
     		}
     		
 			curMapList = clause1.getTrueAssignments();
-			newList = new ArrayList<HashMap<LogicLiteral, Boolean>>();
+			newList = new ArrayList<HashMap<String, Boolean>>();
     		
     		for (int j = 0; j < oldList.size(); j++) {
-    			oldLitsMap = oldList.get(j);
+    			oldLitsMap = new HashMap<String, Boolean>(oldList.get(i));
     			
     			for (int s = 0; s < curMapList.size(); s++) {
-        			newLitsMap = oldLitsMap;
-        			for (Map.Entry<LogicLiteral, Boolean> entry : curMapList.get(s).entrySet()) {
+        			newLitsMap = new HashMap<String, Boolean>(oldLitsMap);
+        			for (Map.Entry<String, Boolean> entry : curMapList.get(s).entrySet()) {
         				if (!intersectContraAll.containsKey(entry.getKey())) {
             				newLitsMap.put(entry.getKey(), entry.getValue());
         				}
@@ -354,20 +356,20 @@ public class CnfFormula implements CnfLogicRule {
     			// newList has all combinations of oldMaps looped over new maps
     		}
     		// Update the oldList with all expanded maps.
-    		oldList = new ArrayList<HashMap<LogicLiteral, Boolean>>(newList);
+    		oldList = new ArrayList<HashMap<String, Boolean>>(newList);
     	}
 
     	/*
     	 * Add all intersecting literals and possibly their different values.
     	 */
-    	newList = new ArrayList<HashMap<LogicLiteral, Boolean>>();
+    	newList = new ArrayList<HashMap<String, Boolean>>();
     	boolean addSecondMap;
-		for (Map.Entry<LogicLiteral, Boolean> entry : intersectContraAll.entrySet()) {
+		for (Map.Entry<String, Boolean> entry : intersectContraAll.entrySet()) {
 
 	    	addSecondMap = false;
 	    	// Add intersecting literals and their potentially first value
 			for (int i = 0; i < oldList.size(); i++) {
-				newLitsMap = oldList.get(i);
+				newLitsMap = new HashMap<String, Boolean>(oldList.get(i));;
 				
 				if(intersectContraAll.get(entry.getKey())) {
 					newLitsMap.put(entry.getKey(), true);
@@ -376,11 +378,11 @@ public class CnfFormula implements CnfLogicRule {
 				} else { //intersecting literal != contradicting between clauses.
 					for (int j = 0; j < this.clauseList.size(); j++) {
 			    		
-			    		if(this.clauseList.get(j).getPositiveLiterals().contains(entry.getKey())) {
+			    		if(this.clauseList.get(j).getPositiveNameSet().contains(entry.getKey())) {
 			    			newLitsMap.put(entry.getKey(), true);
 			    			break;
 			    			
-			    		} else if(this.clauseList.get(j).getNegativeLiterals().contains(entry.getKey())) {
+			    		} else if(this.clauseList.get(j).getNegativeNameSet().contains(entry.getKey())) {
 			    			newLitsMap.put(entry.getKey(), false);
 			    			break;
 			    		}
@@ -393,7 +395,7 @@ public class CnfFormula implements CnfLogicRule {
 			// Redo this iteration but then for the other value.
 			if(addSecondMap) { 
 				for (int i = 0; i < oldList.size(); i++) {
-					newLitsMap = oldList.get(i);
+					newLitsMap = new HashMap<String, Boolean>(oldList.get(i));
 					
 					if(intersectContraAll.get(entry.getKey())) {
 						newLitsMap.put(entry.getKey(), false);
@@ -401,11 +403,11 @@ public class CnfFormula implements CnfLogicRule {
 					} else { //intersecting literal != contradicting between clauses.
 						for (int j = 0; j < this.clauseList.size(); j++) {
 				    		
-				    		if(this.clauseList.get(j).getPositiveLiterals().contains(entry.getKey())) {
+				    		if(this.clauseList.get(j).getPositiveNameSet().contains(entry.getKey())) {
 				    			newLitsMap.put(entry.getKey(), true);
 				    			break;
 				    			
-				    		} else if(this.clauseList.get(j).getNegativeLiterals().contains(entry.getKey())) {
+				    		} else if(this.clauseList.get(j).getNegativeNameSet().contains(entry.getKey())) {
 				    			newLitsMap.put(entry.getKey(), false);
 				    			break;
 				    		}
@@ -416,7 +418,7 @@ public class CnfFormula implements CnfLogicRule {
 				}
 			}
     		// Update the oldList with all expanded maps.
-    		oldList = new ArrayList<HashMap<LogicLiteral, Boolean>>(newList);
+    		oldList = new ArrayList<HashMap<String, Boolean>>(newList);
 		}
 		// Finally return the generated complete list of maps.
     	return oldList;
@@ -426,14 +428,14 @@ public class CnfFormula implements CnfLogicRule {
     
     public String falseAssignmentsToString() {
     	String result = " - FALSE ASSIGNMENTS - \n";
-    	List<HashMap<LogicLiteral, Boolean>> assignList = (ArrayList) getFalseAssignments();
-    	HashMap<LogicLiteral, Boolean> map;
+    	List<HashMap<String, Boolean>> assignList = (ArrayList) getFalseAssignments();
+    	HashMap<String, Boolean> map;
     	
     	for (int i = 0; i < assignList.size(); i++) {
 
-    		result += "No. of assignment: " + i + "\n";
+    		result += "No.: " + i + " of FALSE assignment\n";
     		map = assignList.get(i);
-    		for (Map.Entry<LogicLiteral, Boolean> entry : map.entrySet()) {
+    		for (Map.Entry<String, Boolean> entry : map.entrySet()) {
     			result += (entry.getKey().toString() + ": " + entry.getValue().toString() + "\n");
     		}
     		result += "\n\n";
@@ -442,128 +444,201 @@ public class CnfFormula implements CnfLogicRule {
     	return result;
     }
     
-    public List<HashMap<LogicLiteral, Boolean>> getFalseAssignments() {
+    public List<HashMap<String, Boolean>> getFalseAssignments() {
     	return this.falseAssignments;
     }
-
-    /**
-     * 
-     * @return
-     */
-    private List<HashMap<LogicLiteral, Boolean>> fetchFalseAssignments() {
-    	// An ArrayList of Lists of Mappings for both passed clauses, as well as,
-    	// clauses currently looping through.
-    	List<List<HashMap<LogicLiteral, Boolean>>> passedClauseAssignmentsLists = 
-    			new ArrayList<List<HashMap<LogicLiteral, Boolean>>>();
-    	List<List<HashMap<LogicLiteral, Boolean>>> iterationClauseAssignmentsLists = 
-    			new ArrayList<List<HashMap<LogicLiteral, Boolean>>>();
-    	// The resulting list with all possible assignments and 
-    	// the current clause's assignment lists, old and new.
-    	List<HashMap<LogicLiteral, Boolean>> resultList = 
-    			new ArrayList<HashMap<LogicLiteral, Boolean>>();
-    	List<HashMap<LogicLiteral, Boolean>> clauseAssignMapsListOld = 
-    			new ArrayList<HashMap<LogicLiteral, Boolean>>();
-    	List<HashMap<LogicLiteral, Boolean>> clauseAssignMapsListNew = 
-    			new ArrayList<HashMap<LogicLiteral, Boolean>>();
-    	// Lists for the current two clauses.
-		List<HashMap<LogicLiteral, Boolean>> clause1MapList, clause2MapList;
-    	// The currently constructed assignment mapping.
-    	HashMap<LogicLiteral, Boolean> clause1Map, clause2Map, subResultMap;
-    	// Counter for the first true clause in current iteration and
-    	// a variable to hold the listSize.
-    	int firstTrueClause, listSize;
+    
+    private List<HashMap<String, Boolean>> mergeMaps(HashMap<String, Boolean> firstMap, HashMap<String, Boolean> secondMap) {
     	
-    	for (int i = 0; i < this.clauseList.size(); i++) {
-    		
-    		passedClauseAssignmentsLists.add(this.clauseList.get(i).getFalseAssignments());
-    		firstTrueClause = getLiterals().size();
-    		
-			while (firstTrueClause > i) {
-				// Firstly, get the lists of assignments for current iteration.
-				for (int j = i+1; j < this.clauseList.size(); j++) {
-    				
-    				if (j >= firstTrueClause) {
-    					iterationClauseAssignmentsLists.set(j-1, this.clauseList.get(j).getTrueAssignments());
-        				
-        			} else {
-        				if (iterationClauseAssignmentsLists.size() >= j) {
-        					iterationClauseAssignmentsLists.set(j-1, this.clauseList.get(j).getFalseAssignments());
-        				} else {
-        					iterationClauseAssignmentsLists.add(this.clauseList.get(j).getFalseAssignments()); }
+    	List<HashMap<String, Boolean>> resultMapList = new ArrayList<HashMap<String, Boolean>>();
+    	boolean differentKeyVals = false;
+    	HashMap<String, Boolean> resultMap1 = new HashMap<String, Boolean>();
+    	HashMap<String, Boolean> resultMap2 = new HashMap<String, Boolean>();
+    	
+    	// Get all entries and put them in both result maps, whilst
+    	// keeping track if there are duplicate keys with different vals.
+    	for (Map.Entry<String, Boolean> entry : firstMap.entrySet()) {
 
-        			}
-    			}
-				
-				// Secondly, iterate through the different assignments.
-				for (int j = 0; j < this.clauseList.size(); j++) {
-					
-					// Get appropriate mappings list.
-					if (j <= i) {
-						clause1MapList = passedClauseAssignmentsLists.get(j);
-					} else {
-						clause1MapList = iterationClauseAssignmentsLists.get(j-1); }
-					
-					// Reset the previous new list to fill it with new values.
-					clauseAssignMapsListNew.clear();
-					listSize = clause1MapList.size();
-					// Loop through old mappings list if not empty and
-					// add all mappings of the current clause to the list.
-					for (int jc = 0; jc < listSize; jc++) {
-						clause1Map = clause1MapList.get(jc);
-						if (clauseAssignMapsListOld.size() == 0) {
-							clauseAssignMapsListNew.add(clause1Map);
-							
-						} else {
-							for (int floeps = 0; floeps < clauseAssignMapsListOld.size(); floeps++) {
-								subResultMap = clauseAssignMapsListOld.get(floeps);
-								subResultMap.putAll(clause1Map);
-								clauseAssignMapsListNew.add(subResultMap);
-								
-							}
-						}
-					}
-					// Save the new list in the old one.
-					clauseAssignMapsListOld = new ArrayList<HashMap<LogicLiteral, Boolean>>(clauseAssignMapsListNew);
-
-					for (int k = j+1; k < this.clauseList.size(); k++) {
-
-						// Get appropriate mappings list.
-						if (k <= i) {
-							clause2MapList = passedClauseAssignmentsLists.get(j);
-						} else {
-							clause2MapList = iterationClauseAssignmentsLists.get(j); }
-						
-						clauseAssignMapsListNew.clear();
-						listSize = clause2MapList.size();
-						for (int kc = 0; kc < listSize; kc++) {
-							clause2Map = clause2MapList.get(kc);
-							for (int jc = 0; jc < clauseAssignMapsListOld.size(); jc++) {
-
-								subResultMap = clauseAssignMapsListOld.get(jc);
-								subResultMap.putAll(clause2Map);
-								clauseAssignMapsListNew.add(subResultMap);
-								
-							}
-						}
-						// Save the new list in the old one.
-						clauseAssignMapsListOld = new ArrayList<HashMap<LogicLiteral, Boolean>>(clauseAssignMapsListNew);
-					}
-				}
-				// Decrement the first true clause and go to next iteration if
-				// firstTrueClause > i.
-				firstTrueClause--;
-    			
+    		if ( (secondMap.containsKey(entry.getKey()) ) && (!entry.getValue() == secondMap.get(entry.getKey())) ) {
+    				differentKeyVals = true;
+    	    		resultMap1.put(entry.getKey(), entry.getValue());
+    	    		resultMap2.put(entry.getKey(), secondMap.get(entry.getKey()));
     		}
-    		
-    		// Remove the false assignments and add true assignments.
-    		passedClauseAssignmentsLists.set(i, this.clauseList.get(i).getTrueAssignments());
-    		
+    		else {
+        		resultMap1.put(entry.getKey(), entry.getValue());
+        		resultMap2.put(entry.getKey(), entry.getValue());
+    		}
     	}
+    	// Get all entries and put them in both result maps if
+    	// the entry is not already in the maps.
+    	for (Map.Entry<String, Boolean> entry : secondMap.entrySet()) {
+    		if (!firstMap.containsKey(entry.getKey())) {
+        		resultMap1.put(entry.getKey(), entry.getValue());
+        		resultMap2.put(entry.getKey(), entry.getValue());
+    		}
+    	}
+    	// Add duplicate, contradicting keys.
+    	if (differentKeyVals) {
+    		resultMapList.add(resultMap1);
+    		resultMapList.add(resultMap2);
+    	}
+    	else {
+    		resultMapList.add(resultMap1); }
     	
-    	resultList = new ArrayList<HashMap<LogicLiteral, Boolean>>(clauseAssignMapsListOld);
-    	return resultList;
+    	return resultMapList;
     }
 
+    private List<HashMap<String, Boolean>> fetchFalseAssignments() {
+
+    	ArrayList<HashMap<String, Boolean>> subResultAssignmentsList = new ArrayList<HashMap<String, Boolean>>();
+    	ArrayList<HashMap<String, Boolean>> resultAssignmentsList = new ArrayList<HashMap<String, Boolean>>();
+    	ArrayList<HashMap<String, Boolean>> emptyInputMap = new ArrayList<HashMap<String, Boolean>>();
+    	
+    	List<ArrayList<HashMap<String, Boolean>>> allFalseAssignmentLists, allTrueAssignmentLists;
+    	allFalseAssignmentLists = new ArrayList<ArrayList<HashMap<String, Boolean>>>();
+    	allTrueAssignmentLists = new ArrayList<ArrayList<HashMap<String, Boolean>>>();
+    	
+    	ArrayList<Integer> falseClauses, trueClauses;
+    	falseClauses = new ArrayList<Integer>();
+    	trueClauses = new ArrayList<Integer>();
+    	int numClauses = this.clauseList.size();
+    	int firstTrueClause = numClauses;
+    	
+    	
+    	/*
+    	 * Start of looping through the clauses.
+    	 */
+    	for (int i = 0; i < numClauses; i++) {
+    		
+    		falseClauses.add(i);
+    		
+    		while (firstTrueClause > i) {
+        		for (int j = i+1; j < numClauses; j++) {
+        			
+        			if (j < firstTrueClause) {
+        				if (trueClauses.contains(j)) { trueClauses.remove(j); }
+        				
+        				falseClauses.add(j);
+        			} else {
+        				if (falseClauses.contains(j)) { falseClauses.remove(j); }
+        				trueClauses.add(j);
+        			}
+        		}
+        		
+        		// Add all the mappings lists to correct list of lists.
+        		allFalseAssignmentLists.clear();
+        		for (int iFalse = 0; iFalse < falseClauses.size(); iFalse++) {
+        			allFalseAssignmentLists.add((ArrayList) this.clauseList.get(iFalse).getFalseAssignments());
+        		}
+        		allTrueAssignmentLists.clear();
+        		for (int iTrue = 0; iTrue < trueClauses.size(); iTrue++) {
+        			allTrueAssignmentLists.add((ArrayList) this.clauseList.get(iTrue).getTrueAssignments());
+        		}
+        		
+        		subResultAssignmentsList = (ArrayList<HashMap<String, Boolean>>) assignmentCombinationUtil(allFalseAssignmentLists, allTrueAssignmentLists,
+        											emptyInputMap, 0, numClauses);
+        		resultAssignmentsList.addAll(subResultAssignmentsList);
+        		
+        		// Decrement first true clause.
+        		firstTrueClause--;
+    		}
+
+    		if (i < numClauses-1) { 
+        		falseClauses.remove(i);
+        		trueClauses.add(i);
+        	}
+    	}
+    	return resultAssignmentsList;
+    	
+    }
+    
+    private List<HashMap<String, Boolean>> assignmentCombinationUtil(List<ArrayList<HashMap<String, Boolean>>> allFalseAssignmentLists,
+    										List<ArrayList<HashMap<String, Boolean>>> allTrueAssignmentLists,
+    										List<HashMap<String, Boolean>> curMapList, int curClause, final int totalNoClauses) {
+    	// The resulting list.
+    	List<HashMap<String, Boolean>> newCurMapList = new ArrayList<HashMap<String, Boolean>>();
+    	List<HashMap<String, Boolean>> mergedMapsList = new ArrayList<HashMap<String, Boolean>>();
+    	
+    	// The false assignment variables
+    	final int falseSize, trueSize;
+    	List<HashMap<String, Boolean>> falseMapList, trueMapList;
+    	
+    	if(allFalseAssignmentLists.size() > curClause) {
+    		falseMapList = allFalseAssignmentLists.get(curClause);
+        	falseSize = falseMapList.size();
+    	} else { 
+    		falseMapList = new ArrayList<HashMap<String, Boolean>>(); 
+        	falseSize = 0; 
+        }
+    	HashMap<String, Boolean> falseMap = new HashMap<String, Boolean>();
+    	// The true assignment variables
+    	if (allTrueAssignmentLists.size() > curClause) {
+        	trueMapList = allTrueAssignmentLists.get(curClause);
+        	trueSize = trueMapList.size();
+    	} else {
+        	trueMapList = new ArrayList<HashMap<String, Boolean>>();
+        	trueSize = 0;
+    	}
+    	HashMap<String, Boolean> trueMap = new HashMap<String, Boolean>();
+    	
+    	// Edge case 1.
+    	if (curClause == 0) {
+    		// for each false assignment in clause, add
+    		// that assignment to newCurMapList.
+    		for (int i = 0; i < falseSize; i ++) {
+        		falseMap = new HashMap<String, Boolean>(falseMapList.get(i));
+    			newCurMapList.add(falseMap);
+    		}
+    		// for each true assignment in clause, add
+    		// that assignment also to newCurMapList.
+    		for (int i = 0; i < trueSize; i ++) {
+        		trueMap = new HashMap<String, Boolean>(trueMapList.get(i));
+    			newCurMapList.add(trueMap);
+    		}
+    		
+    		return assignmentCombinationUtil(allFalseAssignmentLists, allTrueAssignmentLists, 
+    												newCurMapList, curClause+1, totalNoClauses);
+    	}
+    	// Edge case 2
+    	else if (curClause >= totalNoClauses) {
+    		return curMapList;
+    		
+    	} else {
+    		// for each false assignment in clause, add
+    		// that assignment to all maps in curMapList.
+    		for (int i = 0; i < falseSize; i ++) {
+        		falseMap = new HashMap<String, Boolean>(falseMapList.get(i));
+        		
+        		// for each map in curMapList, add map from
+        		// false mapping of current clause with index i.
+    			for (HashMap<String, Boolean> map : curMapList) {
+    				mergedMapsList = mergeMaps(map, falseMap);
+    				for (HashMap<String, Boolean> mergedMap : mergedMapsList) {
+            			newCurMapList.add(mergedMap);
+    				}
+    			}
+    		}
+
+    		// for each false assignment in clause, add
+    		// that assignment to all maps in curMapList.
+    		for (int i = 0; i < trueSize; i ++) {
+        		trueMap = new HashMap<String, Boolean>(trueMapList.get(i));
+        		
+        		// for each map in curMapList, add map from
+        		// false mapping of current clause with index i.
+    			for (HashMap<String, Boolean> map : curMapList) {
+    				mergedMapsList = mergeMaps(map, trueMap);
+    				for (HashMap<String, Boolean> mergedMap : mergedMapsList) {
+            			newCurMapList.add(mergedMap);
+    				}
+    			}
+    		}
+    		
+    		return assignmentCombinationUtil(allFalseAssignmentLists, allTrueAssignmentLists, 
+    												newCurMapList, curClause+1, totalNoClauses);
+    	}
+    }
+    
     /**
      * Method for satisfying this clause.
      */
