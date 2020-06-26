@@ -11,6 +11,8 @@ import org.apache.log4j.Logger;
 import org.uu.nl.embedding.lensr.DdnnfGraph;
 import org.uu.nl.embedding.logic.LogicRule;
 import org.uu.nl.embedding.logic.ddnnf.DdnnfLogicRule;
+import org.uu.nl.embedding.logic.util.SimpleDate;
+import org.uu.nl.embedding.util.ArrayUtils;
 
 /**
  * Interface class for logic CNF formulae 
@@ -27,7 +29,9 @@ public class CnfFormula implements CnfLogicRule {
 
     private final static Logger logger = Logger.getLogger(CnfFormula.class);
 
-	private boolean assignment;
+	private boolean assignment, hasCheckedSecondDate = false;
+	private SimpleDate firstDate = null;
+	private SimpleDate secondDate = null;
 	private List<HashMap<String, Boolean>> trueAssignments, falseAssignments;
 	
 	private String name = null;
@@ -106,6 +110,64 @@ public class CnfFormula implements CnfLogicRule {
 		this.trueAssignments = fetchTrueAssignments();
 		this.falseAssignments = fetchFalseAssignments();
 	}
+    
+    public CnfFormula(CnfFormula formula) {
+    	super();
+    	for(Clause clause : formula.getClauses()) { addClause(clause); }
+    	
+		this.name = this.toString();
+		this.cnfName = this.name;
+
+		this.assignment = isSatisfied();
+		this.trueAssignments = fetchTrueAssignments();
+		this.falseAssignments = fetchFalseAssignments();
+    }
+    
+    public CnfFormula(CnfFormula formula, final String secondDate) {
+    	super();
+    	int counter;
+    	Clause newClause;
+    	LogicLiteral newLiteral;
+    	ArrayList<Boolean> orderedNegated = new ArrayList<Boolean>();
+    	ArrayList<LogicLiteral> literals = new ArrayList<LogicLiteral>();
+    	
+    	for(Clause clause : formula.getClauses()) {
+        	counter = 0;
+    		for (LogicLiteral literal : clause.getPositiveLiterals()) {
+    			
+				if (clause.getPositiveLiterals().contains(literal)) { orderedNegated.add(true); }
+				else { orderedNegated.add(false); }
+				
+    			if (literal instanceof CnfDateLogic && counter < 1) {
+    				if (counter == 1) { 
+    					newLiteral = new CnfDateLogic(secondDate, literal.getName(), literal.getAssignment(), literal.isNegated());
+    					literals.add(newLiteral);
+    				}
+    				else { ; }
+    			}
+    			else if (literal instanceof CnfDateComparer) {
+    				CnfDateComparer newComparer = (CnfDateComparer) literal;
+					newLiteral = new CnfDateComparer(newComparer.getDates()[0], 
+												newComparer.getDates()[0], newComparer.getName(), 
+												newComparer.getAssignment(), newComparer.isNegated());
+					literals.add(newLiteral);
+    			} else {
+    				newLiteral = new LogicLiteral(literal.getName(), literal.getAssignment(), orderedNegated.get(counter));
+    				literals.add(newLiteral);
+    			}
+    			counter++; 
+    		}
+    		newClause = new Clause(literals.toArray(new LogicLiteral[0]), ArrayUtils.toArray(orderedNegated));
+    		addClause(newClause); 
+    	}
+    	
+		this.name = this.toString();
+		this.cnfName = this.name;
+
+		this.assignment = isSatisfied();
+		this.trueAssignments = fetchTrueAssignments();
+		this.falseAssignments = fetchFalseAssignments();
+    }
 
     /**
      * Constructor method for this class.
@@ -236,6 +298,54 @@ public class CnfFormula implements CnfLogicRule {
     	//resForm.cleanClauses();
     	
     	return resForm;
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    public boolean hasDateComparer() {
+    	if (this.hasCheckedSecondDate && this.secondDate != null) { return true; }
+    	else if (this.hasCheckedSecondDate && this.secondDate == null) { return false; }
+    	else {
+
+	    	this.hasCheckedSecondDate = true;
+	    	for (Clause clause : this.clauseList) {
+	    		for (LogicLiteral literal : clause.getLiterals()) {
+	        		if (literal instanceof CnfDateComparer) {
+	        			CnfDateComparer comparer = (CnfDateComparer) literal;
+	        			this.firstDate = comparer.getDates()[0];
+	        			this.secondDate = comparer.getDates()[1];
+	        			return true;
+	        		}
+	    	}}
+	    	return false;
+    	}
+    }
+    
+    /**
+     * 
+     * @param pattern
+     */
+    public void changeSecondDate(String pattern) {
+    	SimpleDate newDate = new SimpleDate(pattern);
+    	CnfDateComparer newComparer, comparer;
+    	
+    	for (Clause clause : this.clauseList) {
+    		for (LogicLiteral literal : clause.getLiterals()) {
+        		if (literal instanceof CnfDateComparer) {
+        			
+        			comparer = (CnfDateComparer) literal;
+        			newComparer = new CnfDateComparer(comparer.getDates()[0], newDate, comparer.getName(), comparer.getAssignment(), comparer.isNegated());
+        			
+        			if (clause.getPositiveLiterals().contains(literal)) {
+            			clause.removeLiteral(literal);
+            			clause.addPositiveLiteral(newComparer); } 
+        			else { 
+            			clause.removeLiteral(literal);
+            			clause.addNegativeLiteral(newComparer); }
+        		}
+    	}}
     }
     
     public String trueAssignmentsToString() {
