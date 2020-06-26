@@ -154,7 +154,7 @@ public class SimpleDate {
 			if (mon1 == 13) { mon1 = 1; year1++; }
 		}
 		// years
-		while (year1 != year2) {
+		while (year1 < year2) {
 			res += daysInYear(year1);
 			year1++;
 		}
