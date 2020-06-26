@@ -10,8 +10,14 @@ import java.util.TreeSet;
 
 import org.apache.jena.graph.Graph;
 import org.uu.nl.embedding.logic.LogicRule;
+import org.uu.nl.embedding.logic.cnf.Clause;
+import org.uu.nl.embedding.logic.cnf.CnfDateComparer;
+import org.uu.nl.embedding.logic.cnf.CnfFormula;
 import org.uu.nl.embedding.logic.cnf.CnfLogicRule;
+import org.uu.nl.embedding.logic.cnf.LogicLiteral;
 import org.uu.nl.embedding.logic.ddnnf.DdnnfLogicRule;
+import org.uu.nl.embedding.logic.util.LogicRuleSet;
+import org.uu.nl.embedding.logic.util.SimpleDate;
 import org.uu.nl.embedding.util.OpsMatrix;
 
 import Jama.Matrix;
@@ -106,14 +112,14 @@ public class LENSRModel {
 	ArrayList<Integer> orNodes;
 	ArrayList<Integer> andNodes;
 	DdnnfGraph logicGraph;
-	/*
+	
 	private void semanticRegularization(CnfLogicRule F) {
 		
 		Matrix resLoss = new Matrix(Z[Z.length-1].getRowDimension(), 1);
 		Matrix subSum  = new Matrix(Z[Z.length-1].getRowDimension(), 1);
 		Matrix subResult = new Matrix(Z[Z.length-1].getRowDimension(), 1);
 		Matrix matMultip;
-		LogicRule[] allTerms;
+		ArrayList<DdnnfLogicRule> childNodes;
 		
 		orNodes = getOrNodes(F);
 		andNodes = getAndNodes(F);
@@ -125,9 +131,9 @@ public class LENSRModel {
 		for(int v : orNodes) {
 			subSum  = new Matrix(Z[Z.length-1].getRowDimension(), 1);
 			rule = logicGraph.getIntLogicMap().get(v);
-			allTerms = new DdnnfLogicRule[] {rule.getLeftChild, rule.getRightChild};
-			for(LogicRule vj : allTerms) {
-				subSum = subSum.plus(embedLogic(vj) - 1);
+			childNodes = new ArrayList<DdnnfLogicRule>(rule.getRules());
+			for(LogicRule vj : childNodes) {
+				subSum = subSum.plus(embedLogic(vj) - 1);//1 is een vector
 			}
 			// Get squared Euclidean distance
 			subResult = subResult.plus(OpsMatrix.power(subSum, 2));   
@@ -139,9 +145,9 @@ public class LENSRModel {
 		for(int v : orNodes) {
 			subSum = new Matrix(Z[Z.length-1].getRowDimension(), 1);
 			rule = logicGraph.getIntLogicMap().get(v);
-			
-			allTerms = rule.getAllTerms();
-			matMultip = VertexMatrixK(allTerms).transpose().times(VertexMatrixK(allTerms));
+
+			childNodes = new ArrayList<DdnnfLogicRule>(rule.getRules());
+			matMultip = VertexMatrixK(childNodes).transpose().times(VertexMatrixK(childNodes));
 			subSum = matMultip.minus(matMultip.arrayTimes(OpsMatrix.antiIdentity(matMultip)));
 			
 			// Get squared Euclidean distance
@@ -154,16 +160,20 @@ public class LENSRModel {
 	
 	private Matrix embedLogic(LogicRule rule) {
 		Matrix placeHolder = new Matrix(Z[Z.length].getRowDimension(), 1);
+		int layer = 0;
+		
+		
+		
 		return placeHolder;
 	}
 	
-	private Matrix VertexMatrixK(LogicRule[] rules) { // Gaat dit helemaal goed?
-		Matrix Vk = new Matrix(Z[Z.length].getRowDimension(), rules.length);
+	private Matrix VertexMatrixK(ArrayList<DdnnfLogicRule> allTerms) { // Gaat dit helemaal goed?
+		Matrix Vk = new Matrix(Z[Z.length].getRowDimension(), allTerms.size());
 		
-		for(int i = 0; i < rules.length; i++) {
+		for(int i = 0; i < allTerms.size(); i++) {
 			Vk.setMatrix(0, Z[Z.length].getRowDimension(), 
 						i, i, 
-						embedLogic(rules[i]));
+						embedLogic(allTerms.get(i)));
 		}
 		return Vk;
 	}
@@ -179,8 +189,86 @@ public class LENSRModel {
 		
 		return Math.max(res, 0);
 	}
+
+	private void embeddingTrainer() { // = L_emb
+		
+	}
 	
-	private void embeddingTrainer(LogicRule[] allRules) {
+	private Matrix embedderTraining(final LogicRuleSet ruleSet) {
+		
+		String comparison = ruleSet.getComparison();
+		CnfFormula cnfFormula = ruleSet.getCnfFormula();
+		List<HashMap<String, Boolean>> allTrueAssignments = new ArrayList<HashMap<String, Boolean>>();
+		List<HashMap<String, Boolean>> allFalseAssignments = new ArrayList<HashMap<String, Boolean>>();
+		
+		SimpleDate firstDate;
+		firstDate = new SimpleDate("01-01-2000");
+		for (LogicLiteral literal : cnfFormula.getLiterals()) {
+			if (literal instanceof CnfDateComparer) {
+				firstDate = new SimpleDate(((CnfDateComparer) literal).getDates()[0].toString());
+			}
+		}
+		
+		LogicRuleSet curRuleSet;
+		CnfFormula curCnfFormula;
+		ArrayList<DdnnfLogicRule> curDdnnfRules;
+		ArrayList<DdnnfLogicRule> foundDdnnfRules;
+		ArrayList<LogicRuleSet> allRuleSets = new ArrayList<LogicRuleSet>();
+		allRuleSets.add(ruleSet);
+		
+		boolean notConverged = true;
+		double lossDifference = 0; // To check for convergence.
+		LogicRule[] fi; // intermediate formula.
+		int[] nodes;
+		
+		String[] literalVals = new String[10]; // TEMP
+		int[][] images = new int[10][]; // TEMP variable for 'training images'.
+		// wrs een holder voor de huidige rdf.
+		
+		qEmbedder = qInit();
+		// q(h(x)) = relation prediction van GloVe if(personX == personY).
+		// q(G) = prediction obv d-DNNF graph if(personX == personY).
+		
+		while(notConverged) {
+			for (int i = 0; i < images.length; i++) {
+				// Create intermediate formula
+				foundDdnnfRules = new ArrayList<DdnnfLogicRule>(); // = fi in algo paper
+				nodes = images[i];
+				for (int j = 0; j < nodes.length; j++) { // for all ci in f do
+					if (SimpleDate.isDateFormat(literalVals[j])) {
+						
+						allRuleSets = new ArrayList<LogicRuleSet>(allRuleSets);
+						curRuleSet = new LogicRuleSet(ruleSet.getRuleType(), firstDate.toString(), 
+																		literalVals[j], comparison);
+						allRuleSets.add(curRuleSet); // fi = fi U ci.
+						curCnfFormula = curRuleSet.getCnfFormula();
+						
+						/* OLD
+						curDdnnfRules = curRuleSet.splitDdnnfRules();
+						for (DdnnfLogicRule childRule : curDdnnfRules) { // for all ci in f do
+							if (childRule.getAssignment()) {
+								foundDdnnfRules.add(childRule); // fi = fi U ci.
+						}}*/
+						
+						/* Append constraints? --> constraint zitten al in logic rules.
+						 * fi = append_constraints(fi).
+						 */
+						
+						allTrueAssignments.addAll(curCnfFormula.getTrueAssignments());
+						allFalseAssignments.addAll(curCnfFormula.getFalseAssignments());
+						// Theta_q = argmin(Theta_q, L_emb)
+						qEmbedder = updateEmbedder(qEmbedder, Theta_q);
+				}}
+				
+			}
+			if (lossDifference < 0.01) { notConverged = false; } // So there was convergence.
+		}
+		
+		// Return the resulting embedder.
+		return qEmbedder;
+	}
+	
+	private Matrix updateEmbedder(Matrix curEmbedder, Object Theta_q) {
 		
 	}
 	
@@ -203,16 +291,12 @@ public class LENSRModel {
 		return res;
 	}
 	
-	private ArrayList<LogicRule> getTruthAssignments(LogicRule rule) {
-		List<LogicRule> resList = new ArrayList<LogicRule>();
-		return resList;
-	}
-	
-	private ArrayList<LogicRule> getFalseAssignments(LogicRule rule) {
-		List<LogicRule> resList = new ArrayList<LogicRule>();
-		return resList;
-	}
-	
+	/**
+	 * 
+	 * @param F
+	 * @param node
+	 * @return
+	 */
 	private ArrayList<Integer> getChildNodes(final CnfLogicRule F, final int node) {
 		List<Integer> childNodes = new ArrayList<Integer>();
 		TreeSet<Integer> otherNodes = new TreeSet<Integer>();
@@ -243,6 +327,11 @@ public class LENSRModel {
 		return (ArrayList<Integer>) childNodes;// Gaat dit goed?
 	}
 	
+	/**
+	 * 
+	 * @param F
+	 * @return
+	 */
 	private ArrayList<Integer> getAndNodes(CnfLogicRule F) {
 		List<Integer> andNodes = new ArrayList<Integer>();
 		DdnnfGraph logicGraph = F.getDdnnfGraph();
@@ -257,6 +346,11 @@ public class LENSRModel {
 		return (ArrayList<Integer>) andNodes;// Gaat dit goed?
 	}
 
+	/**
+	 * 
+	 * @param F
+	 * @return
+	 */
 	private ArrayList<Integer> getOrNodes(CnfLogicRule F) {
 		List<Integer> orNodes = new ArrayList<Integer>();
 		DdnnfGraph logicGraph = F.getDdnnfGraph();
@@ -270,6 +364,6 @@ public class LENSRModel {
 		Collections.sort(orNodes);
 		return (ArrayList<Integer>) orNodes;// Gaat dit goed?
 	}
-	*/
+	
 
 }
