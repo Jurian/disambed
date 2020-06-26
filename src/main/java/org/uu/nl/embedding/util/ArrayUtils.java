@@ -1,6 +1,7 @@
 	package org.uu.nl.embedding.util;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 
 public class ArrayUtils {
 	
@@ -32,6 +33,18 @@ public class ArrayUtils {
 	    boolean[] resArray = (boolean[]) Array.newInstance(array1.getClass().getComponentType(), aLen + bLen);
 	    System.arraycopy(array1, 0, resArray, 0, aLen);
 	    System.arraycopy(array2, 0, resArray, aLen, bLen);
+
+	    return resArray;
+	}
+	
+
+	
+	static public boolean[] toArray(final ArrayList<Boolean> array) {
+	    int len = array.size();
+
+	    @SuppressWarnings("unchecked")
+	    boolean[] resArray = (boolean[]) Array.newInstance(array.getClass().getComponentType(), len);
+	    System.arraycopy(array, 0, resArray, 0, len);
 
 	    return resArray;
 	}
