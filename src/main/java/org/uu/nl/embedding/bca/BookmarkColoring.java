@@ -58,19 +58,19 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 
 			switch (nodeInfo) {
 				case URI:
-					if(output.outputUriNodes() && !output.getUri().isEmpty() && output.getUri().stream().anyMatch(key::startsWith)) {
+					if(output.outputUriNodes() && (output.getUri().isEmpty() || output.getUri().stream().anyMatch(key::startsWith))) {
 						performBCA[i] = true;
 						notSkipped++;
 					}
 					break;
 				case BLANK:
-					if(output.outputBlankNodes() && !output.getBlank().isEmpty() && output.getBlank().stream().anyMatch(key::startsWith)) {
+					if(output.outputBlankNodes()) {
 						performBCA[i] = true;
 						notSkipped++;
 					}
 					break;
 				case LITERAL:
-					if(output.outputLiteralNodes() && !output.getLiteral().isEmpty() && output.getLiteral().stream().anyMatch(key::startsWith)) {
+					if(output.outputLiteralNodes() && (output.getLiteral().isEmpty() || output.getLiteral().stream().anyMatch(key::startsWith))) {
 						performBCA[i] = true;
 						notSkipped++;
 					}
@@ -204,6 +204,11 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		return this.coOccurrenceCount;
 	}
 
+
+	@Override
+	public InMemoryRdfGraph getGraph() {
+		return graph;
+	}
 
 	@Override
 	public int contextIndex2Focus(int i) {
