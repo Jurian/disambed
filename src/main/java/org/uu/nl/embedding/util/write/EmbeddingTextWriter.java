@@ -91,7 +91,7 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 			writeConfig(dict);
 			writeConfig(vect);
 
-			dict.write("key" + delimiter + "type" + newLine);
+			dict.write("key" + delimiter + "type" + delimiter + "predicate" + newLine);
 
 			Configuration.Output output = config.getOutput();
 
@@ -113,6 +113,8 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 						.replace(delimiter, "")
 						+ delimiter
 						+ nodeInfo.name()
+						+ delimiter
+						+ (nodeInfo == NodeInfo.LITERAL ? coMatrix.getGraph().getLiteralPredicateProperty().getValueAsString(coMatrix.focusIndex2Context(i)) : "")
 						+ newLine
 				);
 				pb.step();

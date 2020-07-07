@@ -5,6 +5,7 @@ package org.uu.nl.embedding.util;
  */
 public interface CoOccurrenceMatrix {
 
+	InMemoryRdfGraph getGraph();
 	int contextIndex2Focus(int i);
 	int focusIndex2Context(int i);
 	int nrOfContextVectors();

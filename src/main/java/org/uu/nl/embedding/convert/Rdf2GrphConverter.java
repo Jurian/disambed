@@ -216,6 +216,7 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 			} else {
 				// First time we see this predicate-literal pair
 				nodes.put(n, i);
+				g.getLiteralPredicateProperty().setValue(i, p.toString(false));
 			}
 		} else {
 			// First time we see this non-literal node
