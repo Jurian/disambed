@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.uu.nl</groupId>
 	<artifactId>graph-embeddings</artifactId>
-	<version>0.1.0</version>
+	<version>1.0</version>
 	<name>Creating embeddings from RDF graphs</name>
 	<packaging>jar</packaging>
 
@@ -48,7 +48,7 @@
 		<dependency>
 			<groupId>info.debatty</groupId>
 			<artifactId>java-string-similarity</artifactId>
-			<version>RELEASE</version>
+			<version>2.0.0</version>
 		</dependency>
 		<!-- For very large arrays
 		<dependency>
@@ -113,41 +113,7 @@
 
 		<sourceDirectory>src/main/java</sourceDirectory>
 
-		<plugins>
 
-			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<configuration>
-					<archive>
-						<manifest>
-							<mainClass>org.uu.nl.embedding.Main</mainClass>
-						</manifest>
-					</archive>
-					<finalName>graph-embeddings</finalName>
-					<appendAssemblyId>false</appendAssemblyId>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
-				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-
-				<configuration>
-
-					<archive>
-						<manifest>
-							<addClasspath>true</addClasspath>
-							<mainClass>org.uu.nl.embedding.Main</mainClass>
-						</manifest>
-					</archive>
-				</configuration>
-
-			</plugin>
-
-		</plugins>
 	</build>
 
 
