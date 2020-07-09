@@ -1,13 +1,16 @@
 package org.uu.nl.embedding.lensr;
 
 import java.util.Map;
+import java.util.TreeSet;
 
 import org.uu.nl.embedding.logic.ddnnf.DdnnfClause;
 import org.uu.nl.embedding.logic.ddnnf.DdnnfFormula;
 import org.uu.nl.embedding.logic.ddnnf.DdnnfLiteral;
 import org.uu.nl.embedding.logic.ddnnf.DdnnfLogicRule;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 /**
  * 
@@ -76,7 +79,7 @@ public class DdnnfGraph {
 		this.parent = parentNumber;
 	}
 	
-	public HashMap<Integer,String> getGraph() {
+	public HashMap<Integer, String> getOperatorMap() {
 		return this.operatorMap;
 	}
 	
@@ -132,7 +135,7 @@ public class DdnnfGraph {
 	}
 	
 	private void setChildGraph(DdnnfGraph graph) {
-		for(Map.Entry<Integer,String> entry : graph.getGraph().entrySet()) {
+		for(Map.Entry<Integer,String> entry : graph.getOperatorMap().entrySet()) {
 			this.operatorMap.put(entry.getKey(), entry.getValue());
 			if(maxVertInt < entry.getKey()) { maxVertInt = entry.getKey(); }
 		}
@@ -186,6 +189,29 @@ public class DdnnfGraph {
 		return this.intGraphMap;
 	}
 	
+	public HashMap<Integer, DdnnfGraph> getChildGraphs() {
+		HashMap<Integer, DdnnfGraph> resMap = new HashMap<Integer, DdnnfGraph>();
+		ArrayList<Integer> queue = new ArrayList<Integer>();
+		
+		if(this.leftChild != null) { queue.add(this.leftChild.getThisRoot()); }
+		if(this.rightChild != null) { queue.add(this.leftChild.getThisRoot()); }
+		
+		DdnnfGraph curGraph;
+		int curGraphInt;
+		while (queue.size() > 0) {
+			curGraphInt = queue.get(0);
+			curGraph = this.intGraphMap.get(curGraphInt);
+			if (curGraph.getLogicType() == this.getLogicType()) {
+				queue.add(curGraph.getLeftInt());
+				queue.add(curGraph.getRightInt());
+			}
+			else { resMap.put(curGraphInt, curGraph); }
+			queue.remove(0);
+		}
+		
+		return resMap;
+	}
+	
 	/*
 	public HashMap<Integer, DdnnfGraph> getIntGraphMap() {
 		return this.intGraphMap;
@@ -198,7 +224,9 @@ public class DdnnfGraph {
     	} else if(this.f instanceof DdnnfClause) {
     		return "OR";
     	} else if(this.f instanceof DdnnfLiteral) {
-    		return "Term";
+    		return "Literal";
+    	} else if (this.root == 0) {
+    		return "Global";
     	} else {
     		System.out.print("This formula is not a d-DNNF formula, clause, or literal.");
     		return "Non";

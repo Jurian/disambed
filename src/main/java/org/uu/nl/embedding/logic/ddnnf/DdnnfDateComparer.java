@@ -23,6 +23,7 @@ public class DdnnfDateComparer extends DdnnfLiteral {
 	private SimpleDate date2;
 	private final String dateString1;
 	private final String dateString2;
+	private String nam;
 	
 	private String comparison = "exact";
 	
@@ -38,6 +39,22 @@ public class DdnnfDateComparer extends DdnnfLiteral {
 		this.dateString2 = date2.toString();
 		//this.ddnnfGraph = generateDdnnfGraph();
 	}
+	
+
+	/**
+	 * Constructor method for this d-DNNF logic rule.
+	 * @param date The date of this class.
+	 */
+	public DdnnfDateComparer(final SimpleDate date1, final SimpleDate date2, final String name) {
+		super(name, false);
+		this.date1 = date1;
+		this.date2 = date2;
+		this.dateString1 = date1.toString();
+		this.dateString2 = date2.toString();
+		//this.ddnnfGraph = generateDdnnfGraph();
+	}
+	
+	
 	
 	/*
 	private DdnnfGraph generateDdnnfGraph() {

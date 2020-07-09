@@ -21,6 +21,7 @@ public class LogicRuleSet {
 	private CnfFormula cnfFormula;
 	private DdnnfLogicRule ddnnfFormulae;
 	private DdnnfGraph ddnnfGraph;
+	private DdnnfLogicRule mainDdnnfRule;
 	
 	public LogicRuleSet(final String datesTypeRule, final String datum1, final String datum2, final String comparison) {
 		
@@ -59,6 +60,10 @@ public class LogicRuleSet {
 		return this.ddnnfGraph;
 	}
 	
+	public DdnnfLogicRule getMainRule() {
+		return this.mainDdnnfRule;
+	}
+	
 	
 	public ArrayList<DdnnfLogicRule> splitDdnnfRules() {
 
@@ -67,6 +72,23 @@ public class LogicRuleSet {
 		queue.add(this.ddnnfFormulae);
 		for (DdnnfLogicRule rule : queue) {
 			if (rule.getClass() == this.ddnnfFormulae.getClass()) {
+				queue.remove(rule);
+				for (DdnnfLogicRule newRule : rule.getRules()) { queue.add(newRule); }
+			}
+		}
+
+		ArrayList<DdnnfLogicRule> resultList = new ArrayList<DdnnfLogicRule>(queue);
+		return resultList;
+	}
+	
+
+	public static ArrayList<DdnnfLogicRule> splitDdnnfRules(DdnnfLogicRule ddnnfFormulae) {
+
+		ArrayList<DdnnfLogicRule> queue = new ArrayList<DdnnfLogicRule>();
+		
+		queue.add(ddnnfFormulae);
+		for (DdnnfLogicRule rule : queue) {
+			if (rule.getClass() == ddnnfFormulae.getClass()) {
 				queue.remove(rule);
 				for (DdnnfLogicRule newRule : rule.getRules()) { queue.add(newRule); }
 			}
@@ -92,7 +114,7 @@ public class LogicRuleSet {
 		// CNF rule.
 		CnfDateLogic cnfBirthDate = new CnfDateLogic(date1, "BirthDate", true, false);
 		CnfDateLogic cnfDeathDate = new CnfDateLogic(date2, "DeathDate", true, false);
-		CnfDateComparer cnfDate21Comparer = new CnfDateComparer(date1, date2, "date1_compareto_date2", true, false);
+		CnfDateComparer cnfDate21Comparer = new CnfDateComparer(date1, date2, "CompareTo", true, false);
 		if(comparison == "after") { cnfDate21Comparer.setComparisonAfter(); }
 		else if(comparison == "before") { cnfDate21Comparer.setComparisonBefore(); }
 		// CNF ArrayBuilders.
@@ -109,7 +131,7 @@ public class LogicRuleSet {
 		// d-DNNF logic literals.
 		DdnnfDate birthDate = new DdnnfDate(date1, "BirthDate", true);
 		DdnnfDate deathDate = new DdnnfDate(date2, "DeathDate", true);
-		DdnnfDateComparer date21Comparer = new DdnnfDateComparer(date2, date1);
+		DdnnfDateComparer date21Comparer = new DdnnfDateComparer(date2, date1, "CompareTo");
 		
 		// Array builders
 		//5
@@ -135,6 +157,7 @@ public class LogicRuleSet {
 		DdnnfFormula conj3 = new DdnnfFormula(conj3LitArray, conj3boolArray, "conjunction3");
 		DdnnfFormula conj2 = new DdnnfFormula(conj2LitArray, conj2boolArray, "conjunction2");
 		DdnnfFormula conj1 = new DdnnfFormula(conj1LitArray, conj1boolArray, "conjunction1");
+		this.mainDdnnfRule = conj1;
 		
 		// d-DNNF logic clauses.
 		boolean[] boolArray = new boolean[] {true, true};
@@ -179,7 +202,7 @@ public class LogicRuleSet {
 		// CNF rule.
 		CnfDateLogic cnfBirthDate = new CnfDateLogic(date1, "BirthDate", true, false);
 		CnfDateLogic cnfBaptisedDate = new CnfDateLogic(date2, "BaptisedDate", true, false);
-		CnfDateComparer cnfDate21Comparer = new CnfDateComparer(date1, date2, "date1_compareto_date2", true, false);
+		CnfDateComparer cnfDate21Comparer = new CnfDateComparer(date1, date2, "CompareTo", true, false);
 		if(comparison == "after") { cnfDate21Comparer.setComparisonAfter(); }
 		else if(comparison == "before") { cnfDate21Comparer.setComparisonBefore(); }
 		// CNF ArrayBuilders.
@@ -196,7 +219,7 @@ public class LogicRuleSet {
 		// d-DNNF logic literals.
 		DdnnfDate birthDate = new DdnnfDate(date1, "BirthDate", true);
 		DdnnfDate baptisedDate = new DdnnfDate(date2, "BaptisedDate", true);
-		DdnnfDateComparer date21Comparer = new DdnnfDateComparer(date2, date1);
+		DdnnfDateComparer date21Comparer = new DdnnfDateComparer(date2, date1, "CompareTo");
 		
 		// Array builders
 		//5
@@ -222,6 +245,7 @@ public class LogicRuleSet {
 		DdnnfFormula conj3 = new DdnnfFormula(conj3LitArray, conj3boolArray, "conjunction3");
 		DdnnfFormula conj2 = new DdnnfFormula(conj2LitArray, conj2boolArray, "conjunction2");
 		DdnnfFormula conj1 = new DdnnfFormula(conj1LitArray, conj1boolArray, "conjunction1");
+		this.mainDdnnfRule = conj1;
 		
 		// d-DNNF logic clauses.
 		boolean[] boolArray = new boolean[] {true, true};
@@ -260,7 +284,7 @@ public class LogicRuleSet {
 		// CNF rule.
 		CnfDateLogic cnfBaptisedDate = new CnfDateLogic(date1, "BaptisedDate", true, false);
 		CnfDateLogic cnfDeathDate = new CnfDateLogic(date2, "DeathDate", true, false);
-		CnfDateComparer cnfDate21Comparer = new CnfDateComparer(date1, date2, "date1_compareto_date2", true, false);
+		CnfDateComparer cnfDate21Comparer = new CnfDateComparer(date1, date2, "CompareTo", true, false);
 		if(comparison == "after") { cnfDate21Comparer.setComparisonAfter(); }
 		else if(comparison == "before") { cnfDate21Comparer.setComparisonBefore(); }
 		// CNF ArrayBuilders.
@@ -277,7 +301,7 @@ public class LogicRuleSet {
 		// d-DNNF logic literals.
 		DdnnfDate baptisedDate = new DdnnfDate(date1, "BaptisedDate", true);
 		DdnnfDate deathDate = new DdnnfDate(date2, "DeathDate", true);
-		DdnnfDateComparer date21Comparer = new DdnnfDateComparer(date2, date1);
+		DdnnfDateComparer date21Comparer = new DdnnfDateComparer(date2, date1, "CompareTo");
 		
 		// Array builders
 		//5
@@ -303,6 +327,7 @@ public class LogicRuleSet {
 		DdnnfFormula conj3 = new DdnnfFormula(conj3LitArray, conj3boolArray, "conjunction3");
 		DdnnfFormula conj2 = new DdnnfFormula(conj2LitArray, conj2boolArray, "conjunction2");
 		DdnnfFormula conj1 = new DdnnfFormula(conj1LitArray, conj1boolArray, "conjunction1");
+		this.mainDdnnfRule = conj1;
 		
 		// d-DNNF logic clauses.
 		boolean[] boolArray = new boolean[] {true, true};

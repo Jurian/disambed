@@ -557,46 +557,6 @@ public class CnfFormula implements CnfLogicRule {
     public List<HashMap<String, Boolean>> getFalseAssignments() {
     	return this.falseAssignments;
     }
-    
-    private List<HashMap<String, Boolean>> mergeMaps(HashMap<String, Boolean> firstMap, HashMap<String, Boolean> secondMap) {
-    	
-    	List<HashMap<String, Boolean>> resultMapList = new ArrayList<HashMap<String, Boolean>>();
-    	boolean differentKeyVals = false;
-    	HashMap<String, Boolean> resultMap1 = new HashMap<String, Boolean>();
-    	HashMap<String, Boolean> resultMap2 = new HashMap<String, Boolean>();
-    	
-    	// Get all entries and put them in both result maps, whilst
-    	// keeping track if there are duplicate keys with different vals.
-    	for (Map.Entry<String, Boolean> entry : firstMap.entrySet()) {
-
-    		if ( (secondMap.containsKey(entry.getKey()) ) && (!entry.getValue() == secondMap.get(entry.getKey())) ) {
-    				differentKeyVals = true;
-    	    		resultMap1.put(entry.getKey(), entry.getValue());
-    	    		resultMap2.put(entry.getKey(), secondMap.get(entry.getKey()));
-    		}
-    		else {
-        		resultMap1.put(entry.getKey(), entry.getValue());
-        		resultMap2.put(entry.getKey(), entry.getValue());
-    		}
-    	}
-    	// Get all entries and put them in both result maps if
-    	// the entry is not already in the maps.
-    	for (Map.Entry<String, Boolean> entry : secondMap.entrySet()) {
-    		if (!firstMap.containsKey(entry.getKey())) {
-        		resultMap1.put(entry.getKey(), entry.getValue());
-        		resultMap2.put(entry.getKey(), entry.getValue());
-    		}
-    	}
-    	// Add duplicate, contradicting keys.
-    	if (differentKeyVals) {
-    		resultMapList.add(resultMap1);
-    		resultMapList.add(resultMap2);
-    	}
-    	else {
-    		resultMapList.add(resultMap1); }
-    	
-    	return resultMapList;
-    }
 
     private List<HashMap<String, Boolean>> fetchFalseAssignments() {
 
@@ -747,6 +707,46 @@ public class CnfFormula implements CnfLogicRule {
     		return assignmentCombinationUtil(allFalseAssignmentLists, allTrueAssignmentLists, 
     												newCurMapList, curClause+1, totalNoClauses);
     	}
+    }
+    
+    private List<HashMap<String, Boolean>> mergeMaps(HashMap<String, Boolean> firstMap, HashMap<String, Boolean> secondMap) {
+    	
+    	List<HashMap<String, Boolean>> resultMapList = new ArrayList<HashMap<String, Boolean>>();
+    	boolean differentKeyVals = false;
+    	HashMap<String, Boolean> resultMap1 = new HashMap<String, Boolean>();
+    	HashMap<String, Boolean> resultMap2 = new HashMap<String, Boolean>();
+    	
+    	// Get all entries and put them in both result maps, whilst
+    	// keeping track if there are duplicate keys with different vals.
+    	for (Map.Entry<String, Boolean> entry : firstMap.entrySet()) {
+
+    		if ( (secondMap.containsKey(entry.getKey()) ) && (!entry.getValue() == secondMap.get(entry.getKey())) ) {
+    				differentKeyVals = true;
+    	    		resultMap1.put(entry.getKey(), entry.getValue());
+    	    		resultMap2.put(entry.getKey(), secondMap.get(entry.getKey()));
+    		}
+    		else {
+        		resultMap1.put(entry.getKey(), entry.getValue());
+        		resultMap2.put(entry.getKey(), entry.getValue());
+    		}
+    	}
+    	// Get all entries and put them in both result maps if
+    	// the entry is not already in the maps.
+    	for (Map.Entry<String, Boolean> entry : secondMap.entrySet()) {
+    		if (!firstMap.containsKey(entry.getKey())) {
+        		resultMap1.put(entry.getKey(), entry.getValue());
+        		resultMap2.put(entry.getKey(), entry.getValue());
+    		}
+    	}
+    	// Add duplicate, contradicting keys.
+    	if (differentKeyVals) {
+    		resultMapList.add(resultMap1);
+    		resultMapList.add(resultMap2);
+    	}
+    	else {
+    		resultMapList.add(resultMap1); }
+    	
+    	return resultMapList;
     }
     
     /**
