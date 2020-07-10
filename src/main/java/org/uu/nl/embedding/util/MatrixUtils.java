@@ -299,12 +299,57 @@ public class MatrixUtils {
 		}}
 		return maxCoords;
 	}
+
+	/**
+	 * 
+	 * @param mat1
+	 * @param mat2
+	 * @return
+	 */
+	public static Matrix sqrdEuclidDistanceVec(final Matrix mat, final Matrix vec) {
+		MatrixUtils.checkMultipMatrixDims(mat, vec);
+		
+		Matrix resVec = new Matrix(mat.getRowDimension(), vec.getColumnDimension());
+		double dist;
+
+		for (int r = 0; r < mat.getRowDimension(); r++) {
+			dist = 0;
+			for (int c = 0; c < mat.getColumnDimension(); c++) {
+				dist += mat.get(r, c)-vec.get(r, 0);
+			}
+			resVec.set(r, 0, (dist*dist));
+		}
+		return resVec;
+	}
+
+	/**
+	 * 
+	 * @param mat1
+	 * @param mat2
+	 * @return
+	 */
+	public static Matrix euclidDistanceVec(final Matrix mat, final Matrix vec) {
+		Matrix resVec = sqrdEuclidDistanceVec(mat, vec);
+		
+		double val;
+		for (int r = 0; r < resVec.getRowDimension(); r++) {
+			for (int c = 0; c < resVec.getColumnDimension(); c++) {
+				val = resVec.get(r, c);
+				resVec.set( r, c, (val*val) );
+		}}
+		return resVec;
+	}
 	
 	/*
 	 * Below: Matrix object manipulation methods.
 	 * (Above: mathematical operations.)
 	 */
 	
+	/**
+	 * 
+	 * @param m1
+	 * @param m2
+	 */
 	public static void checkMatrixDims(final Matrix m1, final Matrix m2) {
 		if (m1.getRowDimension() != m2.getRowDimension()) {
 			logger.error("Row dimensions of matrices do not match.");
@@ -312,6 +357,40 @@ public class MatrixUtils {
 		if (m1.getColumnDimension() != m2.getColumnDimension()) {
 			logger.error("Column dimensions of matrices do not match.");
 		}
+	}
+	
+	/**
+	 * 
+	 * @param m1
+	 * @param m2
+	 */
+	public static void checkMultipMatrixDims(final Matrix m1, final Matrix m2) {
+		if (m1.getColumnDimension() != m2.getRowDimension()) {
+			logger.error("Multiplication dimensions of matrices do not match.");
+		}
+	}
+	
+	/**
+	 * 
+	 * @param matrix
+	 * @return
+	 */
+	public static Matrix getDegreeMatrix(final Matrix matrix) {
+		Matrix D = new Matrix(matrix.getRowDimension(), matrix.getColumnDimension());
+		
+		int degree;
+		for (int r = 0; r < matrix.getRowDimension(); r++) {
+			// Reset the degree.
+			degree = 0;
+			for (int c = 0; c < matrix.getColumnDimension(); c++) {
+				// Increment degree with found number.
+				degree += matrix.get(r, c);
+			}
+			// Assign degree of current node.
+			D.set(r, r, degree);
+		}
+		
+		return D;
 	}
 
 	/**
