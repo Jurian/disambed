@@ -51,6 +51,10 @@ public class DdnnfGraph {
     	this(formula, null, null);
     }
     
+    /*
+     * Rest of the methods.
+     */
+    
     public DdnnfLogicRule getFormula() {
     	return this.f;
     }
