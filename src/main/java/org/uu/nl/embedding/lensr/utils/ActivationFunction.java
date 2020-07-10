@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.lensr;
+package org.uu.nl.embedding.lensr.utils;
 
 import java.util.HashMap;
 import java.util.Map;
