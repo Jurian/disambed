@@ -14,6 +14,7 @@ import java.util.TreeSet;
 
 import org.apache.jena.graph.Graph;
 import org.apache.log4j.Logger;
+import org.uu.nl.embedding.lensr.utils.ActivationFunction;
 import org.uu.nl.embedding.lensr.utils.LensrUtils;
 import org.uu.nl.embedding.lensr.utils.VectorUtils;
 import org.uu.nl.embedding.logic.LogicRule;
