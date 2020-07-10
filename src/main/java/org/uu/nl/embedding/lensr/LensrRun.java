@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.uu.nl.embedding.lensr.utils.ActivationFunction;
 import org.uu.nl.embedding.util.ArrayUtils;
 import org.uu.nl.embedding.util.MatrixUtils;
 
