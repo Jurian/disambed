@@ -9,6 +9,7 @@ import org.uu.nl.embedding.logic.ddnnf.DdnnfLiteral;
 import org.uu.nl.embedding.logic.ddnnf.DdnnfLogicRule;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -31,6 +32,9 @@ public class DdnnfGraph {
 	HashMap<DdnnfLogicRule, String> logicMap = new HashMap<DdnnfLogicRule, String>();
 	HashMap<Integer, DdnnfLogicRule> intLogicMap = new HashMap<Integer, DdnnfLogicRule>();
 	HashMap<Integer, DdnnfGraph> intGraphMap = new HashMap<Integer, DdnnfGraph>();
+	
+	// Node type sets
+	HashMap<Integer, DdnnfGraph> andSet, orSet, notSet, leafSet;
 
     int maxVertInt = -1;
     
@@ -41,6 +45,7 @@ public class DdnnfGraph {
     	generateGraph();
     	getLogicType();
     	setLogicMaps();
+    	nodeTypeSets();
     }
     
     public DdnnfGraph(DdnnfLogicRule formula, final DdnnfGraph leftGrph) {
@@ -58,7 +63,60 @@ public class DdnnfGraph {
     public DdnnfLogicRule getFormula() {
     	return this.f;
     }
+    
+    /**
+     * 
+     */
+    private void nodeTypeSets() {
+    	// Node type sets initialization
+    	andSet = new HashMap<Integer, DdnnfGraph>();
+    	orSet = new HashMap<Integer, DdnnfGraph>();
+    	notSet = new HashMap<Integer, DdnnfGraph>();
+    	leafSet = new HashMap<Integer, DdnnfGraph>();
+    	
+    	DdnnfGraph gr = this;
+    	DdnnfLogicRule rule = this.getFormula(), rule2;
+    	int node;
+    	
+		for (Map.Entry<Integer, DdnnfGraph> entry : getChildGraphs().entrySet()) {
+			node = entry.getKey();
+			gr = entry.getValue();
+			rule2 = gr.getFormula();
+			
+			// Check for node type (negated is checked separately).
+			if (rule instanceof DdnnfFormula) { andSet.put(node, gr); }
+			else if (rule instanceof DdnnfClause) { orSet.put(node, gr); }
+			else if (rule instanceof DdnnfLiteral) {leafSet.put(node, gr); }
+			else { System.out.print("This formula is not a d-DNNF formula, clause, or literal."); }
+
+			// Negated is checked separately from the other node types.
+			if (rule.getNegativeLiterals().contains(rule2)) { notSet.put(node, gr); }
+			
+			rule = rule2;
+		}
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    public HashMap<Integer, DdnnfGraph> getNotSet() {
+    	return this.notSet;
+    }
+    
+    /**
+     * 
+     * @return
+     */
+    public ArrayList<HashMap<Integer, DdnnfGraph>> getNodeTypeMaps() {
+    	return new ArrayList<HashMap<Integer, DdnnfGraph>>( 
+    			Arrays.asList(this.andSet, this.orSet, this.notSet, this.leafSet) );
+    }
 	
+    /**
+     * 
+     * @param vertNumber
+     */
 	public void setChildInts(final int vertNumber) {
 		this.root = vertNumber;
 
@@ -222,7 +280,9 @@ public class DdnnfGraph {
 	}*/
     
     public String getLogicType() {
-    			
+    	
+    	if ()
+    	
     	if(this.f instanceof DdnnfFormula) {
     		return "AND";
     	} else if(this.f instanceof DdnnfClause) {
