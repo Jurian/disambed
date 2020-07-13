@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.uu.nl.embedding.lensr.utils.ActivationFunction;
 import org.uu.nl.embedding.lensr.utils.LensrUtils;
+import org.uu.nl.embedding.lensr.utils.VectorUtils;
 import org.uu.nl.embedding.logic.cnf.CnfFormula;
 import org.uu.nl.embedding.logic.ddnnf.DdnnfLogicRule;
 import org.uu.nl.embedding.logic.util.LogicRuleSet;
@@ -192,27 +193,18 @@ public class LogicGraphEmbedder {
 	 * @param childNodes
 	 * @return
 	 */
-	private double orLoss(final HashMap<Integer, DdnnfGraph> childNodes) {
-		Matrix vector, sqrdVec, normVector = new Matrix(childNodes.size(), 1);
+	private Matrix orLoss(final HashMap<Integer, DdnnfGraph> childNodes) {
+		Matrix vector, sqrdVec;
 		Matrix onesM = MatrixUtils.onesMatrix(childNodes.size(), 1);
-		double subSum = 0d, matSum;
-		int counter = 0;
+		Matrix subSum = new Matrix(childNodes.size(), 1);
+		
 		for(Map.Entry<Integer, DdnnfGraph> entry : childNodes.entrySet()) {
 			
 			vector = embedLogicGraph(entry.getValue());
 			// Get squared Euclidean distance and sum of resulting vector.
 			sqrdVec = MatrixUtils.sqrdEuclidDistanceVec(vector, onesM);
-			matSum = MatrixUtils.sum(sqrdVec);
-			normVector.set(counter, 0, matSum);
-			counter++;
-			
-			/* OR NOT?? See GitHub
-			// Get squared Euclidean distance
-			subSum += sqrdEuclidDistance( embedLogicGraph(entry.getValue()), onesM );
-			*/
+			subSum = subSum.plus(sqrdVec);
 		}
-		subSum = Math.pow((normVector.normF() - 1), 2);
-		
 		return subSum;
 	}
 	
@@ -230,12 +222,6 @@ public class LogicGraphEmbedder {
 		
 		// Get squared Euclidean distance between Vk*VkT and diag(Vk*VkT).
 		Matrix resultMat = MatrixUtils.sqrdEuclidDistanceVec(matMultip, MatrixUtils.getDiagonalMatrix(matMultip));
-		
-		
-		/* or not?? See GitHub
-		// Get squared Euclidean distance
-		return sqrdEuclidDistance(matMultip, MatrixUtils.antiIdentity(matMultip));
-		*/
 		
 		return resultMat;
 	}
@@ -262,7 +248,52 @@ public class LogicGraphEmbedder {
 	 * @return a vertical vector as Matrix object.
 	 */
 	private Matrix embedLogicGraph(final DdnnfGraph graph) { // q(.)
+		ArrayList<HashMap<Integer, DdnnfGraph>> nodeTypeMaps = graph.getNodeTypeMaps();
+		Matrix[] andVecs, orVecs, notVecs, leafVecs;
+		Matrix globalVec;
+		Matrix bcv;
+		int mapSize, counter = 0;
 		
+		// Order: 0. AND, 1. OR, 2. NOT, 3. Leaf
+		
+		// Embed AND-nodes.
+		mapSize = nodeTypeMaps.get(0).size();
+		andVecs = new Matrix[mapSize];
+		for (Map.Entry<Integer, DdnnfGraph> entry : nodeTypeMaps.get(0).entrySet()) {
+			bcv = VectorUtils.getVector(entry.getValue().getFormula());
+			andVecs[counter] = forwardProp(bcv, this.Wand, this.Band, 0);
+			counter++;
+		}
+		// Embed OR-nodes.
+		mapSize = nodeTypeMaps.get(1).size();
+		orVecs = new Matrix[mapSize];
+		counter = 0;
+		for (Map.Entry<Integer, DdnnfGraph> entry : nodeTypeMaps.get(1).entrySet()) {
+			bcv = VectorUtils.getVector(entry.getValue().getFormula());
+			orVecs[counter] = forwardProp(bcv, this.Wor, this.Bor, 0);
+			counter++;
+		}
+		// Embed NOT-nodes.
+		mapSize = nodeTypeMaps.get(2).size();
+		notVecs = new Matrix[mapSize];
+		counter = 0;
+		for (Map.Entry<Integer, DdnnfGraph> entry : nodeTypeMaps.get(2).entrySet()) {
+			bcv = VectorUtils.getVector(entry.getValue().getFormula());
+			notVecs[counter] = forwardProp(bcv, this.Wnot, this.Bnot, 0);
+			counter++;
+		}
+		// Embed Leaf-nodes.
+		mapSize = nodeTypeMaps.get(3).size();
+		leafVecs = new Matrix[mapSize];
+		counter = 0;
+		for (Map.Entry<Integer, DdnnfGraph> entry : nodeTypeMaps.get(3).entrySet()) {
+			bcv = VectorUtils.getVector(entry.getValue().getFormula());
+			leafVecs[counter] = forwardProp(bcv, this.Wleaf, this.Bleaf, 0);
+			counter++;
+		}
+		// Embed the global node.
+		bcv = VectorUtils.getVector(graph.getFormula());
+		globalVec = forwardProp(bcv, this.Wglobal, this.Bglobal, 0);
 	}
 	
 	
