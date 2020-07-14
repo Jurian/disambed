@@ -299,6 +299,35 @@ public class MatrixUtils {
 		}}
 		return maxCoords;
 	}
+	
+	/**
+	 * 
+	 * @param matrix
+	 * @param d
+	 * @return
+	 */
+	public static Matrix divideBy(final Matrix matrix, final double d) {
+		Matrix resultMat = new Matrix(matrix.getRowDimension(), matrix.getColumnDimension());
+		double res;
+
+		for (int r = 0; r < matrix.getRowDimension(); r++) {
+			for (int c = 0; c < matrix.getColumnDimension(); c++) {
+				res = matrix.get(r, c) / d;
+				resultMat.set(r, c, res);
+		}}
+		
+		return resultMat;
+	}
+	
+	/**
+	 * 
+	 * @param matrix
+	 * @param i
+	 * @return
+	 */
+	public static Matrix divideBy(final Matrix matrix, final int i) {
+		return divideBy(matrix, (double) i);
+	}
 
 	/**
 	 * 
