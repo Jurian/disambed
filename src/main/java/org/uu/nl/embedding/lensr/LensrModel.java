@@ -336,19 +336,6 @@ public class LensrModel {
 		
 		return Math.max(res, 0);
 	}
-	
-	private double sqrdEuclidDistance(Matrix mat1, Matrix mat2) {
-		MatrixUtils.checkMatrixDims(mat1, mat2);
-		
-		double res = 0d;
-		double dist;
-		
-		for(int i = 0; i < mat1.getRowDimension(); i++) {
-			dist = (mat1.get(i, 0) - mat2.get(i, 0));
-			res += dist*dist;
-		}
-		return res;
-	}
 
 	private double embeddingTrainer(final ArrayList<LogicRuleSet> formulaeSets) { // = L_emb
 		double embLoss = 0d, tripletLoss = 0d, regLoss = 0d; // L_emb, l_t, and l_r respectively.

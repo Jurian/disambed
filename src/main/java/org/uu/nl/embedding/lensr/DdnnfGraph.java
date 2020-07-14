@@ -281,8 +281,6 @@ public class DdnnfGraph {
     
     public String getLogicType() {
     	
-    	if ()
-    	
     	if(this.f instanceof DdnnfFormula) {
     		return "AND";
     	} else if(this.f instanceof DdnnfClause) {
