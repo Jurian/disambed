@@ -1,6 +1,7 @@
 package org.uu.nl.embedding.logic.util;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.uu.nl.embedding.lensr.DdnnfGraph;
 import org.uu.nl.embedding.logic.cnf.Clause;
