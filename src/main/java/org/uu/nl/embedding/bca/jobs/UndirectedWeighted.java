@@ -1,6 +1,7 @@
 package org.uu.nl.embedding.bca.jobs;
 
 import grph.properties.NumericalProperty;
+import grph.properties.StringProperty;
 
 import org.uu.nl.embedding.bca.util.BCAJob;
 import org.uu.nl.embedding.bca.util.BCV;
@@ -63,7 +64,7 @@ public class UndirectedWeighted extends BCAJob {
             // If there is not enough paint we stop and don't distribute among the neighbors
             if (wetPaint < epsilon)
                 continue;
-
+            
 			double totalWeight = 0;
 
 			for (int i = 0; i < vertexOut[focusNode].length; i++) {
@@ -71,7 +72,7 @@ public class UndirectedWeighted extends BCAJob {
 				//if(neighbors[i] == node.prevNodeID) continue;
 				totalWeight += edgeWeights.getValueAsFloat(edgeOut[focusNode][i]);
 			}
-
+			
 			for (int i = 0; i < vertexIn[focusNode].length; i++) {
 				// Skip any edges we don't want to follow
 				//if(neighbors[i] == node.prevNodeID) continue;
@@ -121,25 +122,28 @@ public class UndirectedWeighted extends BCAJob {
 		return bcv;
 	}
 	
-	public BCV doWorkInclPredicates(final InMemoryRdfGraph graph, final boolean reverse) {
+	public BCV doWorkInclPreds(final InMemoryRdfGraph graph, final boolean reverse) {
 
 		if(reverse) throw new UnsupportedOperationException("No reverse mode in undirected version");
 
 		final int numVerts = graph.getVertices().toIntArray().length;
-		final int[] edges = graph.getEdges().toIntArray();
+		final StringProperty edges = graph.getLiteralPredicateProperty();
 		final HashMap<Integer, Integer> edgeIDs = new HashMap<Integer, Integer>();
-		for (int e = 0; e < edges.length; e++) {
+		for (int e = 0; e < edges.size(); e++) {
 			edgeIDs.put(edges[e], (numVerts + edges[e]) );
 		}
 
 		final NumericalProperty edgeWeights = graph.getEdgeWeightProperty();
 		final NumericalProperty edgeTypes = graph.getEdgeTypeProperty();
 		final TreeMap<Integer, PaintedNode> nodeTree = new TreeMap<>();
+		final TreeMap<Integer, int[]> edgeCntTree = new TreeMap<>();
 		final BCV bcv = new BCV(bookmark);
 
 		nodeTree.put(bookmark, new PaintedNode(bookmark, 1));
 
 		int focusNode;
+		int edgeID;
+		int[] ioCnt;
 		double wetPaint, partialWetPaint;
 		PaintedNode node;
 
@@ -150,26 +154,54 @@ public class UndirectedWeighted extends BCAJob {
 			wetPaint = node.getPaint();
 
             // Keep part of the available paint on this node, distribute the rest
-            bcv.add(focusNode, (alpha * wetPaint));
+            bcv.add(focusNode, (this.alpha * wetPaint));
 
             // If there is not enough paint we stop and don't distribute among the neighbors
-            if (wetPaint < epsilon)
+            if (wetPaint < this.epsilon)
                 continue;
 
-			double totalWeight = 0;
-
+            /*
+             * ook gebruiken voor edge paint?
+             */
+			double totalWeight = 0d;
+			
+			// Get values and count for outgoing edges.
 			for (int i = 0; i < vertexOut[focusNode].length; i++) {
 				// Skip any edges we don't want to follow
 				//if(neighbors[i] == node.prevNodeID) continue;
 				totalWeight += edgeWeights.getValueAsFloat(edgeOut[focusNode][i]);
+				// Add edge to edgeTree for later use.
+				edgeID = edgeTypes.getValueAsInt(edgeOut[focusNode][i]);
+				/*
+				 * ID WERKT WRS NOG NIET JUIST!!!!!!!!!!!!
+				 */
+				if (!edgeCntTree.containsKey(edgeID)) { ioCnt = new int[] {1, 0}; }
+				else { 
+					ioCnt = edgeCntTree.get(edgeID);
+					ioCnt[0] += 1; 
+				} 
+				edgeCntTree.put(edgeID, ioCnt);
 			}
 
+			// Get values and count for incoming edges.
 			for (int i = 0; i < vertexIn[focusNode].length; i++) {
 				// Skip any edges we don't want to follow
 				//if(neighbors[i] == node.prevNodeID) continue;
 				totalWeight += edgeWeights.getValueAsFloat(edgeIn[focusNode][i]);
+				// Add edge to edgeTree for later use.
+				edgeID = edgeTypes.getValueAsInt(edgeOut[focusNode][i]);
+				/*
+				 * ID WERKT WRS NOG NIET JUIST!!!!!!!!!!!!
+				 */
+				if (!edgeCntTree.containsKey(edgeID)) { ioCnt = new int[] {0, 1}; }
+				else { 
+					ioCnt = edgeCntTree.get(edgeID);
+					ioCnt[1] += 1; 
+				}
+				edgeCntTree.put(edgeID, ioCnt);
 			}
-
+			
+			
 			for (int i = 0; i < vertexOut[focusNode].length; i++) {
 
 				float weight = edgeWeights.getValueAsFloat(edgeOut[focusNode][i]);
