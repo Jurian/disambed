@@ -48,12 +48,12 @@ public class AMSGrad extends Optimizer {
 	/**
 	 * Contains the maximum of the past first moments w.r.t. to all parameters
 	 */
-	private final float[] M1focus, M1context;
+	private final float[][] M1focus, M1context;
 	private final float[] M1fBias, M1cBias;
 	/**
 	 * Contains the maximum of the past second moments w.r.t. to all parameters
 	 */
-	private final float[] M2focus, M2context;
+	private final float[][] M2focus, M2context;
 	private final float[] M2fBias, M2cBias;
 	/**
 	 * Decay rate for first momentum
@@ -67,19 +67,19 @@ public class AMSGrad extends Optimizer {
 	 * Mainly used to prevent divisions by zero, in some cases setting this to 0.1
 	 * or 1 can help improve stability
 	 */
-	private final float epsilon = 1e-7f;
+	private final float epsilon = 1e-1f;
 
 	public AMSGrad(CoOccurrenceMatrix coMatrix, Configuration config, CostFunction costFunction) {
 		super(coMatrix, config, costFunction);
 
-		this.M1focus = new float[vocabSize * dimension];
-		this.M2focus = new float[vocabSize * dimension];
-		this.M1context = new float[vocabSize * dimension];
-		this.M2context = new float[vocabSize * dimension];
-		this.M1fBias = new float[vocabSize];
-		this.M2fBias = new float[vocabSize];
-		this.M1cBias = new float[vocabSize];
-		this.M2cBias = new float[vocabSize];
+		this.M1focus = new float[focusVectors][dimension];
+		this.M2focus = new float[focusVectors][dimension];
+		this.M1context = new float[contextVectors][dimension];
+		this.M2context = new float[contextVectors][dimension];
+		this.M1fBias = new float[focusVectors];
+		this.M2fBias = new float[focusVectors];
+		this.M1cBias = new float[contextVectors];
+		this.M2cBias = new float[contextVectors];
 	}
 	
 	@Override
@@ -92,21 +92,21 @@ public class AMSGrad extends Optimizer {
 
 		return () -> {
 
-			int i, d, u, v, bu, bv, d1, d2;
-			float Xij, m1, m2, v1, v2, grad_u, grad_v;
+			int i, d, i_u, i_v, bu, bv;
+			float Xij, m, v, grad_u, grad_v;
 			float cost = 0, innerCost, weightedCost;
 			final int offset = coCount / numThreads * id;
 
 			for (i = 0; i < linesPerThread[id]; i++) {
 
-				bu = coMatrix.cIdx_I(i + offset); // Index of focus bias
-				bv = coMatrix.cIdx_J(i + offset); // Index of context bias
-				u = bu * dimension; // Index of focus vector
-				v = bv * dimension; // Index of bias vector
+				i_u = coMatrix.cIdx_I(i + offset); // Index of focus bias
+				i_v = coMatrix.cIdx_J(i + offset); // Index of context bias
+				//i_u = bu * dimension; // Index of focus vector
+				//i_v = bv * dimension; // Index of bias vector
 				Xij = coMatrix.cIdx_C(i + offset); // Co-occurrence
 
 				/* Calculate cost, save diff for gradients */
-				innerCost = costFunction.innerCost(this, Xij, u, v, bu, bv);
+				innerCost = costFunction.innerCost(this, Xij, i_u, i_v);
 				weightedCost = costFunction.weightedCost(this, innerCost, Xij);
 				cost += 0.5 * weightedCost * innerCost; // weighted squared error
 
@@ -117,26 +117,24 @@ public class AMSGrad extends Optimizer {
 				// Compute for node vectors
 				for (d = 0; d < dimension; d++) {
 
-					d1 = d + u; // Index of specific dimension in focus vector
-					d2 = d + v; // Index of specific dimension in context vector
+					//d1 = d + i_u; // Index of specific dimension in focus vector
+					//d2 = d + i_v; // Index of specific dimension in context vector
 
 					// Compute gradients
-					grad_u = weightedCost * context[d2];
-					grad_v = weightedCost * focus[d1];
-					// Update biased first and second moment estimates
-					m1 = beta1 * M1focus[d1] + (1 - beta1) * grad_u;
-					m2 = beta1 * M1context[d2] + (1 - beta1) * grad_v;
-					v1 = FastMath.max(M2focus[d1], beta2 * M2focus[d1] + (1 - beta2) * (grad_u * grad_u));
-					v2 = FastMath.max(M2context[d2], beta2 * M2context[d2] + (1 - beta2) * (grad_v * grad_v));
+					grad_u = weightedCost * context[i_v][d];
+					grad_v = weightedCost * focus[i_u][d];
 
-					// Compute and apply updates
-					focus[d1] -= learningRate / (FastMath.sqrt(v1) + epsilon) * m1;
-					context[d2] -= learningRate / (FastMath.sqrt(v2) + epsilon) * m2;
-					// Store new moments
-					M1focus[d1] = m1;
-					M1context[d2] = m2;
-					M2focus[d1] = v1;
-					M2context[d2] = v2;
+					m = beta1 * M1focus[i_u][d] + (1 - beta1) * grad_u;
+					v = FastMath.max(M2focus[i_u][d], beta2 * M2focus[i_u][d] + (1 - beta2) * (grad_u * grad_u));
+					focus[i_u][d] -= learningRate / (FastMath.sqrt(v) + epsilon) * m;
+					M1focus[i_u][d] = m;
+					M2focus[i_u][d] = v;
+
+					m = beta1 * M1context[i_v][d] + (1 - beta1) * grad_v;
+					v = FastMath.max(M2context[i_v][d], beta2 * M2context[i_v][d] + (1 - beta2) * (grad_v * grad_v));
+					context[i_v][d] -= learningRate / (FastMath.sqrt(v) + epsilon) * m;
+					M1context[i_v][d] = m;
+					M2context[i_v][d] = v;
 				}
 
 				/*---------------------
@@ -144,18 +142,17 @@ public class AMSGrad extends Optimizer {
 				 ---------------------*/
 
 				// Update the first, second moment for the biases
-				m1 = beta1 * M1fBias[bu] + (1 - beta1) * weightedCost;
-				m2 = beta1 * M1cBias[bv] + (1 - beta1) * weightedCost;
-				v1 = FastMath.max(M2fBias[bu], beta2 * M2fBias[bu] + (1 - beta2) * (weightedCost * weightedCost));
-				v2 = FastMath.max(M2cBias[bv], beta2 * M2cBias[bv] + (1 - beta2) * (weightedCost * weightedCost));
-				// Perform updates on bias terms
-				fBias[bu] -= learningRate / (FastMath.sqrt(v1) + epsilon) * m1;
-				cBias[bv] -= learningRate / (FastMath.sqrt(v2) + epsilon) * m2;
-				// Store new moments
-				M1fBias[bu] = m1;
-				M1cBias[bv] = m2;
-				M2fBias[bu] = v1;
-				M2cBias[bv] = v2;
+				m = beta1 * M1fBias[i_u] + (1 - beta1) * weightedCost;
+				v = FastMath.max(M2fBias[i_u], beta2 * M2fBias[i_u] + (1 - beta2) * (weightedCost * weightedCost));
+				fBias[i_u] -= learningRate / (FastMath.sqrt(v) + epsilon) * m;
+				M1fBias[i_u] = m;
+				M2fBias[i_u] = v;
+
+				m = beta1 * M1cBias[i_v] + (1 - beta1) * weightedCost;
+				v = FastMath.max(M2cBias[i_v], beta2 * M2cBias[i_v] + (1 - beta2) * (weightedCost * weightedCost));
+				cBias[i_v] -= learningRate / (FastMath.sqrt(v) + epsilon) * m;
+				M1cBias[i_v] = m;
+				M2cBias[i_v] = v;
 			}
 			return cost;
 		};

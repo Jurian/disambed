@@ -10,6 +10,9 @@ import org.rdfhdt.hdtjena.HDTGraph;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Jurian Baas
@@ -20,24 +23,53 @@ public class JenaReader implements Reader<Model> {
 
     public Model load(File file) throws IOException {
 
-        Model model;
+        final Model model = ModelFactory.createDefaultModel();
 
-        if(file.isFile()) {
-            logger.info( "Loading " + file.getName());
+        if(file.isDirectory()) {
 
-            if(file.getName().endsWith(".hdt")) {
-                HDT hdt = HDTManager.loadHDT(file.getPath(), null);
-                HDTGraph graph = new HDTGraph(hdt);
-                model = ModelFactory.createModelForGraph(graph);
-            } else {
-                model = ModelFactory.createDefaultModel();
-                RDFDataMgr.read(model, file.getPath()) ;
+            logger.info( "Directory specified, loading all files recursively");
+            List<File> files = new ArrayList<>();
+            listf(file, files);
+
+            for(File subFile: files) {
+                logger.info( "Loading " + subFile.getName());
+                model.add(addToModel(subFile));
             }
-            logger.info( "Done loading, number of triples: " + model.size());
+
         } else {
-            throw new IllegalArgumentException("Supplied argument is not a file");
+            logger.info( "Loading " + file.getName());
+            model.add(addToModel(file));
         }
 
+        logger.info( "Done loading, number of triples: " + model.size());
         return model;
     }
+
+    private Model addToModel(File file) throws IOException {
+        Model model;
+        if(file.getName().endsWith(".hdt")) {
+            HDT hdt = HDTManager.loadHDT(file.getPath(), null);
+            HDTGraph graph = new HDTGraph(hdt);
+            model = ModelFactory.createModelForGraph(graph);
+        } else {
+            model = ModelFactory.createDefaultModel();
+            RDFDataMgr.read(model, file.getPath()) ;
+        }
+        return model;
+    }
+
+    private void listf(File directory, List<File> files) {
+
+        // Get all files from a directory.
+        File[] fList = directory.listFiles();
+        if(fList != null)
+            for (File file : fList) {
+                if (file.isFile()) {
+                    files.add(file);
+                } else if (file.isDirectory()) {
+                    listf(file, files);
+                }
+            }
+    }
+
 }

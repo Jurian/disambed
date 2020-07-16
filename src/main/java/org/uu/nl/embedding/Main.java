@@ -34,8 +34,8 @@ public class Main {
         logger.info("Threads: " + config.getThreads());
         logger.info("BCA Alpha: " + config.getBca().getAlpha());
         logger.info("BCA Epsilon: " + config.getBca().getEpsilon());
-        logger.info("BCA Directed: " + config.getBca().isDirected());
-        logger.info("BCA normalize: " + config.getBca().getNormalize());
+        logger.info("BCA Type: " + config.getBca().getType());
+        logger.info("BCA Normalize: " + config.getBca().getNormalize());
         logger.info("Gradient Descent Algorithm: " + config.getOpt().getMethod());
         logger.info(config.getMethod() + " Tolerance: " + config.getOpt().getTolerance());
         logger.info(config.getMethod() + " Maximum Iterations: " + config.getOpt().getMaxiter());
@@ -90,11 +90,7 @@ public class Main {
             outFileName += "_exact";
         }
 
-        if(config.getBca().isDirected()){
-            outFileName += "_directed";
-        } else {
-            outFileName += "_undirected";
-        }
+        outFileName += "_" +  config.getBca().getType().toLowerCase();
 
         outFileName += "_" + config.getBca().getAlpha() + "_" + config.getBca().getEpsilon();
         outFileName += "_" + config.getOpt().getMethod();

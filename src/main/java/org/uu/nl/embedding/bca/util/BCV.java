@@ -15,7 +15,7 @@ public class BCV extends HashMap<Integer, Float> {
 
 	private static final ExtendedRandom random = Configuration.getThreadLocalRandom();
 	private static final long serialVersionUID = 1L;
-	
+
 	private final int rootNode;
 
 	public int getRootNode() {
@@ -25,7 +25,19 @@ public class BCV extends HashMap<Integer, Float> {
 	public BCV(int rootNode) {
 		this.rootNode = rootNode;
 	}
-	
+
+	@Override
+	public String toString() {
+		//Float[] values = entrySet().stream().sorted(Entry.comparingByKey()).map(Entry::getValue).toArray(Float[]::new);
+		//int maxKey = keySet().stream().max(Integer::compareTo).orElse(0);
+		StringBuilder s = new StringBuilder();
+		for(int i = 0; i < size(); i++) {
+			Float f = get(i);
+			s.append(f == null ? "\t\t\t\t": 	"\t" + i + ": " + f);
+		}
+		return rootNode + ":\t" + s.toString();
+	}
+
 	/**
 	 * Add the value to a key, or create a new 
 	 * record if the key was not present before

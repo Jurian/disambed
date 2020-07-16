@@ -14,7 +14,6 @@ public class PaintedNode implements Comparable<PaintedNode> {
      */
     public final int nodeID;
 
-
     private double paint;
 
     public PaintedNode(int nodeID, double startPaint) {
@@ -46,4 +45,5 @@ public class PaintedNode implements Comparable<PaintedNode> {
             return this.nodeID == ((PaintedNode) obj).nodeID;
         return false;
     }
+
 }

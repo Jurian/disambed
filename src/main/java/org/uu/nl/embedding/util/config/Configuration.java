@@ -32,6 +32,10 @@ public class Configuration {
         NONE, UNITY, COUNTS
     }
 
+    public enum BCAType {
+        DIRECTED, UNDIRECTED, HYBRID
+    }
+
     private String graph;
 
     public File getGraphFile() {
@@ -321,8 +325,8 @@ public class Configuration {
 
         private double alpha;
         private double epsilon;
-        private boolean directed;
         private String normalize;
+        private String type;
 
         public BCANormalization getNormalizeEnum() {
             return normalize == null ? BCANormalization.NONE : BCANormalization.valueOf(normalize.toUpperCase());
@@ -352,13 +356,15 @@ public class Configuration {
             this.epsilon = epsilon;
         }
 
-        public boolean isDirected() {
-            return directed;
+        public String getType() {
+            return type;
         }
 
-        public void setDirected(boolean directed) {
-            this.directed = directed;
+        public void setType(String type) {
+            this.type = type;
         }
+
+        public BCAType getTypeEnum(){ return BCAType.valueOf(type.toUpperCase());}
 
     }
 

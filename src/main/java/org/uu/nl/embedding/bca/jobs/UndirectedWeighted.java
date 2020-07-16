@@ -19,21 +19,20 @@ import java.util.TreeMap;
 import java.util.stream.IntStream;
 
 
+import org.uu.nl.embedding.bca.util.BCAJob;
+import org.uu.nl.embedding.bca.util.BCAJobStable;
+import org.uu.nl.embedding.util.InMemoryRdfGraph;
+
 /**
  * @author Jurian Baas
  */
-public class UndirectedWeighted extends BCAJob {
+public class UndirectedWeighted extends BCAJobStable {
 
-	private final int[][] vertexOut, vertexIn, edgeOut, edgeIn;
-
-	public UndirectedWeighted(InMemoryRdfGraph graph, int bookmark,
-							  double alpha, double epsilon,
-							  int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
-		super(bookmark, false, alpha, epsilon, graph);
-		this.vertexOut = vertexOut;
-		this.vertexIn = vertexIn;
-		this.edgeOut = edgeOut;
-		this.edgeIn = edgeIn;
+	public UndirectedWeighted(
+			InMemoryRdfGraph graph, int bookmark,
+			double alpha, double epsilon,
+			int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
+		super(bookmark, true, alpha, epsilon, graph, vertexOut, vertexIn, edgeOut, edgeIn);
 	}
 
 	@Override
@@ -107,19 +106,13 @@ public class UndirectedWeighted extends BCAJob {
 				// We can already tell that the neighbor will not have enough paint to continue
 				if(partialWetPaint < epsilon)
 					continue;
+	protected int[] getIndexes(boolean reverse, int focusNode, int[][] indexIn, int[][] indexOut) {
 
-				// Log(n) time lookup
-				if (nodeTree.containsKey(vertexIn[focusNode][i])) {
-					nodeTree.get(vertexIn[focusNode][i]).addPaint(partialWetPaint);
-				} else {
+		int[] index = new int[indexIn[focusNode].length + indexOut[focusNode].length];
+		System.arraycopy(indexIn[focusNode], 0, index, 0, indexIn[focusNode].length);
+		System.arraycopy(indexOut[focusNode], 0, index, indexIn[focusNode].length, indexOut[focusNode].length);
 
-					// Remember which node we came from so we don't go back
-					// Remember which predicate we used to get here
-					nodeTree.put(vertexIn[focusNode][i], new PaintedNode(vertexIn[focusNode][i], partialWetPaint));
-				}
-			}
-		}
-		return bcv;
+		return index;
 	}
 	
 	public BCV doWorkInclPreds(final InMemoryRdfGraph graph, final boolean reverse) {
