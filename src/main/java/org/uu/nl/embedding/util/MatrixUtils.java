@@ -11,6 +11,11 @@ import org.uu.nl.embedding.lensr.LensrModel;
 import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
 
+/**
+ * 
+ * @author Euan Westenbroek
+ *
+ */
 public class MatrixUtils {
 
     private final static Logger logger = Logger.getLogger(MatrixUtils.class);

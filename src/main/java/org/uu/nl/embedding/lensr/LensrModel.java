@@ -331,10 +331,13 @@ public class LensrModel {
 		Matrix embedTruth = embedLogicGraph(graphT);
 		Matrix embedFalse = embedLogicGraph(graphF);
 		
+		/*
 		res = sqrdEuclidDistance(embedRule, embedFalse) - sqrdEuclidDistance(embedRule, embedTruth);
 		res += margin;
 		
 		return Math.max(res, 0);
+		*/
+		return 0d;
 	}
 
 	private double embeddingTrainer(final ArrayList<LogicRuleSet> formulaeSets) { // = L_emb
@@ -409,7 +412,7 @@ public class LensrModel {
 		int[][] images = new int[10][]; // TEMP variable for 'training images'.
 		// wrs een holder voor de huidige rdf.
 		
-		qEmbedder = qInit();
+		//qEmbedder = qInit();
 		// q(h(x)) = relation prediction van GloVe if(personX == personY).
 		// q(G) = prediction obv d-DNNF graph if(personX == personY).
 		
@@ -441,7 +444,7 @@ public class LensrModel {
 						allTrueAssignments.addAll(curCnfFormula.getTrueAssignments());
 						allFalseAssignments.addAll(curCnfFormula.getFalseAssignments());
 						// Theta_q = argmin(Theta_q, L_emb)
-						qEmbedder = updateEmbedder(qEmbedder, Theta_q);
+						//qEmbedder = updateEmbedder(qEmbedder, Theta_q);
 				}}
 				
 			}
@@ -474,9 +477,9 @@ public class LensrModel {
 		 *
 		 */
 		
-		double lossResult = sqrdEuclidDistance(graphEmbedding, relationPredEmbedding);
+		//double lossResult = sqrdEuclidDistance(graphEmbedding, relationPredEmbedding);
 		
-		return lossResult;
+		return 0d;
 	}
 	
 	private double crossEntropyLoss(final Matrix graphEmbedding, final Matrix relationPredEmbedding) { // MOETEN HIER WEL DE EMBEDDINGS IN?????
@@ -512,12 +515,14 @@ public class LensrModel {
 			else if (type == "Literal") {}
 			else if (type == "Global") {}
 		}
+		return new Matrix(0,0);
 		
 	}
 	
 	
 	private Matrix updateEmbedder(Matrix curEmbedder, Object Theta_q) {
-		
+
+		return new Matrix(0,0);
 	}
 	
 	private void backwardsPropagation() { // ??

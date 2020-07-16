@@ -6,7 +6,7 @@ public class LensrAlgo {
 		//TODO: do stuff
 	}
 	
-	public Matrix embedLogicGraph() {
+	public void /*Matrix*/ embedLogicGraph() {
 		
 	}
 }

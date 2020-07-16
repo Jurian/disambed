@@ -112,7 +112,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 					final BCV bcv = completionService.take().get();
 					
 					ExactSameDateLogic xSameDateLogic = new ExactSameDateLogic();
-					final BCV awareBcv = addDateAwareWindow(bcv, xSameDateLogic, 0, graph);
+					final BCV awareBcv = addDateAwareWinnow(bcv, xSameDateLogic, 0, graph);
 
 					switch (config.getBca().getNormalizeEnum()) {
 						case UNITY:
@@ -179,7 +179,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	 * @version 1.0
 	 * @since 25-05-2020
 	 */
-	protected BCV addDateAwareWindow(final BCV bcv, final DateCompareLogic dateRule, final int daysDifference, final InMemoryRdfGraph graph) {
+	protected BCV addDateAwareWinnow(final BCV bcv, final DateCompareLogic dateRule, final int daysDifference, final InMemoryRdfGraph graph) {
 		
 		final int root = bcv.getRootNode();
 		final BCV awareBcv = new BCV(root);

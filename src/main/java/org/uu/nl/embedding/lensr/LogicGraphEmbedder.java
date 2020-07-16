@@ -37,6 +37,7 @@ public class LogicGraphEmbedder {
 	
 	// Utility variables
 	protected HashMap<String, Integer> typeIndices;
+	protected HashMap<Integer, String> indicesTypes;
 	
 	/*
 	 * Firstly, the constructor method and all 
@@ -73,6 +74,14 @@ public class LogicGraphEmbedder {
 		typeIndices.put("NOT", 2);
 		typeIndices.put("Leaf", 3);
 		typeIndices.put("Global", 4);
+
+		indicesTypes = new HashMap<Integer, String>();
+		
+		indicesTypes.put(0, "AND");
+		indicesTypes.put(1, "OR");
+		indicesTypes.put(2, "NOT");
+		indicesTypes.put(3, "Leaf");
+		indicesTypes.put(4, "Global");
 	}
 	
 	/**
@@ -160,7 +169,7 @@ public class LogicGraphEmbedder {
 		// OR-nodes regularization
 		for(int v : this.orNodesF) {
 			nodeGraph = graph.getIntGraphMap().get(v);
-			subResult = subResult.plus(orLoss(nodeGraph.getChildGraphs()));
+			//subResult = subResult.plus(orLoss(nodeGraph.getChildGraphs()));
 			
 		}
 		lossResult = lossResult.plus(subResult);
@@ -171,7 +180,7 @@ public class LogicGraphEmbedder {
 			nodeGraph = graph.getIntGraphMap().get(v);
 			childNodes = new HashMap<Integer, DdnnfGraph>(nodeGraph.getChildGraphs());
 			 
-			subResult = subResult.plus(andLoss(childNodes));
+			//subResult = subResult.plus(andLoss(childNodes));
 		}
 		lossResult = lossResult.plus(subResult);
 		
@@ -182,7 +191,7 @@ public class LogicGraphEmbedder {
 	 * 
 	 * @param childNodes
 	 * @return
-	 */
+	 *//*
 	private Matrix orLoss(final HashMap<Integer, DdnnfGraph> childNodes) {
 		Matrix vector, sqrdVec;
 		Matrix onesM = MatrixUtils.onesMatrix(childNodes.size(), 1);
@@ -202,7 +211,7 @@ public class LogicGraphEmbedder {
 	 * 
 	 * @param childNodes
 	 * @return
-	 */
+	 *//*
 	private Matrix andLoss(final HashMap<Integer, DdnnfGraph> childNodes) {
 		
 		// Generate Vk and VkT
@@ -220,7 +229,7 @@ public class LogicGraphEmbedder {
 	 * 
 	 * @param childNodes
 	 * @return
-	 */
+	 *//*
 	private Matrix VertexMatrixK(HashMap<Integer, DdnnfGraph> childNodes) { // Gaat dit helemaal goed?
 		Matrix Vk = new Matrix(numNodes, childNodes.size());
 		
@@ -230,13 +239,14 @@ public class LogicGraphEmbedder {
 						embedLogicGraph(childNodes.get(i))); // Vector verticaal (zoals nu) of horizontaal erin zetten?
 		}
 		return Vk;
-	}
+	}*/
 	
 	/**
 	 * 
 	 * @param graph
 	 * @return a vertical vector as Matrix object.
 	 */
+	/*
 	private Matrix embedLogicGraph(final DdnnfGraph graph) { // q(.)
 		HashMap<Integer, DdnnfGraph> graphMap = graph.getIntGraphMap();
 		HashMap<Integer, DdnnfGraph> notSet = graph.getNotSet();
@@ -245,9 +255,74 @@ public class LogicGraphEmbedder {
 	
 	/**
 	 * 
+	 * @param input
+	 * @param layerTypes
+	 * @return
+	 */
+	private HashMap<String, ArrayList<Matrix>> feedForward(final Matrix input, final int[] layerTypes) {
+		ArrayList<Matrix> activations = new ArrayList<Matrix>();
+		ArrayList<Matrix> vectors = new ArrayList<Matrix>();
+		Matrix activation, vector;
+		
+		activation = input;
+		activations.add(activation);
+		for (int l = 0; l < layerTypes.length; l++) {
+
+			// Multiply D^(1/2)*A*D^(1/2) by the input.
+			vector = this.DADTilde.copy();
+			vector = vector.times(activation);
+			
+			// Depending on node type, multiply vector by
+			// respective weights and plus its biases.
+			switch (layerTypes[l]) {
+			case 0: // AND node.
+				// Multiply input by its weights, add its biases.
+				vector = vector.times(Wand[l]);
+				vector = vector.plus(Band[l]);
+			case 1: // OR node.
+				// Multiply input by its weights, add its biases.
+				vector = vector.times(Wor[l]);
+				vector = vector.plus(Bor[l]);
+			case 2: // NOT node.
+				// Multiply input by its weights, add its biases.
+				vector = vector.times(Wnot[l]);
+				vector = vector.plus(Bnot[l]);
+			case 3: // Leaf node.
+				// Multiply input by its weights, add its biases.
+				vector = vector.times(Wleaf[l]);
+				vector = vector.plus(Bleaf[l]);
+			case 4: // Global node.
+				// Multiply input by its weights, add its biases.
+				vector = vector.times(Wglobal[l]);
+				vector = vector.plus(Bglobal[l]);
+			default: // Shouldn't arrive here.
+				// Multiply input by its weights, add its biases.
+				vector = vector.times(Wglobal[l]);
+				vector = vector.plus(Bglobal[l]);
+			}
+			// Activate the output.
+			activation = af.sigmoid(vector);
+			// Save both the vector and its activation for back-prop.
+			activations.add(activation);
+			vectors.add(vector);
+		}
+		
+		HashMap<String, ArrayList<Matrix>> avs = new HashMap<String, ArrayList<Matrix>>();
+		// Add the activations and vectors to the HashMap and return the result.
+		avs.put("activations", activations);
+		avs.put("vectors", vectors);
+		return avs;
+	}
+	
+	
+	
+	
+	
+	/**
+	 * 
 	 * @param graph
 	 * @return a vertical vector as Matrix object.
-	 */
+	 *//*
 	private ArrayList<HashMap<String, ArrayList<Matrix>>> embedGraphForBackProp(final DdnnfGraph graph) { // q(.)
 		HashMap<Integer, DdnnfGraph> graphMap = graph.getIntGraphMap();
 		HashMap<Integer, DdnnfGraph> notSet = graph.getNotSet();
@@ -340,7 +415,7 @@ public class LogicGraphEmbedder {
 				typedAvs.set(this.typeIndices.get("OR"), avs);
 				return typedAvs;
 			}
-		}
+		}/*
 		else { // if (graphMap.get(node).getLogicType() == "Leaf")
 			Matrix vec = VectorUtils.getVector(graphMap.get(node).getFormula());
 			ArrayList<Matrix> activations, vectors;
@@ -352,13 +427,13 @@ public class LogicGraphEmbedder {
 			avs.put("vectors", vectors);
 			/*
 			 * Dit hierboven uitbreiden in andere types en extra dimensie list toevoegen voor updaten.
-			 */
+			 
 			ddddddddddddddddddddddddd
 			avs = typedAvs.get(this.typeIndices.get("Leaf"));
 			avs = feedForwardTypeRecForBackProp(avs, Wleaf, Bleaf, 0);
 			typedAvs.set(this.typeIndices.get("Leaf"), avs);
 			return typedAvs;
-		}
+		}*/
 		
 		// Return below results in error.
 		return typedAvs;
@@ -532,7 +607,8 @@ public class LogicGraphEmbedder {
 	 * @return
 	 */
 	private Matrix feedForward(final DdnnfGraph graph) {
-		return embedLogicGraph(graph);
+		//return embedLogicGraph(graph);
+		return new Matrix(0,0);
 	}
 
 	/**
