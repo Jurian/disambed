@@ -35,16 +35,16 @@ import java.util.concurrent.*;
  */
 public class BookmarkColoring implements CoOccurrenceMatrix {
 
-	private final ArrayList<Integer> coOccurrenceIdx_I;
-	private final ArrayList<Integer> coOccurrenceIdx_J;
-	private final ArrayList<Float> coOccurrenceValues;
+	private ArrayList<Integer> coOccurrenceIdx_I;
+	private ArrayList<Integer> coOccurrenceIdx_J;
+	private ArrayList<Float> coOccurrenceValues;
 	private ArrayList<Integer>  awareOccurrenceIdx_I;
 	private ArrayList<Integer>  awareOccurrenceIdx_J;
 	private ArrayList<Float>  awareOccurrenceValues;
 	private Map<String, Double> bcvMaxVals;
 	private final int vocabSize;
 	private double max;
-	private final int focusVectors, contextVectors
+	private int focusVectors, contextVectors;
 	private int coOccurrenceCount;
 	private int awareOccurrenceCount;
 	private Permutation permutation;
@@ -67,7 +67,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		final boolean[] performBCA = new boolean[verts.length];
 
 		this.graph = graph;
-		this.vocabSize = jobs.length;
+		this.vocabSize = verts.length;
 		
 		// Initialization standard co-occurrence matrix
 		this.coOccurrenceIdx_I = new ArrayList<>(vocabSize);
@@ -94,28 +94,27 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 			final NodeInfo nodeInfo = NodeInfo.fromByte(type);
 
 			switch (nodeInfo) {
-				case URI:
-					if(output.outputUriNodes() && (output.getUri().isEmpty() || output.getUri().stream().anyMatch(key::startsWith))) {
-						performBCA[i] = true;
-						notSkipped++;
-					}
-					break;
-				case BLANK:
-					if(output.outputBlankNodes()) {
-						performBCA[i] = true;
-						notSkipped++;
-					}
-					break;
-				case LITERAL:
-					if(output.outputLiteralNodes() && (output.getLiteral().isEmpty() || output.getLiteral().stream().anyMatch(key::startsWith))) {
-						performBCA[i] = true;
-						notSkipped++;
-					}
-					break;
+			case URI:
+				if(output.outputUriNodes() && (output.getUri().isEmpty() || output.getUri().stream().anyMatch(key::startsWith))) {
+					performBCA[i] = true;
+					notSkipped++;
+				}
+				break;
+			case BLANK:
+				if(output.outputBlankNodes()) {
+					performBCA[i] = true;
+					notSkipped++;
+				}
+				break;
+			case LITERAL:
+				if(output.outputLiteralNodes() && (output.getLiteral().isEmpty() || output.getLiteral().stream().anyMatch(key::startsWith))) {
+					performBCA[i] = true;
+					notSkipped++;
+				}
+				break;
 			}
 		}
-
-		this.graph = graph;
+		
 		this.focusVectors = notSkipped;
 		this.contextVectors = verts.length;
 		this.coOccurrenceIdx_I = new ArrayList<>(notSkipped);
@@ -151,13 +150,6 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 							graph, bookmark,
 							alpha, epsilon,
 							this.inVertex, this.outVertex, this.inEdge, this.outEdge));
-				} else {
-					completionService.submit(new UndirectedWeighted(
-							graph, bookmark,
-							alpha, epsilon,
-							this.inVertex, this.outVertex, this.inEdge, this.outEdge));
-				}
-							inVertex, outVertex, inEdge, outEdge));
 					break;
 				case UNDIRECTED:
 					completionService.submit(new UndirectedWeighted(
