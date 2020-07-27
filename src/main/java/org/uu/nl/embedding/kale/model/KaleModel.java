@@ -1,18 +1,22 @@
 package org.uu.nl.embedding.kale.model;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import org.uu.nl.embedding.kale.struct.RuleSet;
 import org.uu.nl.embedding.kale.struct.Triple;
-import org.uu.nl.embedding.kale.struct.TripleMatrix;
+import org.uu.nl.embedding.kale.struct.KaleMatrix;
 import org.uu.nl.embedding.kale.struct.TripleRule;
 import org.uu.nl.embedding.kale.struct.TripleSet;
 import org.uu.nl.embedding.kale.util.MetricMonitor;
 import org.uu.nl.embedding.kale.util.NegativeRuleGenerator;
 import org.uu.nl.embedding.kale.util.NegativeTripleGenerator;
+import org.uu.nl.embedding.kale.util.StringSplitter;
 
 
 /**
@@ -27,13 +31,14 @@ public class KaleModel {
 	public TripleSet m_Triples;
 	public RuleSet m_TrainingRules;
 	
-	public TripleMatrix m_Entity_Factor_MatrixE;
-	public TripleMatrix m_Relation_Factor_MatrixR;
-	public TripleMatrix m_MatrixEGradient;
-	public TripleMatrix m_MatrixRGradient;
+	public KaleMatrix m_Entity_Factor_MatrixE;
+	public KaleMatrix m_Relation_Factor_MatrixR;
+	public KaleMatrix m_MatrixEGradient;
+	public KaleMatrix m_MatrixRGradient;
 	
 	public int m_NumRelation;
 	public int m_NumEntity;
+	public int m_NumGloveVecs;
 	public String m_MatrixE_prefix = "";
 	public String m_MatrixR_prefix = "";
 	
@@ -45,6 +50,12 @@ public class KaleModel {
 	public int m_NumIteration = 1000;
 	public int m_OutputIterSkip = 50;
 	public double m_Weight = 0.01;
+	
+	public boolean isGlove;
+	private ArrayList<Integer> coOccurrenceIdx_I = null;
+	private ArrayList<Integer> coOccurrenceIdx_J = null;
+	private ArrayList<Float> coOccurrenceValues = null;
+	private int iFirstEdge;
 	
 	/**
 	 * 
@@ -65,18 +76,25 @@ public class KaleModel {
 	 * @param fnTestingTriples
 	 * @param fnTrainingRules
 	 * @throws Exception
+	 * @author iieir-km, Euan Westenbroek
 	 */
 	public void Initialization(final int iNumRelation, final int iNumEntity,
-			String fnTrainingTriples, String fnValidateTriples, String fnTestingTriples,
-			String fnTrainingRules) throws Exception {
+			final String fnTrainingTriples, final String fnValidateTriples, final String fnTestingTriples,
+			final String fnTrainingRules, final String fnGloveVectors) throws Exception {
+		
 		this.m_NumRelation = iNumRelation;
 		this.m_NumEntity = iNumEntity;
-		this.m_MatrixE_prefix = "MatrixE-k" + m_NumFactor 
+		this.m_NumGloveVecs = iNumRelation + iNumEntity;
+		
+		if (fnGloveVectors != null) this.isGlove = true;
+		else this.isGlove = false;
+		
+		this.m_MatrixE_prefix = "MatrixE-k" + this.m_NumFactor 
 				+ "-d" + decimalFormat.format(m_Delta)
 				+ "-ge" + decimalFormat.format(m_GammaE) 
 				+ "-gr" + decimalFormat.format(m_GammaR)
 				+ "-w" +  decimalFormat.format(m_Weight);
-		this.m_MatrixR_prefix = "MatrixR-k" + m_NumFactor 
+		this.m_MatrixR_prefix = "MatrixR-k" + this.m_NumFactor 
 				+ "-d" + decimalFormat.format(m_Delta)
 				+ "-ge" + decimalFormat.format(m_GammaE) 
 				+ "-gr" + decimalFormat.format(m_GammaR)
@@ -99,23 +117,35 @@ public class KaleModel {
 		System.out.println("Success.");		
 		
 		System.out.println("\nRandomly initializing matrix E and matrix R");
-		this.m_Entity_Factor_MatrixE = new TripleMatrix(this.m_NumEntity, this.m_NumFactor);
-		this.m_Entity_Factor_MatrixE.setToRandom();
-		this.m_Entity_Factor_MatrixE.normalizeByRow();
-		this.m_Relation_Factor_MatrixR = new TripleMatrix(this.m_NumRelation, this.m_NumFactor);
-		this.m_Relation_Factor_MatrixR.setToRandom();
-		this.m_Relation_Factor_MatrixR.normalizeByRow();
+		this.m_Entity_Factor_MatrixE = new KaleMatrix(this.m_NumEntity, this.m_NumFactor);
+		this.m_Relation_Factor_MatrixR = new KaleMatrix(this.m_NumRelation, this.m_NumFactor);
+		if (this.isGlove)  {
+			loadGloveVectors(fnGloveVectors);
+			this.m_Entity_Factor_MatrixE = loadGloveEntityVectors();
+			this.m_Relation_Factor_MatrixR = loadGloveRelationVectors();
+			/*
+			 *
+			this.m_Entity_Factor_MatrixE.normalizeByRow();
+			this.m_Relation_Factor_MatrixR.normalizeByRow(); 
+			 */
+		}
+		else { 
+			this.m_Entity_Factor_MatrixE.setToRandom();
+			this.m_Relation_Factor_MatrixR.setToRandom();
+			this.m_Entity_Factor_MatrixE.normalizeByRow();
+			this.m_Relation_Factor_MatrixR.normalizeByRow();
+		}
 		System.out.println("Success.");
 		
 		System.out.println("\nInitializing gradients of matrix E and matrix R");
-		this.m_MatrixEGradient = new TripleMatrix(this.m_NumEntity, this.m_NumFactor);
-		this.m_MatrixRGradient = new TripleMatrix(this.m_NumRelation, this.m_NumFactor);
+		this.m_MatrixEGradient = new KaleMatrix(this.m_NumEntity, this.m_NumFactor);
+		this.m_MatrixRGradient = new KaleMatrix(this.m_NumRelation, this.m_NumFactor);
 		System.out.println("Success.");
 	}
 	
 	public void Initialization(String strNumRelation, String strNumEntity,
 			String fnTrainingTriples, String fnValidateTriples, String fnTestingTriples,
-			String fnTrainingRules) throws Exception {
+			String fnTrainingRules, final String fnGloveVectors) throws Exception {
 		
 		m_NumRelation = Integer.parseInt(strNumRelation);
 		m_NumEntity = Integer.parseInt(strNumEntity);
@@ -125,7 +155,133 @@ public class KaleModel {
 				fnTrainingTriples, 
 				fnValidateTriples, 
 				fnTestingTriples, 
-				fnTrainingRules); 
+				fnTrainingRules,
+				fnGloveVectors); 
+	}
+	
+	/**
+	 * 
+	 * @param fnGloveVectors
+	 * @throws Exception
+	 * @author Euan Westenbroek
+	 */
+	public void loadGloveVectors(final String fnGloveVectors) throws Exception {
+		BufferedReader reader = new BufferedReader(new InputStreamReader(
+				new FileInputStream(fnGloveVectors), "UTF-8"));
+		// Initialize matrix.
+		this.coOccurrenceIdx_I = new ArrayList<Integer>();
+		this.coOccurrenceIdx_J = new ArrayList<Integer>();
+		this.coOccurrenceValues = new ArrayList<Float>();
+		
+		/*
+		 * FILE FORMAT:
+		 * 
+		 * line1 <- ["NEIGHBORS", nodeID1, neighborID1, neighborID2, ..., neighborIDn]
+		 * line2 <- ["VALUES", nodeID1, value1, value2, ..., value_n]
+		 * ...
+		 */
+		
+		String line = "";
+		int nodeID, neighborID;
+		int vecCounter = 0;
+		float value;
+		boolean neighborsLine = true;
+		while ((line = reader.readLine()) != null) {
+			String[] tokens = StringSplitter.RemoveEmptyEntries(StringSplitter
+					.split("\t ", line));
+
+			if (tokens[0] == "NEIGHBORS") {
+				// Check if correct line order is maintained.
+				if (!neighborsLine) throw new Exception("load error in KaleModel.loadGloveVectors(): neighborsLine expected.");
+				// Parse nodeID and check.
+				nodeID = Integer.parseInt(tokens[1]);
+				if (nodeID < 0 || nodeID >= this.m_NumGloveVecs) {
+					throw new Exception("load error in KaleModel.loadGloveVectors(): invalid nodeID.");
+				}
+				// Add current nodeID and each neighbor to matrix.
+				for (int col = 2; col < tokens.length; col++) {
+					neighborID = Integer.parseInt(tokens[col]);
+					if (neighborID < 0 || neighborID >= this.m_NumGloveVecs) {
+						throw new Exception("load error in KaleModel.loadGloveVectors(): invalid neighborID.");
+					}
+					this.coOccurrenceIdx_I.add(nodeID);
+					this.coOccurrenceIdx_J.add(neighborID);
+				}
+				
+			} else if (tokens[0] == "VALUES") {
+				// Check if correct line order is maintained.
+				if (neighborsLine) throw new Exception("load error in KaleModel.loadGloveVectors(): values line expected (i.e. not neighborsLine expected).");
+				// Parse nodeID and check.
+				nodeID = Integer.parseInt(tokens[1]);
+				if (nodeID != this.coOccurrenceIdx_I.get(this.coOccurrenceIdx_I.size()-1)) {
+					throw new Exception("load error in KaleModel.loadGloveVectors(): current nodeID does not match expected nodeID.");
+				}
+				if (nodeID < 0 || nodeID >= this.m_NumGloveVecs) {
+					throw new Exception("load error in KaleModel.loadGloveVectors(): invalid nodeID.");
+				}
+				// Add current nodeID and each neighbor to matrix.
+				for (int col = 2; col < tokens.length; col++) {
+					value = Float.parseFloat(tokens[col]);
+					this.coOccurrenceValues.add(value);
+				}
+				vecCounter++;
+				
+			} else { throw new Exception("load error in KaleModel.loadGloveVectors(): invalid row header."); }
+		}
+		if (vecCounter != this.m_NumGloveVecs) {
+			throw new Exception("load error in KaleModel.loadGloveVectors(): vecCounter does not match expected number of vectors.");
+		}
+		
+		reader.close();
+	}
+
+	/**
+	 * 
+	 * @return
+	 * @throws Exception
+	 * @author Euan Westenbroek
+	 */
+	public KaleMatrix loadGloveEntityVectors() throws Exception {
+		KaleMatrix kMatrix = new KaleMatrix(this.m_NumEntity, this.m_NumFactor);
+		
+		int nodeID, neighborID, v = 0, nodeCntr = 0;
+		float value;
+		// Get matrix values and add to KaleMatrix.
+		while (nodeCntr < this.m_NumEntity) {
+			nodeID = this.coOccurrenceIdx_I.get(v);
+			neighborID = this.coOccurrenceIdx_J.get(v);
+			value = this.coOccurrenceValues.get(v);
+			
+			kMatrix.add(nodeCntr, neighborID, value);
+			
+			v++;
+			// If next node is different than current node:
+			// increment node counter.
+			if (this.coOccurrenceIdx_I.get(v) != nodeID) nodeCntr++;
+		}
+		this.iFirstEdge = v;
+		return kMatrix;
+	}
+	
+	public KaleMatrix loadGloveRelationVectors() throws Exception {
+		KaleMatrix kMatrix = new KaleMatrix(this.m_NumEntity, this.m_NumFactor);
+		
+		int edgeID, neighborID, e = this.iFirstEdge, edgeCntr = 0;
+		float value;
+		// Get matrix values and add to KaleMatrix.
+		while (edgeCntr < this.m_NumRelation) {
+			edgeID = this.coOccurrenceIdx_I.get(e);
+			neighborID = this.coOccurrenceIdx_J.get(e);
+			value = this.coOccurrenceValues.get(e);
+			
+			kMatrix.add(edgeCntr, neighborID, value);
+			
+			e++;
+			// If next node is different than current node:
+			// increment node counter.
+			if (!this.coOccurrenceIdx_I.contains(e) || (this.coOccurrenceIdx_I.get(e) != edgeID)) edgeCntr++;
+		}
+		return kMatrix;
 	}
 	
 	public void Cochez_learn() throws Exception {
@@ -218,7 +374,7 @@ public class KaleModel {
 				}
 			}
 			
-			double m_BatchSize= m_TrainingTriples.triples()/(double)m_NumMiniBatch;
+			double m_BatchSize = m_TrainingTriples.triples()/(double)m_NumMiniBatch;
 			for (int iID = 0; iID < m_NumMiniBatch; iID++) {
 				StochasticUpdater stochasticUpdate = new StochasticUpdater(
 						lstPosTriples.get(iID),
@@ -236,7 +392,8 @@ public class KaleModel {
 //	###					margin
 						m_Delta,
 //	###					weight
-						m_Weight);
+						m_Weight,
+						this.isGlove);
 				stochasticUpdate.stochasticIteration();
 			}
 
