@@ -1,6 +1,8 @@
 package org.uu.nl.embedding.kale;
 
 import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.HashSet;
 
 import org.uu.nl.embedding.kale.model.KaleModel;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
@@ -13,6 +15,8 @@ public class KaleRunner {
 	private final InMemoryRdfGraph graph;
 	private final int iNumEntities;
 	private final int iNumRelations;
+	private final HashSet<String> uniqueRelationTypes;
+	private final int iNumUniqueRelations;
 	
 	private int m_NumFactor = 20;
 	private int m_NumMiniBatch = 100;
@@ -31,6 +35,7 @@ public class KaleRunner {
 	private String fnValidateTriples;
 	private String fnTestingTriples;
 	private String fnTrainingRules;
+	private String fnGloveVectors;
 	
 	/**
 	 * 
@@ -42,8 +47,16 @@ public class KaleRunner {
 		this.graph = graph;
 		final int[] verts = graph.getVertices().toIntArray();
 		final int[] edges = graph.getEdges().toIntArray();
+		uniqueRelationTypes = new HashSet<String>();
+		
+		for (int e = 0; e < edges.length; e++) {
+			String predicate = graph.getEdgeLabelProperty().getValueAsString(edges[e]).toLowerCase();
+			if (!uniqueRelationTypes.contains(predicate)) uniqueRelationTypes.add(predicate);
+		}
+		
 		this.iNumEntities = verts.length;
 		this.iNumRelations = edges.length;
+		this.iNumUniqueRelations = uniqueRelationTypes.size();
 		
 
 		this.fnSaveFile = "result-k" + m_NumFactor 
@@ -56,14 +69,16 @@ public class KaleRunner {
 		this.fnValidateTriples = this.FILEPATH + "validate_triples";
 		this.fnTestingTriples = this.FILEPATH + "testing_triples";
 		this.fnTrainingRules = this.FILEPATH + "training_rules";
+		this.fnGloveVectors = this.FILEPATH + "glove_vectors";
 		
 		this.kale = new KaleModel();
-		this.kale.Initialization(this.iNumRelations, 
+		this.kale.Initialization(this.iNumUniqueRelations, 
 				this.iNumEntities, 
 				this.fnTrainingTriples, 
 				this.fnValidateTriples, 
 				this.fnTestingTriples, 
-				this.fnTrainingRules);
+				this.fnTrainingRules,
+				this.fnGloveVectors);
 		
 		
 	}
