@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import org.uu.nl.embedding.kale.struct.Triple;
 import org.uu.nl.embedding.kale.struct.TripleSet;
 import org.uu.nl.embedding.kale.struct.TripleRule;
-import org.uu.nl.embedding.kale.struct.TripleMatrix;
+import org.uu.nl.embedding.kale.struct.KaleMatrix;
 
 
 /**
@@ -21,14 +21,15 @@ public class StochasticUpdater {
 //	public ArrayList<Rule> lstFstRelNegRules;
 	public ArrayList<TripleRule> lstSndRelNegRules;
 
-	public TripleMatrix MatrixE;
-	public TripleMatrix MatrixR;
-	public TripleMatrix MatrixEGradient;
-	public TripleMatrix MatrixRGradient;
+	public KaleMatrix MatrixE;
+	public KaleMatrix MatrixR;
+	public KaleMatrix MatrixEGradient;
+	public KaleMatrix MatrixRGradient;
 	public double dGammaE;
 	public double dGammaR;
 	public double dDelta;
 	public double m_Weight;
+	boolean isGlove;
 	
 	public StochasticUpdater(
 			ArrayList<Triple> inLstPosTriples,
@@ -36,14 +37,15 @@ public class StochasticUpdater {
 			ArrayList<Triple> inLstTailNegTriples,
 			ArrayList<TripleRule> inlstRules,
 			ArrayList<TripleRule> inlstSndRelNegRules,
-			TripleMatrix inMatrixE, 
-			TripleMatrix inMatrixR,
-			TripleMatrix inMatrixEGradient, 
-			TripleMatrix inMatrixRGradient,
+			KaleMatrix inMatrixE, 
+			KaleMatrix inMatrixR,
+			KaleMatrix inMatrixEGradient, 
+			KaleMatrix inMatrixRGradient,
 			double inGammaE,
 			double inGammaR,
 			double inDelta,
-			double in_m_Weight) {
+			double in_m_Weight,
+			final boolean isGlove) {
 		lstPosTriples = inLstPosTriples;
 		lstHeadNegTriples = inLstHeadNegTriples;
 		lstTailNegTriples = inLstTailNegTriples;
@@ -57,9 +59,98 @@ public class StochasticUpdater {
 		dGammaE = inGammaE;
 		dGammaR = inGammaR;
 		dDelta = inDelta;
+		this.isGlove = isGlove;
 	}
 	
+	/**
+	 * 
+	 * @throws Exception
+	 * @author Euan Westenbroek
+	 */
 	public void stochasticIteration() throws Exception {
+		if (this.isGlove) stochasticIterationGlove();
+		else stochasticIterationDefault();
+	}
+	
+	/**
+	 * 
+	 * @throws Exception
+	 * @author Euan Westenbroek
+	 */
+	public void stochasticIterationGlove() throws Exception {
+		this.MatrixEGradient.setToValue(0.0);
+		this.MatrixRGradient.setToValue(0.0);
+
+		// Loop through positive triples and calculate
+		// gradients.
+		for (int iID = 0; iID < this.lstPosTriples.size(); iID++) {
+			Triple PosTriple = this.lstPosTriples.get(iID);
+			Triple HeadNegTriple = this.lstHeadNegTriples.get(iID);
+			Triple TailNegTriple = this.lstTailNegTriples.get(iID);
+			
+			TripleGradient headGradient = new TripleGradient(
+					PosTriple,
+					HeadNegTriple,
+					this.MatrixE,
+					this.MatrixR,
+					this.MatrixEGradient,
+					this.MatrixRGradient,
+					this.dDelta,
+					this.isGlove);
+			headGradient.calculateGradient();
+
+			TripleGradient tailGradient = new TripleGradient(
+					PosTriple,
+					TailNegTriple,
+					MatrixE,
+					MatrixR,
+					MatrixEGradient,
+					MatrixRGradient,
+					dDelta,
+					this.isGlove);
+			tailGradient.calculateGradient();
+		}
+
+		for (int iID = 0; iID < lstRules.size(); iID++) {
+			TripleRule rule = lstRules.get(iID);
+			TripleRule sndRelNegrule = lstSndRelNegRules.get(iID);
+			
+			RuleGradient tailruleGradient = new RuleGradient(
+					rule,
+					sndRelNegrule,
+					MatrixE,
+					MatrixR,
+					MatrixEGradient,
+					MatrixRGradient,
+					dDelta,
+					this.isGlove);
+			tailruleGradient.calculateGradient(m_Weight);	
+		}
+		
+		MatrixEGradient.rescaleByRow();
+		MatrixRGradient.rescaleByRow();
+		
+		for (int i = 0; i < MatrixE.rows(); i++) {
+			for (int j = 0; j < MatrixE.columns(); j++) {
+				double dValue = MatrixEGradient.get(i, j);
+				MatrixEGradient.accumulatedByGrad(i, j);
+				double dLrate = Math.sqrt(MatrixEGradient.getSum(i, j)) + 1e-8;
+				MatrixE.add(i, j, -1.0 * dGammaE * dValue / dLrate);
+			}
+		}
+		for (int i = 0; i < MatrixR.rows(); i++) {
+			for (int j = 0; j < MatrixR.columns(); j++) {
+				double dValue = MatrixRGradient.get(i, j);
+				MatrixRGradient.accumulatedByGrad(i, j);
+				double dLrate = Math.sqrt(MatrixRGradient.getSum(i, j)) + 1e-8;
+				MatrixR.add(i, j, -1.0 * dGammaR * dValue / dLrate);
+			}
+		}
+		MatrixE.normalizeByRow();
+		MatrixR.normalizeByRow();
+	}
+	
+	public void stochasticIterationDefault() throws Exception {
 		MatrixEGradient.setToValue(0.0);
 		MatrixRGradient.setToValue(0.0);
 
@@ -76,7 +167,8 @@ public class StochasticUpdater {
 					MatrixR,
 					MatrixEGradient,
 					MatrixRGradient,
-					dDelta);
+					dDelta,
+					this.isGlove);
 			headGradient.calculateGradient();
 
 			TripleGradient tailGradient = new TripleGradient(
@@ -86,7 +178,8 @@ public class StochasticUpdater {
 					MatrixR,
 					MatrixEGradient,
 					MatrixRGradient,
-					dDelta);
+					dDelta,
+					this.isGlove);
 			tailGradient.calculateGradient();
 		}
 
@@ -101,7 +194,8 @@ public class StochasticUpdater {
 					MatrixR,
 					MatrixEGradient,
 					MatrixRGradient,
-					dDelta);
+					dDelta,
+					this.isGlove);
 			tailruleGradient.calculateGradient(m_Weight);	
 		}
 		

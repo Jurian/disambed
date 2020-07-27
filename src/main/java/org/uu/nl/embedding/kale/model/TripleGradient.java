@@ -1,7 +1,7 @@
 package org.uu.nl.embedding.kale.model;
 
 import org.uu.nl.embedding.kale.struct.Triple;
-import org.uu.nl.embedding.kale.struct.TripleMatrix;
+import org.uu.nl.embedding.kale.struct.KaleMatrix;
 
 
 /**
@@ -12,22 +12,24 @@ import org.uu.nl.embedding.kale.struct.TripleMatrix;
 public class TripleGradient {
 	public Triple PosTriple;
 	public Triple NegTriple;
-	public TripleMatrix MatrixE;
-	public TripleMatrix MatrixR;
-	public TripleMatrix MatrixEGradient;
-	public TripleMatrix MatrixRGradient;
+	public KaleMatrix MatrixE;
+	public KaleMatrix MatrixR;
+	public KaleMatrix MatrixEGradient;
+	public KaleMatrix MatrixRGradient;
 	public double dDelta;
 	double dPosPi;
 	double dNegPi;
+	boolean isGlove;
 	
 	public TripleGradient(
 			Triple inPosTriple,
 			Triple inNegTriple,
-			TripleMatrix inMatrixE, 
-			TripleMatrix inMatrixR,
-			TripleMatrix inMatrixEGradient, 
-			TripleMatrix inMatrixRGradient,
-			double inDelta) {
+			KaleMatrix inMatrixE, 
+			KaleMatrix inMatrixR,
+			KaleMatrix inMatrixEGradient, 
+			KaleMatrix inMatrixRGradient,
+			double inDelta,
+			final boolean isGlove) {
 		PosTriple = inPosTriple;
 		NegTriple = inNegTriple;
 		MatrixE = inMatrixE;
@@ -35,9 +37,87 @@ public class TripleGradient {
 		MatrixEGradient = inMatrixEGradient;
 		MatrixRGradient = inMatrixRGradient;
 		dDelta = inDelta;
+		this.isGlove = isGlove;
 	}
 	
+	/**
+	 * 
+	 * @param weight
+	 * @throws Exception
+	 * @author Euan Westenbroek
+	 */
 	public void calculateGradient() throws Exception {
+		if (this.isGlove) calculateGradientGlove(); // VERDER GAAN WAAR GEBLEVEN
+		else calculateGradientDefault();
+	}
+	
+	public void calculateGradientGlove() throws Exception {
+		int iNumberOfFactors = this.MatrixE.columns();
+		int iPosHead = this.PosTriple.head();
+		int iPosTail = this.PosTriple.tail();
+		int iPosRelation = this.PosTriple.relation();
+		int iNegHead = this.NegTriple.head();
+		int iNegTail = this.NegTriple.tail();
+		int iNegRelation = this.NegTriple.relation();
+		
+
+		/*
+		 * From paper:
+		 * 1 / (3d)
+		 * Where d is the dimension of the embedding space.
+		 */
+		double dValue = 1.0 / (3.0 * Math.sqrt(iNumberOfFactors));
+		double tripleEmbedding;
+		this.dPosPi = 0.0;
+		for (int p = 0; p < iNumberOfFactors; p++) {
+			/*
+			 * From paper:
+			 * ||e_i + r_k - e_j||_1
+			 * 
+			 * Where e_i, r_k, e_j are the GloVe vector embedding of
+			 * head entity, relation, and tail entity respectively.
+			 */
+			tripleEmbedding = this.MatrixE.get(iPosHead, p) + this.MatrixR.get(iPosRelation, p) - this.MatrixE.get(iPosTail, p);
+			this.dPosPi -= Math.abs(tripleEmbedding);
+		}
+		this.dPosPi *= dValue;
+		this.dPosPi += 1.0;
+		
+		dNegPi = 0.0;
+		for (int p = 0; p < iNumberOfFactors; p++) {
+			dNegPi -= Math.abs(MatrixE.get(iNegHead, p) + MatrixR.get(iNegRelation, p) - MatrixE.get(iNegTail, p));
+		}
+		dNegPi *= dValue;
+		dNegPi += 1.0;
+         
+		
+		if (dDelta - dPosPi + dNegPi > 0.0) {
+//		if (dDeltaAdapt - dPosPi + dNegPi > 0.0) {
+			for (int p = 0; p < iNumberOfFactors; p++) {
+				double dPosSgn = 0.0;
+				if (MatrixE.get(iPosHead, p) + MatrixR.get(iPosRelation, p) - MatrixE.get(iPosTail, p) > 0) {
+					dPosSgn = 1.0;
+				} else if (MatrixE.get(iPosHead, p) + MatrixR.get(iPosRelation, p) - MatrixE.get(iPosTail, p) < 0) {
+					dPosSgn = -1.0;
+				}
+				MatrixEGradient.add(iPosHead, p, dValue * dPosSgn);
+				MatrixEGradient.add(iPosTail, p, -1.0 * dValue * dPosSgn);
+				MatrixRGradient.add(iPosRelation, p, dValue * dPosSgn);
+//				System.out.println("true0:"+  dValue * dPosSgn);
+				double dNegSgn = 0.0;
+				if (MatrixE.get(iNegHead, p) + MatrixR.get(iNegRelation, p) - MatrixE.get(iNegTail, p) > 0) {
+					dNegSgn = 1.0;
+				} else if (MatrixE.get(iNegHead, p) + MatrixR.get(iNegRelation, p) - MatrixE.get(iNegTail, p) < 0) {
+					dNegSgn = -1.0;
+				}
+				MatrixEGradient.add(iNegHead, p, -1.0 * dValue * dNegSgn);
+				MatrixEGradient.add(iNegTail, p, dValue * dNegSgn);
+				MatrixRGradient.add(iNegRelation, p, -1.0 * dValue * dNegSgn);
+			}
+		}
+	}
+	
+	public void calculateGradientDefault() throws Exception {
 		int iNumberOfFactors = MatrixE.columns();
 		int iPosHead = PosTriple.head();
 		int iPosTail = PosTriple.tail();
