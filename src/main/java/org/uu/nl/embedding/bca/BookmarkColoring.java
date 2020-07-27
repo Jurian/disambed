@@ -196,7 +196,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 					
 					/*
 					 * invoegen ContextAwareBCV van Euan
-					 * addDateAwareWindow();
+					 * addDateAwareWinnow();
 					 */
 					
 					//System.out.println(bcv);
@@ -225,7 +225,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 				} catch (InterruptedException | ExecutionException e) {
 					e.printStackTrace();
 				} finally {
-					received ++;
+					received++;
 					pb.step();
 				}
 			}
@@ -237,6 +237,173 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		permutation = new Permutation(coOccurrenceCount);
 		awarePermutation = new Permutation(awareOccurrenceCount);
 	}
+	
+	/**
+	 * 
+	 * @param graph
+	 * @param config
+	 * @param isKale
+	 * @author Euan Westenbroek
+	 */
+	public BookmarkColoring(final InMemoryRdfGraph graph, final Configuration config, final boolean isKale) {
+		
+		final double alpha = config.getBca().getAlpha();
+		final double epsilon = config.getBca().getEpsilon();
+		final int[] verts = graph.getVertices().toIntArray();
+		final boolean[] performBCA = new boolean[verts.length];
+
+		this.graph = graph;
+		this.vocabSize = verts.length;
+		
+		this.bcvMaxVals = new HashMap<String, Double>();
+		final Configuration.Output output = config.getOutput();
+
+		this.inVertex = graph.getInNeighborhoods();
+		this.outVertex = graph.getOutNeighborhoods();
+		this.inEdge = new InEdgeNeighborhoodAlgorithm(config).compute(graph);
+		this.outEdge = new OutEdgeNeighborhoodAlgorithm(config).compute(graph);
+
+		int notSkipped = 0;
+
+		for(int i = 0; i < this.vocabSize; i++) {
+
+			final int vert = verts[i];
+			final byte type = (byte) graph.getVertexTypeProperty().getValueAsInt(vert);
+			final String key = graph.getVertexLabelProperty().getValueAsString(vert);
+			final NodeInfo nodeInfo = NodeInfo.fromByte(type);
+
+			switch (nodeInfo) {
+			case URI:
+				if(output.outputUriNodes() && (output.getUri().isEmpty() || output.getUri().stream().anyMatch(key::startsWith))) {
+					performBCA[i] = true;
+					notSkipped++;
+				}
+				break;
+			case BLANK:
+				if(output.outputBlankNodes()) {
+					performBCA[i] = true;
+					notSkipped++;
+				}
+				break;
+			case LITERAL:
+				if(output.outputLiteralNodes() && (output.getLiteral().isEmpty() || output.getLiteral().stream().anyMatch(key::startsWith))) {
+					performBCA[i] = true;
+					notSkipped++;
+				}
+				break;
+			}
+		}
+		
+		TreeMap<Integer, Integer> edgeIdMap = generateEdgeIdMap(graph);
+		// Initialization standard co-occurrence matrix
+		this.focusVectors = notSkipped;
+		final int nVectors = notSkipped + edgeIdMap.size();
+		this.coOccurrenceIdx_I = new ArrayList<>(nVectors);
+		this.coOccurrenceIdx_J = new ArrayList<>(nVectors);
+		this.coOccurrenceValues = new ArrayList<>(nVectors);
+
+		final int numThreads = config.getThreads();
+		this.graphConfig = config;
+
+		final ExecutorService es = Executors.newWorkStealingPool(numThreads);
+
+		CompletionService<BCV> completionService = new ExecutorCompletionService<>(es);
+
+		this.context2focus = new HashMap<>();
+		this.focus2context = new HashMap<>();
+		
+		// Create subgraphs according to config-file.
+		for(int i = 0, j = 0; i < this.vocabSize; i++) {
+			
+			// Skip unnecessary nodes.
+			if(!performBCA[i]) continue;
+			
+			final int bookmark = verts[i];
+			context2focus.put(bookmark, j);
+			focus2context.put(j, bookmark);
+			j++;
+
+			// Choose a graph neighborhood algorithm
+			switch (config.getBca().getTypeEnum()){
+
+				case DIRECTED:
+					completionService.submit(new DirectedWeighted(
+							graph, bookmark,
+							alpha, epsilon,
+							this.inVertex, this.outVertex, this.inEdge, this.outEdge));
+					break;
+				case UNDIRECTED:
+					/*
+					 * TODO: IN CALL() ADD OPTION FOR BCV FOR EDGES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+					 * 					 
+					 */
+					completionService.submit(new UndirectedWeighted(
+							graph, bookmark,
+							alpha, epsilon,
+							inVertex, outVertex, inEdge, outEdge));
+					break;
+				case HYBRID:
+					completionService.submit(new HybridWeighted(
+							graph, bookmark,
+							alpha, epsilon,
+							inVertex, outVertex, inEdge, outEdge));
+					break;
+			}
+		}
+		
+		// Concurrent BCV generation.
+		try(ProgressBar pb = Configuration.progressBar("BCA", notSkipped, "nodes")) {
+
+			//now retrieve the futures after computation (auto wait for it)
+			int received = 0;
+
+			while(received < notSkipped) {
+				try {
+
+					final BCV bcv = completionService.take().get();
+
+					switch (config.getBca().getNormalizeEnum()) {
+						case UNITY:
+							bcv.toUnity();
+							break;
+						case COUNTS:
+							bcv.toCounts();
+							break;
+						default:
+						case NONE:
+							break;
+					}
+					
+					//System.out.println(bcv);
+
+					// It is possible to use this maximum value in GloVe, although in the
+					// literature they set this value to 100 and leave it at that
+					setMax(bcv.max());
+					
+					// Create co-occurrence matrix for standard bcv
+					for (Entry<Integer, Float> bcr : bcv.entrySet()) {
+						coOccurrenceIdx_I.add(bcv.getRootNode());
+						coOccurrenceIdx_J.add(bcr.getKey());
+						coOccurrenceValues.add(bcr.getValue());
+					}
+					coOccurrenceCount += bcv.size();
+
+				} catch (InterruptedException | ExecutionException e) {
+					e.printStackTrace();
+				} finally {
+					received++;
+					pb.step();
+				}
+			}
+
+		} finally {
+			es.shutdown();
+		}
+
+		this.permutation = new Permutation(coOccurrenceCount);
+	}
+	
+	
 
 	/**
 	 * 
@@ -524,6 +691,32 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
     	removedMaps.set(1, removedMapOut);
     	return removedMaps;
 	}
+	
+
+    /**
+     * 
+     * @param graph
+     * @return
+     * @author Euan Westenbroek
+     */
+    public TreeMap<Integer, Integer> generateEdgeIdMap(final InMemoryRdfGraph graph) {
+
+        final int numVerts = graph.getVertices().toIntArray().length;
+        
+        final TreeMap<Integer, Integer> edgeNodeID = new TreeMap<>();
+        
+        int[] edges;
+        int edge, edgeID;
+        for (int v = 0; v < this.outEdge.length; v++) {
+        	edges = this.outEdge[v];
+        	for (int e = 0; e < edges.length; e++) {
+        		edge = edges[e];
+	        	edgeID = numVerts + edge;
+	        	
+	        	if (!edgeNodeID.containsKey(edge)) edgeNodeID.put(edge, edgeID);
+        }}
+        return edgeNodeID;
+    }
 
 	@Override
 	public void shuffle() {
