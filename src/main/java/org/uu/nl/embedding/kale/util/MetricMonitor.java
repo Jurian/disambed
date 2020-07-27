@@ -2,7 +2,7 @@ package org.uu.nl.embedding.kale.util;
 
 import java.util.HashMap;
 
-import org.uu.nl.embedding.kale.struct.TripleMatrix;
+import org.uu.nl.embedding.kale.struct.KaleMatrix;
 import org.uu.nl.embedding.kale.struct.TripleSet;
 
 
@@ -14,16 +14,16 @@ import org.uu.nl.embedding.kale.struct.TripleSet;
 public class MetricMonitor {
 	public TripleSet lstValidateTriples;
 	public HashMap<String, Boolean> lstTriples;
-	public TripleMatrix MatrixE;
-	public TripleMatrix MatrixR;
+	public KaleMatrix MatrixE;
+	public KaleMatrix MatrixR;
 	public double dMeanRank;
 	public double dMRR;
 	public double dHits;
 	
 	public MetricMonitor(TripleSet inLstValidateTriples,
 			HashMap<String, Boolean> inlstTriples,
-			TripleMatrix inMatrixE,
-			TripleMatrix inMatrixR) {
+			KaleMatrix inMatrixE,
+			KaleMatrix inMatrixR) {
 		lstValidateTriples = inLstValidateTriples;
 		lstTriples = inlstTriples;
 		MatrixE = inMatrixE;
