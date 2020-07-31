@@ -27,9 +27,9 @@ public class UndirectedWeighted extends BCAJobStable {
 
 	public UndirectedWeighted(
 			InMemoryRdfGraph graph, int bookmark,
-			double alpha, double epsilon,
+			double alpha, double epsilon, String callType,
 			int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
-		super(bookmark, true, alpha, epsilon, graph, vertexOut, vertexIn, edgeOut, edgeIn);
+		super(bookmark, true, alpha, epsilon, graph, callType, vertexOut, vertexIn, edgeOut, edgeIn);
 	}
 
 	@Override
@@ -136,7 +136,7 @@ public class UndirectedWeighted extends BCAJobStable {
      * @return
      * @author Euan Westenbroek
      */
-    public BCV continueWorkEdges(final InMemoryRdfGraph graph, final boolean reverse) {
+    public BCV doWorkInclEdges(final InMemoryRdfGraph graph, final boolean reverse) {
         if(reverse) throw new UnsupportedOperationException("No reverse mode in undirected version");
     	
         BCV bcv = doWork(graph, reverse);
@@ -199,7 +199,7 @@ public class UndirectedWeighted extends BCAJobStable {
 	
 	            // If there is not enough paint we stop and don't distribute among the neighbors
 	            /*
-	             * CHECK DE WISKUNDE HIER NOG FF GOED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//#######        * CHECK DE WISKUNDE HIER NOG FF GOED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	             */
 	            if ( (this.alpha * wetPaint) < this.epsilon)
 	                continue;
@@ -324,7 +324,7 @@ public class UndirectedWeighted extends BCAJobStable {
 
                     // We can already tell that the neighbor will not have enough paint to continue
                     /*
-                     * IS EPSILON TE KLEIN ALS DE PAINT VAN DE EDGES ZO HOOG GETAL IS????????????
+//###########        * IS EPSILON TE KLEIN ALS DE PAINT VAN DE EDGES ZO HOOG GETAL IS????????????
                      * ?????????????????
                      */
                     if(partialWetPaint < this.epsilon) continue;
@@ -356,7 +356,8 @@ public class UndirectedWeighted extends BCAJobStable {
      * @author Euan Westenbroek
      */
     public BCV doWorkWithIgnore(final InMemoryRdfGraph graph, final boolean reverse,
-                                    final BCV origBcv, final int[] orderedNodes, final List<Map<Integer, int[]>> removedInOutMaps) {
+    							final BCV origBcv, final int[] orderedNodes,
+    							final List<Map<Integer, int[]>> removedInOutMaps) {
 
         if(reverse) throw new UnsupportedOperationException("No reverse mode in undirected version");
 
@@ -365,28 +366,29 @@ public class UndirectedWeighted extends BCAJobStable {
         final BCV bcv = new BCV(bookmark);
         int[][][] inOutVerts = new int[][][] {vertexIn, vertexOut};
         int[][][] inOutEdges = new int[][][] {edgeIn, edgeOut};
-
-        nodeTree.put(bookmark, new PaintedNode(bookmark, 1));
+        
+        // Start with bookmark.
+        nodeTree.put(this.bookmark, new PaintedNode(this.bookmark, 1));
 
         int focusNode;
         double wetPaint, partialWetPaint;
         PaintedNode node;
 
         while (!nodeTree.isEmpty()) {
-
+        	// Initialize variabels for current loop.
             node = nodeTree.pollFirstEntry().getValue();
             focusNode = node.nodeID;
             wetPaint = node.getPaint();
 
-            // Keep part of the available paint on this node, distribute the rest
-            bcv.add(focusNode, (alpha * wetPaint));
+            // Keep part of the available paint on this node,
+            // distribute the rest
+            bcv.add(focusNode, (this.alpha * wetPaint));
 
-            // If there is not enough paint we stop and don't distribute among the neighbors
-            if (wetPaint < epsilon)
-                continue;
-
-            double totalWeight = 0;
+            // If there is not enough paint we stop and don't 
+            // distribute among the neighbors
+            if (wetPaint < this.epsilon) continue;
             
+            double totalWeight = 0;
             for(int direction = 0; direction < removedInOutMaps.size(); direction++) {
                 // get array of removed neighbors (== neighbor of focusNode)
                 int[] removedNeighbors = removedInOutMaps.get(direction).get(focusNode);
@@ -395,30 +397,27 @@ public class UndirectedWeighted extends BCAJobStable {
                  * Calculate totalWeight using edgeWeights
                  */
                 for (int i = 0; i < inOutVerts[direction][focusNode].length; i++) {
-                    // Check if there are any removed neighbors of the focusNode
+                    // Check for any removed neighbors of focusNode.
                     if(removedNeighbors.length == 0) {
-                        
-                            totalWeight += edgeWeights.getValueAsFloat(inOutEdges[direction][focusNode][i]);
+                        totalWeight += edgeWeights.getValueAsFloat(inOutEdges[direction][focusNode][i]);
                             
-                    } else if(removedNeighbors.length > 0) { // if array not empty then ignore each removed vertex
+                    } // If not empty: ignore each removed vertex.
+                    else if(removedNeighbors.length > 0) {
 
                         for(int removedEdge : removedNeighbors) {
-                            if(inOutEdges[direction][focusNode][i] == removedEdge) {
-                                // Keep totalWeight the same
-                                continue;
-                            } else {
-                                totalWeight += edgeWeights.getValueAsFloat(inOutEdges[direction][focusNode][i]);
-                            }
+                        	// Ignore removed edges.
+                            if(inOutEdges[direction][focusNode][i] == removedEdge)  continue;
+                            // Include if not removed.
+                            else totalWeight += edgeWeights.getValueAsFloat(inOutEdges[direction][focusNode][i]);
                         }
-                    } else { // removedVerts < 0, throw Exception
+                    } // else: removedVerts < 0 --> throw Exception
+                    else { 
+                    	// Include clarification in exception.
                         String sDir;
-                        if(direction == 0) {
-                            sDir = "INCOMING";
-                        } else if(direction == 1) {
-                            sDir = "OUTGOING";
-                        } else {
-                            sDir = "(BUG WARNING: direction == " + Integer.toString(direction) + ")";
-                        }
+                        if(direction == 0)  sDir = "INCOMING";
+                        else if(direction == 1) sDir = "OUTGOING";
+                        else sDir = "(BUG WARNING: direction == " + Integer.toString(direction) + ")";
+                        // Throw exception.
                         throw new IllegalArgumentException("Length of removed " + sDir + "verts array of " +
                                 Integer.toString(focusNode) + " is smaller than 0, namely: " + Integer.toString(removedNeighbors.length));
                     }
@@ -430,70 +429,70 @@ public class UndirectedWeighted extends BCAJobStable {
              * Calculate new paint values
              * and put neighboring vertices in TreeMap
              */
-            // Loop over directions as integer
+            // Loop over directions as integer.
             for(int direction = 0; direction < removedInOutMaps.size(); direction++) {
-                // get array of removed neighbors (== neighbor of focusNode)
+                // Get array of removed neighbors (== neighbor of focusNode).
                 int[] removedNeighbors = removedInOutMaps.get(direction).get(focusNode);
 
-                // Check if there are any removed neighbors of the focusNode
+                // Check if there are any removed neighbors of the focusNode.
                 for (int i = 0; i < inOutVerts[direction][focusNode].length; i++) {
                     if(removedNeighbors.length == 0) {
                                 
                         float weight = edgeWeights.getValueAsFloat(inOutEdges[direction][focusNode][i]);
-                        partialWetPaint = (1 - alpha) * wetPaint * (weight / totalWeight);
+                        partialWetPaint = (1 - this.alpha) * wetPaint * (weight / totalWeight);
         
-                        // We can already tell that the neighbor will not have enough paint to continue
-                        if(partialWetPaint < epsilon)
-                            continue;
+                        // We can already tell that the neighbor will not 
+                        // have enough paint to continue.
+                        if(partialWetPaint < this.epsilon) continue;
         
-                        // Log(n) time lookup
+                        // Log(n) time lookup.
                         if (nodeTree.containsKey(inOutVerts[direction][focusNode][i])) {
                             nodeTree.get(inOutVerts[direction][focusNode][i]).addPaint(partialWetPaint);
                         } else {
         
-                            // Remember which node we came from so we don't go back
-                            // Remember which predicate we used to get here
-                            nodeTree.put(inOutVerts[direction][focusNode][i], new PaintedNode(inOutVerts[direction][focusNode][i], partialWetPaint));
+                            // Remember which node we came from so we don't go back.
+                            // Remember which predicate we used to get here.
+                            nodeTree.put(inOutVerts[direction][focusNode][i],
+                            				new PaintedNode(inOutVerts[direction][focusNode][i], partialWetPaint));
                         }
                             
-                    } // if array not empty then ignore each removed vertex
+                    } // If array not empty then ignore each removed vertex.
                     else if(removedNeighbors.length > 0) {
-                            // Act accordingly by reducing number of neighbors and ignore the removed vertex (== neighbor of focusNode)
-    
+                    	// Act accordingly by reducing number of neighbors and 
+                    	// ignore the removed vertex (== neighbor of focusNode).
                         for(int removedEdge : removedNeighbors) {
-                            if(inOutEdges[direction][focusNode][i] == removedEdge) {
-                                // Don't update values, and ignore this edge
-                                continue;
-                                
-                            } else {
+                        	
+                            // Don't update values, and ignore this edge.
+                            if(inOutEdges[direction][focusNode][i] == removedEdge) continue;
+                            // Else: update values.
+                            else {
                                 float weight = edgeWeights.getValueAsFloat(inOutEdges[direction][focusNode][i]);
-                                partialWetPaint = (1 - alpha) * wetPaint * (weight / totalWeight);
+                                partialWetPaint = (1 - this.alpha) * wetPaint * (weight / totalWeight);
                 
-                                // We can already tell that the neighbor will not have enough paint to continue
-                                if(partialWetPaint < epsilon)
-                                    continue;
+                                // We can already tell that the neighbor will not
+                                // have enough paint to continue.
+                                if(partialWetPaint < this.epsilon) continue;
                 
-                                // Log(n) time lookup
+                                // Log(n) time lookup.
                                 if (nodeTree.containsKey(inOutVerts[direction][focusNode][i])) {
                                     nodeTree.get(inOutVerts[direction][focusNode][i]).addPaint(partialWetPaint);
                                 } else {
                 
-                                    // Remember which node we came from so we don't go back
-                                    // Remember which predicate we used to get here
-                                    nodeTree.put(inOutVerts[direction][focusNode][i], new PaintedNode(inOutVerts[direction][focusNode][i], partialWetPaint));
+                                    // Remember which node we came from so we don't go back.
+                                    // Remember which predicate we used to get here.
+                                    nodeTree.put(inOutVerts[direction][focusNode][i],
+                                    				new PaintedNode(inOutVerts[direction][focusNode][i], partialWetPaint));
                                 }
                             }
                         }
-                    } //END else-if length > 0
-                    else { // removedNeighbors < 0, throw Exception
+                    } // Else: removedVerts < 0 --> throw Exception
+	                else { 
+	                	// Include clarification in exception.
                         String sDir;
-                        if(direction == 0) {
-                            sDir = "INCOMING";
-                        } else if(direction == 1) {
-                            sDir = "OUTGOING";
-                        } else {
-                            sDir = "(BUG WARNING: direction == " + Integer.toString(direction) + ")";
-                        }
+                        if(direction == 0) sDir = "INCOMING";
+                        else if(direction == 1) sDir = "OUTGOING";
+                        else sDir = "(BUG WARNING: direction == " + Integer.toString(direction) + ")";
+                        // Throw exception.
                         throw new IllegalArgumentException("Length of removed " + sDir + "verts array of " +
                                 Integer.toString(focusNode) + " is smaller than 0, namely: " + Integer.toString(removedNeighbors.length));
                     }
