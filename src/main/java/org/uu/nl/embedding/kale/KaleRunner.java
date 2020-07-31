@@ -1,10 +1,11 @@
 package org.uu.nl.embedding.kale;
 
-import java.nio.file.Files;
-import java.util.HashMap;
+import java.io.File;
 import java.util.HashSet;
 
+import org.uu.nl.embedding.bca.BookmarkColoring;
 import org.uu.nl.embedding.kale.model.KaleModel;
+import org.uu.nl.embedding.kale.util.DataGenerator;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 
@@ -47,29 +48,35 @@ public class KaleRunner {
 		this.graph = graph;
 		final int[] verts = graph.getVertices().toIntArray();
 		final int[] edges = graph.getEdges().toIntArray();
-		uniqueRelationTypes = new HashSet<String>();
+		this.uniqueRelationTypes = new HashSet<String>();
 		
 		for (int e = 0; e < edges.length; e++) {
 			String predicate = graph.getEdgeLabelProperty().getValueAsString(edges[e]).toLowerCase();
-			if (!uniqueRelationTypes.contains(predicate)) uniqueRelationTypes.add(predicate);
+			if (!this.uniqueRelationTypes.contains(predicate)) this.uniqueRelationTypes.add(predicate);
 		}
 		
 		this.iNumEntities = verts.length;
 		this.iNumRelations = edges.length;
 		this.iNumUniqueRelations = uniqueRelationTypes.size();
-		
 
-		this.fnSaveFile = "result-k" + m_NumFactor 
-				+ "-d" + decimalFormat.format(m_Delta)
-				+ "-ge" + decimalFormat.format(m_GammaE) 
-				+ "-gr" + decimalFormat.format(m_GammaR)
-				+ "-w" +  decimalFormat.format(m_Weight) + this.fileExtension;
+		boolean isKale = true;
+		BookmarkColoring BCA = new BookmarkColoring(graph, config, isKale);
+		boolean undirected = true;
+		DataGenerator dataGenerator = new DataGenerator(graph, undirected,
+										BCA.getInVertices(), BCA.getOutVertices(),
+										BCA.getInEdges(), BCA.getOutEdges());
+		this.fileExtension = ".txt";
+		dataGenerator.Initialize();
+		dataGenerator.setFileExtension(this.fileExtension);
+		dataGenerator.setFilePath(FILEPATH);
 		
-		this.fnTrainingTriples = this.FILEPATH + "training_triples";
-		this.fnValidateTriples = this.FILEPATH + "validate_triples";
-		this.fnTestingTriples = this.FILEPATH + "testing_triples";
-		this.fnTrainingRules = this.FILEPATH + "training_rules";
-		this.fnGloveVectors = this.FILEPATH + "glove_vectors";
+		this.fnSaveFile = generateResultsFileDir();
+		
+		this.fnTrainingTriples = dataGenerator.fnTrainingTriples;
+		this.fnValidateTriples = dataGenerator.fnValidateTriples;
+		this.fnTestingTriples = dataGenerator.fnTestingTriples;
+		this.fnTrainingRules = dataGenerator.fnTrainingRules;
+		this.fnGloveVectors = dataGenerator.fnGloveVectors;
 		
 		this.kale = new KaleModel();
 		this.kale.Initialization(this.iNumUniqueRelations, 
@@ -79,8 +86,23 @@ public class KaleRunner {
 				this.fnTestingTriples, 
 				this.fnTrainingRules,
 				this.fnGloveVectors);
-		
-		
+		this.kale.CochezLearn();
+	}
+	
+	/**
+	 * 
+	 * @throws Exception
+	 */
+	public void CochezLearn() throws Exception {
+		this.kale.CochezLearn();
+	}
+	
+	/**
+	 * 
+	 * @throws Exception
+	 */
+	public void TransELearn() throws Exception {
+		this.kale.TransE_Learn();
 	}
 	
 
@@ -132,10 +154,38 @@ public class KaleRunner {
 	public void setfileExtension(final String fileExtension) throws Exception {
 		// Simple check
 		if (fileExtension.charAt(0) != '.') { 
-			throw new Exception("provided file extension in KaleRunner has invalid format.");
+			throw new Exception("Provided file extension in KaleRunner has invalid format.");
 		}
 		this.fileExtension = fileExtension;
 		this.kale.fileExtension = fileExtension;
+
+		this.fnSaveFile = generateResultsFileDir();
+	}
+
+	
+	/**
+	 * Generates file directory without overwriting existing
+	 * files by iterating through numbers at start of file.
+	 * 
+	 * @param fnDirName
+	 * @return
+	 */
+	public String generateResultsFileDir() {
+		int num = 0;
+		String fnTail = "_result-k" + this.m_NumFactor 
+				+ "-d" + this.decimalFormat.format(this.m_Delta)
+				+ "-ge" + this.decimalFormat.format(this.m_GammaE) 
+				+ "-gr" + this.decimalFormat.format(this.m_GammaR)
+				+ "-w" +  this.decimalFormat.format(this.m_Weight) + this.fileExtension;
+		String fnDir = this.FILEPATH + num + fnTail;
+		
+		File f = new File(fnDir);
+		while (f.exists()) {
+			num++;
+			fnDir = this.FILEPATH + num + fnTail;
+			f = new File(fnDir);
+		}
+		return fnDir;
 	}
 	
 	public int getNumFactors() {
