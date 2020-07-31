@@ -12,7 +12,7 @@ public class DirectedWeighted extends BCAJob {
             InMemoryRdfGraph graph, int bookmark,
             double alpha, double epsilon,
 			int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
-		super(bookmark, true, alpha, epsilon, graph, vertexOut, vertexIn, edgeOut, edgeIn);
+		super(bookmark, true, alpha, epsilon, graph, "directedweighted", vertexOut, vertexIn, edgeOut, edgeIn);
 	}
 
     @Override
