@@ -52,6 +52,7 @@ public class KaleModel {
 	public double m_Weight = 0.01;
 	
 	public boolean isGlove;
+	private ArrayList<Integer> orderedCoOccurrenceIdx_I = null;
 	private ArrayList<Integer> coOccurrenceIdx_I = null;
 	private ArrayList<Integer> coOccurrenceIdx_J = null;
 	private ArrayList<Float> coOccurrenceValues = null;
@@ -60,7 +61,7 @@ public class KaleModel {
 	/**
 	 * 
 	 */
-	public String fileExtension = ".csv";
+	public String fileExtension = ".txt";
 	
 	java.text.DecimalFormat decimalFormat = new java.text.DecimalFormat("#.######");
 	
@@ -176,8 +177,8 @@ public class KaleModel {
 		/*
 		 * FILE FORMAT:
 		 * 
-		 * line1 <- ["NEIGHBORS", nodeID1, neighborID1, neighborID2, ..., neighborIDn]
-		 * line2 <- ["VALUES", nodeID1, value1, value2, ..., value_n]
+		 * line1 <- [NEIGHBORS nodeID1 neighborID1 neighborID2 ... neighborIDn]
+		 * line2 <- [VALUES nodeID1 value1 value2 ... value_n]
 		 * ...
 		 */
 		
@@ -192,44 +193,50 @@ public class KaleModel {
 
 			if (tokens[0] == "NEIGHBORS") {
 				// Check if correct line order is maintained.
-				if (!neighborsLine) throw new Exception("load error in KaleModel.loadGloveVectors(): neighborsLine expected.");
+				if (!neighborsLine) throw new Exception("Loading error in KaleModel.loadGloveVectors(): neighborsLine expected.");
 				// Parse nodeID and check.
 				nodeID = Integer.parseInt(tokens[1]);
 				if (nodeID < 0 || nodeID >= this.m_NumGloveVecs) {
-					throw new Exception("load error in KaleModel.loadGloveVectors(): invalid nodeID.");
+					throw new Exception("Loading error in KaleModel.loadGloveVectors(): invalid nodeID.");
 				}
+				orderedCoOccurrenceIdx_I.add(nodeID);
 				// Add current nodeID and each neighbor to matrix.
 				for (int col = 2; col < tokens.length; col++) {
 					neighborID = Integer.parseInt(tokens[col]);
 					if (neighborID < 0 || neighborID >= this.m_NumGloveVecs) {
-						throw new Exception("load error in KaleModel.loadGloveVectors(): invalid neighborID.");
+						throw new Exception("Loading error in KaleModel.loadGloveVectors(): invalid neighborID.");
 					}
 					this.coOccurrenceIdx_I.add(nodeID);
 					this.coOccurrenceIdx_J.add(neighborID);
 				}
+				// Update expected line type.
+				neighborsLine = false;
 				
 			} else if (tokens[0] == "VALUES") {
 				// Check if correct line order is maintained.
-				if (neighborsLine) throw new Exception("load error in KaleModel.loadGloveVectors(): values line expected (i.e. not neighborsLine expected).");
+				if (neighborsLine) throw new Exception("Loading error in KaleModel.loadGloveVectors(): values line expected (i.e. not neighborsLine expected).");
 				// Parse nodeID and check.
 				nodeID = Integer.parseInt(tokens[1]);
 				if (nodeID != this.coOccurrenceIdx_I.get(this.coOccurrenceIdx_I.size()-1)) {
-					throw new Exception("load error in KaleModel.loadGloveVectors(): current nodeID does not match expected nodeID.");
+					throw new Exception("Loading error in KaleModel.loadGloveVectors(): current nodeID does not match expected nodeID.");
 				}
 				if (nodeID < 0 || nodeID >= this.m_NumGloveVecs) {
-					throw new Exception("load error in KaleModel.loadGloveVectors(): invalid nodeID.");
+					throw new Exception("Loading error in KaleModel.loadGloveVectors(): invalid nodeID.");
 				}
 				// Add current nodeID and each neighbor to matrix.
 				for (int col = 2; col < tokens.length; col++) {
 					value = Float.parseFloat(tokens[col]);
 					this.coOccurrenceValues.add(value);
 				}
+				// Update expected line type and increment counter.
+				neighborsLine = true;
 				vecCounter++;
 				
-			} else { throw new Exception("load error in KaleModel.loadGloveVectors(): invalid row header."); }
+			} else { throw new Exception("Loading error in KaleModel.loadGloveVectors(): invalid row header."); }
 		}
+		// Check if number of vectors adds up.
 		if (vecCounter != this.m_NumGloveVecs) {
-			throw new Exception("load error in KaleModel.loadGloveVectors(): vecCounter does not match expected number of vectors.");
+			throw new Exception("Loading error in KaleModel.loadGloveVectors(): vecCounter does not match expected number of vectors.");
 		}
 		
 		reader.close();
@@ -263,6 +270,12 @@ public class KaleModel {
 		return kMatrix;
 	}
 	
+	/**
+	 * 
+	 * @return
+	 * @throws Exception
+	 * @author Euan Westenbroek
+	 */
 	public KaleMatrix loadGloveRelationVectors() throws Exception {
 		KaleMatrix kMatrix = new KaleMatrix(this.m_NumEntity, this.m_NumFactor);
 		
@@ -284,7 +297,187 @@ public class KaleModel {
 		return kMatrix;
 	}
 	
-	public void Cochez_learn() throws Exception {
+	/**
+	 * 
+	 * @throws Exception
+	 * @author Euan Westenbroek
+	 */
+	public void CochezLearn() throws Exception {
+		if (orderedCoOccurrenceIdx_I == null) throw new Exception("Current instatiation of this KaleModel does not contain needed data.");
+		
+		HashMap<Integer, ArrayList<Triple>> lstPosTriples = new HashMap<Integer, ArrayList<Triple>>();
+		HashMap<Integer, ArrayList<Triple>> lstHeadNegTriples = new HashMap<Integer, ArrayList<Triple>>();
+		HashMap<Integer, ArrayList<Triple>> lstTailNegTriples = new HashMap<Integer, ArrayList<Triple>>();
+		HashMap<Integer, ArrayList<TripleRule>> lstRules = new HashMap<Integer, ArrayList<TripleRule>>();
+		HashMap<Integer, ArrayList<TripleRule>> lstSndRelNegRules = new HashMap<Integer, ArrayList<TripleRule>>();
+		
+		// Generate logging file path.
+		String PATHLOG = "result-k" + this.m_NumFactor 
+				+ "-d" +  this.decimalFormat.format(this.m_Delta)
+				+ "-ge" + this.decimalFormat.format(this.m_GammaE) 
+				+ "-gr" + this.decimalFormat.format(this.m_GammaR)
+				+ "-w" +  this.decimalFormat.format(this.m_Weight) + this.fileExtension;
+		
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+				new FileOutputStream(PATHLOG), "UTF-8"));
+		
+		// Initialize iteration counter and write to file and console.
+		int iIterCntr = 0;
+		writer.write("Complete iteration #" + iIterCntr + ":\n");
+		System.out.println("Complete iteration #" + iIterCntr + ":");
+		// Initialize metric monitor and calculate metrics.
+		MetricMonitor firstMetric = new MetricMonitor(
+				this.m_ValidateTriples,
+				this.m_Triples.tripleSet(),
+				this.m_Entity_Factor_MatrixE,
+				this.m_Relation_Factor_MatrixR,
+				this.orderedCoOccurrenceIdx_I,
+				this.isGlove);
+		firstMetric.calculateMetrics();
+		double dCurrentHits = firstMetric.dHits;
+		double dCurrentMRR = firstMetric.dMRR;
+		// Write first results to file and save as initial best results.
+		writer.write("------Current MRR:"+ dCurrentMRR + "\tCurrent Hits@10:" + dCurrentHits + "\n");
+		System.out.print("\n");
+		double dBestHits = firstMetric.dHits;
+		double dBestMRR = firstMetric.dMRR;
+		// Variable to save the best iteration.
+		int iBestIter = 0;
+		
+		// Initialize start of training time and start training process.
+		long startTime = System.currentTimeMillis();
+		while (iIterCntr < this.m_NumIteration) {
+			
+			// Loop through training triples and generate negative versions (alterations).
+			this.m_TrainingTriples.randomShuffle();
+			for (int iTriple = 0; iTriple < this.m_TrainingTriples.nTriples(); iTriple++) {
+				// Get triple and generate negative alterations.
+				Triple PosTriple = this.m_TrainingTriples.get(iTriple);
+				NegativeTripleGenerator negTripGen = new NegativeTripleGenerator(
+						PosTriple, this.m_NumEntity, this.m_NumRelation);
+				Triple headNegTriple = negTripGen.generateHeadNegTriple();
+				Triple tailNegTriple = negTripGen.generateTailNegTriple();
+				
+				// Determine triple ID within batch.
+				int iTripleID = iTriple % this.m_NumMiniBatch;
+				// If positive triples list doesn't contain current triple,
+				// add new triple to triples lists. Else add newly found triple
+				// and its alterations to their respective lists.
+				if (!lstPosTriples.containsKey(iTripleID)) {
+					ArrayList<Triple> tmpPosLst = new ArrayList<Triple>();
+					ArrayList<Triple> tmpHeadNegLst = new ArrayList<Triple>();
+					ArrayList<Triple> tmpTailNegLst = new ArrayList<Triple>();
+					tmpPosLst.add(PosTriple);
+					tmpHeadNegLst.add(headNegTriple);
+					tmpTailNegLst.add(tailNegTriple);
+					lstPosTriples.put(iTripleID, tmpPosLst);
+					lstHeadNegTriples.put(iTripleID, tmpHeadNegLst);
+					lstTailNegTriples.put(iTripleID, tmpTailNegLst);
+				} else {
+					lstPosTriples.get(iTripleID).add(PosTriple);
+					lstHeadNegTriples.get(iTripleID).add(headNegTriple);
+					lstTailNegTriples.get(iTripleID).add(tailNegTriple);
+				}
+			}
+			
+			// Repeat above process for training rules.
+			// Loop through training rules and generate negative versions (alterations).
+			this.m_TrainingRules.randomShuffle();
+			for (int iRule = 0; iRule < this.m_TrainingRules.rules(); iRule++) {
+				// Get triple and generate negative alterations.
+				TripleRule rule = this.m_TrainingRules.get(iRule);
+				NegativeRuleGenerator negRuleGen = new NegativeRuleGenerator(
+						rule, this.m_NumRelation);
+				TripleRule sndRelNegrule = negRuleGen.generateSndNegRule();			
+
+				// Determine triple ID within batch.
+				int iRuleID = iRule % this.m_NumMiniBatch;
+				// If positive rules list doesn't contain current rule,
+				// add new rule to rules lists. Else add newly found rule
+				// and its alterations to their respective lists.
+				if (!lstRules.containsKey(iRuleID)) {
+					ArrayList<TripleRule> tmpLst = new ArrayList<TripleRule>();
+					ArrayList<TripleRule> tmpsndRelNegLst = new ArrayList<TripleRule>();
+					tmpLst.add(rule);
+					tmpsndRelNegLst.add(sndRelNegrule);
+					lstRules.put(iRuleID, tmpLst);
+					lstSndRelNegRules.put(iRuleID, tmpsndRelNegLst);
+					
+				} else {
+					lstRules.get(iRuleID).add(rule);
+					lstSndRelNegRules.get(iRuleID).add(sndRelNegrule);
+				}
+			}
+			
+			// Update stochastically.
+			for (int iID = 0; iID < this.m_NumMiniBatch; iID++) {
+				StochasticUpdater stochasticUpdate = new StochasticUpdater(
+						lstPosTriples.get(iID),
+						lstHeadNegTriples.get(iID),
+						lstTailNegTriples.get(iID),
+						lstRules.get(iID),
+						lstSndRelNegRules.get(iID),
+						this.m_Entity_Factor_MatrixE,
+						this.m_Relation_Factor_MatrixR,
+						this.m_MatrixEGradient,
+						this.m_MatrixRGradient,
+//	###					this.learning rate
+						this.m_GammaE,
+						this.m_GammaR,
+//	###					this.margin
+						this.m_Delta,
+//	###					this.weight
+						this.m_Weight,
+						this.isGlove);
+				stochasticUpdate.stochasticIterationGlove();
+			}
+			
+			// Reset lists for next iteration.
+			lstPosTriples = new HashMap<Integer, ArrayList<Triple>>();
+			lstHeadNegTriples = new HashMap<Integer, ArrayList<Triple>>();
+			lstTailNegTriples = new HashMap<Integer, ArrayList<Triple>>();
+
+			lstRules = new HashMap<Integer, ArrayList<TripleRule>>();
+			lstSndRelNegRules = new HashMap<Integer, ArrayList<TripleRule>>();
+			
+			// Increment iteration counter and print to console.
+			iIterCntr++;
+			System.out.println("Complete iteration #" + iIterCntr + ":");
+			
+			// If current iteration is an nth-fold of this.m_OutputIterSkip
+			// write current iteration results to file.
+			if (iIterCntr % this.m_OutputIterSkip == 0) {
+				writer.write("Complete iteration #" + iIterCntr + ":\n");
+				System.out.println("Complete iteration #" + iIterCntr + ":");
+				MetricMonitor metric = new MetricMonitor(
+						this.m_ValidateTriples,
+						this.m_Triples.tripleSet(),
+						this.m_Entity_Factor_MatrixE,
+						this.m_Relation_Factor_MatrixR,
+						this.orderedCoOccurrenceIdx_I,
+						this.isGlove);
+				metric.calculateMetrics();
+				dCurrentHits = metric.dHits;
+				dCurrentMRR = metric.dMRR;
+				writer.write("------Current MRR:"+ dCurrentMRR + "\tCurrent Hits@10:" + dCurrentHits + "\n");
+				// Save current statistics if better than previous best results.
+				if (dCurrentMRR > dBestMRR) {
+					this.m_Relation_Factor_MatrixR.output(this.m_MatrixR_prefix + ".best");
+					this.m_Entity_Factor_MatrixE.output(this.m_MatrixE_prefix + ".best");
+					dBestHits = dCurrentHits;
+					dBestMRR = dCurrentMRR;
+					iBestIter = iIterCntr;
+				}
+				writer.write("------Best iteration #" + iBestIter + "\t" + dBestMRR + "\t" + dBestHits+"\n");
+				writer.flush();
+				System.out.println("------\tBest iteration #" + iBestIter + "\tBest MRR:" + dBestMRR + "Best \tHits@10:" + dBestHits);
+				writer.flush();
+			}
+		}
+		// Print end of training time to console and close writer.
+		long endTime = System.currentTimeMillis();
+		System.out.println("All running time:" + (endTime-startTime)+"ms");
+		writer.close();
 		
 	}
 	
@@ -312,7 +505,8 @@ public class KaleModel {
 				m_ValidateTriples,
 				m_Triples.tripleSet(),
 				m_Entity_Factor_MatrixE,
-				m_Relation_Factor_MatrixR);
+				m_Relation_Factor_MatrixR,
+				this.isGlove);
 		first_metrics.calculateMetrics();
 		double dCurrentHits = first_metrics.dHits;
 		double dCurrentMRR = first_metrics.dMRR;
@@ -326,7 +520,7 @@ public class KaleModel {
 		long startTime = System.currentTimeMillis();
 		while (iIter < m_NumIteration) {
 			m_TrainingTriples.randomShuffle();
-			for (int iIndex = 0; iIndex < m_TrainingTriples.triples(); iIndex++) {
+			for (int iIndex = 0; iIndex < m_TrainingTriples.nTriples(); iIndex++) {
 				Triple PosTriple = m_TrainingTriples.get(iIndex);
 				NegativeTripleGenerator negTripGen = new NegativeTripleGenerator(
 						PosTriple, m_NumEntity, m_NumRelation);
@@ -374,7 +568,7 @@ public class KaleModel {
 				}
 			}
 			
-			double m_BatchSize = m_TrainingTriples.triples()/(double)m_NumMiniBatch;
+			double m_BatchSize = m_TrainingTriples.nTriples()/(double)m_NumMiniBatch;
 			for (int iID = 0; iID < m_NumMiniBatch; iID++) {
 				StochasticUpdater stochasticUpdate = new StochasticUpdater(
 						lstPosTriples.get(iID),
@@ -415,7 +609,8 @@ public class KaleModel {
 						m_ValidateTriples,
 						m_Triples.tripleSet(),
 						m_Entity_Factor_MatrixE,
-						m_Relation_Factor_MatrixR);
+						m_Relation_Factor_MatrixR,
+						this.isGlove);
 				metric.calculateMetrics();
 				dCurrentHits = metric.dHits;
 				dCurrentMRR = metric.dMRR;
