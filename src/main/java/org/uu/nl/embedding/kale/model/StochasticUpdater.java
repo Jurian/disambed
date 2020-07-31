@@ -75,11 +75,13 @@ public class StochasticUpdater {
 	/**
 	 * 
 	 * @throws Exception
-	 * @author Euan Westenbroek
+	 * @author Euan Westenbroek, based on iieir-km's method.
 	 */
 	public void stochasticIterationGlove() throws Exception {
 		this.MatrixEGradient.setToValue(0.0);
 		this.MatrixRGradient.setToValue(0.0);
+		
+		// Calculate gradients for triples as well as rules.
 
 		// Loop through positive triples and calculate
 		// gradients.
@@ -88,6 +90,7 @@ public class StochasticUpdater {
 			Triple HeadNegTriple = this.lstHeadNegTriples.get(iID);
 			Triple TailNegTriple = this.lstTailNegTriples.get(iID);
 			
+			// Calculate gradient for head altered triple.
 			TripleGradient headGradient = new TripleGradient(
 					PosTriple,
 					HeadNegTriple,
@@ -97,57 +100,71 @@ public class StochasticUpdater {
 					this.MatrixRGradient,
 					this.dDelta,
 					this.isGlove);
-			headGradient.calculateGradient();
+			headGradient.calculateGradientGlove();
 
+			// Calculate gradient for tail altered triple.
 			TripleGradient tailGradient = new TripleGradient(
 					PosTriple,
 					TailNegTriple,
-					MatrixE,
-					MatrixR,
-					MatrixEGradient,
-					MatrixRGradient,
-					dDelta,
+					this.MatrixE,
+					this.MatrixR,
+					this.MatrixEGradient,
+					this.MatrixRGradient,
+					this.dDelta,
 					this.isGlove);
-			tailGradient.calculateGradient();
+			tailGradient.calculateGradientGlove();
 		}
 
-		for (int iID = 0; iID < lstRules.size(); iID++) {
-			TripleRule rule = lstRules.get(iID);
-			TripleRule sndRelNegrule = lstSndRelNegRules.get(iID);
+		// Calculate gradient for altered rule.
+		for (int iID = 0; iID < this.lstRules.size(); iID++) {
+			TripleRule rule = this.lstRules.get(iID);
+			TripleRule sndRelNegrule = this.lstSndRelNegRules.get(iID);
 			
-			RuleGradient tailruleGradient = new RuleGradient(
+			RuleGradient sndRuleGradient = new RuleGradient(
 					rule,
 					sndRelNegrule,
-					MatrixE,
-					MatrixR,
-					MatrixEGradient,
-					MatrixRGradient,
-					dDelta,
+					this.MatrixE,
+					this.MatrixR,
+					this.MatrixEGradient,
+					this.MatrixRGradient,
+					this.dDelta,
 					this.isGlove);
-			tailruleGradient.calculateGradient(m_Weight);	
+			sndRuleGradient.calculateGradientGlove(this.m_Weight);	
 		}
 		
-		MatrixEGradient.rescaleByRow();
-		MatrixRGradient.rescaleByRow();
+		this.MatrixEGradient.rescaleByRow();
+		this.MatrixRGradient.rescaleByRow();
 		
-		for (int i = 0; i < MatrixE.rows(); i++) {
-			for (int j = 0; j < MatrixE.columns(); j++) {
-				double dValue = MatrixEGradient.get(i, j);
-				MatrixEGradient.accumulatedByGrad(i, j);
-				double dLrate = Math.sqrt(MatrixEGradient.getSum(i, j)) + 1e-8;
-				MatrixE.add(i, j, -1.0 * dGammaE * dValue / dLrate);
+		// Loop through entity-gradient matrix and
+		// update entity matrix.
+		for (int i = 0; i < this.MatrixE.rows(); i++) {
+			for (int j = 0; j < this.MatrixE.columns(); j++) {
+				
+				// Get current gradient.
+				double dValue = this.MatrixEGradient.get(i, j);
+				this.MatrixEGradient.accumulatedByGrad(i, j);
+				// Calculate learned rate and add 1e-8 to prevent division by zero.
+				double dLearnRate = Math.sqrt(this.MatrixEGradient.getSum(i, j)) + 1e-8;
+				double dUpdatedValue = (-1.0 * this.dGammaE * dValue / dLearnRate);
+				this.MatrixE.add(i, j, dUpdatedValue);
 			}
 		}
-		for (int i = 0; i < MatrixR.rows(); i++) {
-			for (int j = 0; j < MatrixR.columns(); j++) {
-				double dValue = MatrixRGradient.get(i, j);
-				MatrixRGradient.accumulatedByGrad(i, j);
-				double dLrate = Math.sqrt(MatrixRGradient.getSum(i, j)) + 1e-8;
-				MatrixR.add(i, j, -1.0 * dGammaR * dValue / dLrate);
+		// Loop through relation-gradient matrix and
+		// update relation matrix.
+		for (int i = 0; i < this.MatrixR.rows(); i++) {
+			for (int j = 0; j < this.MatrixR.columns(); j++) {
+
+				// Get current gradient.
+				double dValue = this.MatrixRGradient.get(i, j);
+				this.MatrixRGradient.accumulatedByGrad(i, j);
+				// Calculate learned rate and add 1e-8 to prevent division by zero.
+				double dLearnRate = Math.sqrt(this.MatrixRGradient.getSum(i, j)) + 1e-8;
+				double dUpdatedValue = (-1.0 * this.dGammaR * dValue / dLearnRate);
+				this.MatrixR.add(i, j, dUpdatedValue);
 			}
 		}
-		MatrixE.normalizeByRow();
-		MatrixR.normalizeByRow();
+		this.MatrixE.normalizeByRow();
+		this.MatrixR.normalizeByRow();
 	}
 	
 	public void stochasticIterationDefault() throws Exception {

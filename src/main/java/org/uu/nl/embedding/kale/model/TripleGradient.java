@@ -60,14 +60,14 @@ public class TripleGradient {
 		int iNegTail = this.NegTriple.tail();
 		int iNegRelation = this.NegTriple.relation();
 		
-
 		/*
 		 * From paper:
 		 * 1 / (3d)
 		 * Where d is the dimension of the embedding space.
 		 */
 		double dValue = 1.0 / (3.0 * Math.sqrt(iNumberOfFactors));
-		double tripleEmbedding;
+		double tripleSum;
+		
 		this.dPosPi = 0.0;
 		for (int p = 0; p < iNumberOfFactors; p++) {
 			/*
@@ -77,42 +77,44 @@ public class TripleGradient {
 			 * Where e_i, r_k, e_j are the GloVe vector embedding of
 			 * head entity, relation, and tail entity respectively.
 			 */
-			tripleEmbedding = this.MatrixE.get(iPosHead, p) + this.MatrixR.get(iPosRelation, p) - this.MatrixE.get(iPosTail, p);
-			this.dPosPi -= Math.abs(tripleEmbedding);
+			tripleSum = this.MatrixE.get(iPosHead, p) + this.MatrixR.get(iPosRelation, p) - this.MatrixE.get(iPosTail, p);
+			this.dPosPi -= Math.abs(tripleSum);
 		}
 		this.dPosPi *= dValue;
 		this.dPosPi += 1.0;
 		
-		dNegPi = 0.0;
+		// Repeat for negative triple
+		this.dNegPi = 0.0;
 		for (int p = 0; p < iNumberOfFactors; p++) {
-			dNegPi -= Math.abs(MatrixE.get(iNegHead, p) + MatrixR.get(iNegRelation, p) - MatrixE.get(iNegTail, p));
+			tripleSum = this.MatrixE.get(iNegHead, p) + this.MatrixR.get(iNegRelation, p) - this.MatrixE.get(iNegTail, p);
+			this.dNegPi -= Math.abs(tripleSum);
 		}
-		dNegPi *= dValue;
-		dNegPi += 1.0;
+		this.dNegPi *= dValue;
+		this.dNegPi += 1.0;
          
-		
-		if (dDelta - dPosPi + dNegPi > 0.0) {
-//		if (dDeltaAdapt - dPosPi + dNegPi > 0.0) {
+		// Update gradient if negative value is delta higher than
+		// positive value.
+		if (this.dDelta - this.dPosPi + this.dNegPi > 0.0) {
 			for (int p = 0; p < iNumberOfFactors; p++) {
+				// Update gradient based on positive triple
 				double dPosSgn = 0.0;
-				if (MatrixE.get(iPosHead, p) + MatrixR.get(iPosRelation, p) - MatrixE.get(iPosTail, p) > 0) {
-					dPosSgn = 1.0;
-				} else if (MatrixE.get(iPosHead, p) + MatrixR.get(iPosRelation, p) - MatrixE.get(iPosTail, p) < 0) {
-					dPosSgn = -1.0;
-				}
-				MatrixEGradient.add(iPosHead, p, dValue * dPosSgn);
-				MatrixEGradient.add(iPosTail, p, -1.0 * dValue * dPosSgn);
-				MatrixRGradient.add(iPosRelation, p, dValue * dPosSgn);
-//				System.out.println("true0:"+  dValue * dPosSgn);
+				tripleSum = this.MatrixE.get(iPosHead, p) + this.MatrixR.get(iPosRelation, p) - this.MatrixE.get(iPosTail, p);
+				if (tripleSum > 0)  	dPosSgn = 1.0;
+				else if (tripleSum < 0) dPosSgn = -1.0;
+				
+				this.MatrixEGradient.add(iPosHead, p, (dPosSgn * dValue));
+				this.MatrixRGradient.add(iPosRelation, p, (dPosSgn * dValue));
+				this.MatrixEGradient.add(iPosTail, p, (-1.0 * dPosSgn * dValue));
+
+				// Update gradient based on negative triple
 				double dNegSgn = 0.0;
-				if (MatrixE.get(iNegHead, p) + MatrixR.get(iNegRelation, p) - MatrixE.get(iNegTail, p) > 0) {
-					dNegSgn = 1.0;
-				} else if (MatrixE.get(iNegHead, p) + MatrixR.get(iNegRelation, p) - MatrixE.get(iNegTail, p) < 0) {
-					dNegSgn = -1.0;
-				}
-				MatrixEGradient.add(iNegHead, p, -1.0 * dValue * dNegSgn);
-				MatrixEGradient.add(iNegTail, p, dValue * dNegSgn);
-				MatrixRGradient.add(iNegRelation, p, -1.0 * dValue * dNegSgn);
+				tripleSum = this.MatrixE.get(iNegHead, p) + this.MatrixR.get(iNegRelation, p) - this.MatrixE.get(iNegTail, p);
+				if (tripleSum > 0) 		dNegSgn = 1.0;
+				else if (tripleSum < 0) dNegSgn = -1.0;
+				
+				this.MatrixEGradient.add(iNegHead, p, (-1.0 * dValue * dNegSgn));
+				this.MatrixRGradient.add(iNegRelation, p, (-1.0 * dValue * dNegSgn));
+				this.MatrixEGradient.add(iNegTail, p, (dValue * dNegSgn));
 			}
 		}
 	}
