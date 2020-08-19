@@ -222,17 +222,23 @@ public class DataGenerator {
 		// Create list with rules.
 		ArrayList<String> rulesList = new ArrayList<String>();
 		
-		rulesList.add("_birthdate(x,y)&_deathdate(x,z)==>_is_same_or_before(y,z)");
-		rulesList.add("_birthdate(x,y)==>_deathdate(x,z)&_is_same_or_before(y,z)");
-		rulesList.add("!_is_same_or_before(y,z)==>!_birthdate(x,y)|!_deathdate(x,z)");
+		rulesList.add("_birthdate(x,y)" + this.separator + "&" + this.separator + "_deathdate(x,z)" + this.separator + "==>" + this.separator + "_is_same_or_before(y,z)");
+		rulesList.add("_birthdate(x,y)" + this.separator + "==>" + this.separator + "_deathdate(x,z)" + this.separator + "&" + this.separator + "_is_same_or_before(y,z)");
+		rulesList.add("!" + this.separator + "_is_same_or_before(y,z)" + this.separator + "==>" + this.separator + 
+				"!" + this.separator + "_birthdate(x,y)" + this.separator + 
+				"|" + this.separator + "!" + this.separator + "_deathdate(x,z)");
 		
-		rulesList.add("_birthdate(x,y)&_baptised_on(x,z)==>_is_same_or_before(y,z)");
-		rulesList.add("_birthdate(x,y)==>_baptised_on(x,z)&_is_same_or_before(y,z)");
-		rulesList.add("!_is_same_or_before(y,z)==>!_birthdate(x,y)|!_baptised_on(x,z)");
+		rulesList.add("_birthdate(x,y)" + this.separator + "&" + this.separator + "_baptised_on(x,z)" + this.separator + "==>" + this.separator + "_is_same_or_before(y,z)");
+		rulesList.add("_birthdate(x,y)" + this.separator + "==>" + this.separator + "_baptised_on(x,z)" + this.separator + "&" + this.separator + "_is_same_or_before(y,z)");
+		rulesList.add("!" + this.separator + "_is_same_or_before(y,z)" + this.separator + "==>" + this.separator + 
+				"!" + this.separator + "_birthdate(x,y)" + this.separator + 
+				"|" + this.separator + "!" + this.separator + "_baptised_on(x,z)");
 		
-		rulesList.add("_baptised_on(x,y)&_deathdate(x,z)==>_is_same_or_before(y,z)");
-		rulesList.add("_baptised_on(x,y)==>_deathdate(x,z)&_is_same_or_before(y,z)");
-		rulesList.add("!_is_same_or_before(y,z)==>!_baptised_on(x,y)|!_deathdate(x,z)");
+		rulesList.add("_baptised_on(x,y)" + this.separator + "&" + this.separator + "_deathdate(x,z)" + this.separator + "==>" + this.separator + "_is_same_or_before(y,z)");
+		rulesList.add("_baptised_on(x,y)" + this.separator + "==>" + this.separator + "_deathdate(x,z)" + this.separator + "&" + this.separator + "_is_same_or_before(y,z)");
+		rulesList.add("!" + this.separator + "_is_same_or_before(y,z)" + this.separator + "==>" + this.separator + 
+				"!" + this.separator + "_baptised_on(x,y)" + this.separator + 
+				"|" + this.separator + "!" + this.separator + "_deathdate(x,z)");
 		
 		// Write all rules to file and close it.
 		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(

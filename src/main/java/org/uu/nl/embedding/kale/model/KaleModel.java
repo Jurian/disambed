@@ -17,6 +17,8 @@ import org.uu.nl.embedding.kale.util.MetricMonitor;
 import org.uu.nl.embedding.kale.util.NegativeRuleGenerator;
 import org.uu.nl.embedding.kale.util.NegativeTripleGenerator;
 import org.uu.nl.embedding.kale.util.StringSplitter;
+import org.uu.nl.embedding.util.InMemoryRdfGraph;
+import org.uu.nl.embedding.util.config.Configuration;
 
 
 /**
@@ -35,6 +37,10 @@ public class KaleModel {
 	public KaleMatrix m_Relation_Factor_MatrixR;
 	public KaleMatrix m_MatrixEGradient;
 	public KaleMatrix m_MatrixRGradient;
+	
+	public KaleVectorMatrix kaleVectorMatrix;
+	private InMemoryRdfGraph graph;
+	private Configuration config;
 	
 	public int m_NumRelation;
 	public int m_NumEntity;
@@ -81,7 +87,8 @@ public class KaleModel {
 	 */
 	public void Initialization(final int iNumRelation, final int iNumEntity,
 			final String fnTrainingTriples, final String fnValidateTriples, final String fnTestingTriples,
-			final String fnTrainingRules, final String fnGloveVectors) throws Exception {
+			final String fnTrainingRules, final String fnGloveVectors, 
+			final InMemoryRdfGraph graph, final Configuration config) throws Exception {
 		
 		this.m_NumRelation = iNumRelation;
 		this.m_NumEntity = iNumEntity;
@@ -114,7 +121,7 @@ public class KaleModel {
 		
 		System.out.println("\nLoading grounding rules");
 		this.m_TrainingRules = new RuleSet(this.m_NumEntity, this.m_NumRelation);
-		this.m_TrainingRules.load(fnTrainingRules);
+		this.m_TrainingRules.loadTimeLogic(fnTrainingRules);
 		System.out.println("Success.");		
 		
 		System.out.println("\nRandomly initializing matrix E and matrix R");
@@ -146,7 +153,8 @@ public class KaleModel {
 	
 	public void Initialization(String strNumRelation, String strNumEntity,
 			String fnTrainingTriples, String fnValidateTriples, String fnTestingTriples,
-			String fnTrainingRules, final String fnGloveVectors) throws Exception {
+			String fnTrainingRules, final String fnGloveVectors, 
+			final InMemoryRdfGraph graph, final Configuration config) throws Exception {
 		
 		m_NumRelation = Integer.parseInt(strNumRelation);
 		m_NumEntity = Integer.parseInt(strNumEntity);
@@ -157,7 +165,9 @@ public class KaleModel {
 				fnValidateTriples, 
 				fnTestingTriples, 
 				fnTrainingRules,
-				fnGloveVectors); 
+				fnGloveVectors,
+				graph,
+				config); 
 	}
 	
 	/**
@@ -311,6 +321,9 @@ public class KaleModel {
 		HashMap<Integer, ArrayList<TripleRule>> lstRules = new HashMap<Integer, ArrayList<TripleRule>>();
 		HashMap<Integer, ArrayList<TripleRule>> lstSndRelNegRules = new HashMap<Integer, ArrayList<TripleRule>>();
 		
+		KaleMatrix bestEntityVectors;
+		KaleMatrix bestRelationVectors;
+		
 		// Generate logging file path.
 		String PATHLOG = "result-k" + this.m_NumFactor 
 				+ "-d" +  this.decimalFormat.format(this.m_Delta)
@@ -336,6 +349,8 @@ public class KaleModel {
 		firstMetric.calculateMetrics();
 		double dCurrentHits = firstMetric.dHits;
 		double dCurrentMRR = firstMetric.dMRR;
+		bestEntityVectors = this.m_Entity_Factor_MatrixE;
+		bestRelationVectors = this.m_Relation_Factor_MatrixR;
 		// Write first results to file and save as initial best results.
 		writer.write("------Current MRR:"+ dCurrentMRR + "\tCurrent Hits@10:" + dCurrentHits + "\n");
 		System.out.print("\n");
@@ -464,6 +479,8 @@ public class KaleModel {
 				if (dCurrentMRR > dBestMRR) {
 					this.m_Relation_Factor_MatrixR.output(this.m_MatrixR_prefix + ".best");
 					this.m_Entity_Factor_MatrixE.output(this.m_MatrixE_prefix + ".best");
+					bestEntityVectors = this.m_Entity_Factor_MatrixE;
+					bestRelationVectors = this.m_Relation_Factor_MatrixR;
 					dBestHits = dCurrentHits;
 					dBestMRR = dCurrentMRR;
 					iBestIter = iIterCntr;
@@ -474,6 +491,7 @@ public class KaleModel {
 				writer.flush();
 			}
 		}
+		this.kaleVectorMatrix = new KaleVectorMatrix(this.graph, this.config, bestEntityVectors, bestRelationVectors);
 		// Print end of training time to console and close writer.
 		long endTime = System.currentTimeMillis();
 		System.out.println("All running time:" + (endTime-startTime)+"ms");

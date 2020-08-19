@@ -3,17 +3,23 @@ package org.uu.nl.embedding.kale;
 import java.io.File;
 import java.util.HashSet;
 
+import org.apache.log4j.Logger;
 import org.uu.nl.embedding.bca.BookmarkColoring;
 import org.uu.nl.embedding.kale.model.KaleModel;
 import org.uu.nl.embedding.kale.util.DataGenerator;
+import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
+import org.uu.nl.embedding.util.config.Configuration.BCA;
 
 public class KaleRunner {
+	
 	java.text.DecimalFormat decimalFormat = new java.text.DecimalFormat("#.######");
+    private final static Logger logger = Logger.getLogger("KaleRunner");
 	
 	private final KaleModel kale;
 	private final InMemoryRdfGraph graph;
+	private final Configuration config;
 	private final int iNumEntities;
 	private final int iNumRelations;
 	private final HashSet<String> uniqueRelationTypes;
@@ -43,28 +49,51 @@ public class KaleRunner {
 	 * @param graph
 	 * @param config
 	 */
-	public KaleRunner(final InMemoryRdfGraph graph, final Configuration config) throws Exception{
-
-		this.graph = graph;
-		final int[] verts = graph.getVertices().toIntArray();
-		final int[] edges = graph.getEdges().toIntArray();
-		this.uniqueRelationTypes = new HashSet<String>();
+	public KaleRunner(final InMemoryRdfGraph graph, final Configuration config) throws Exception {
 		
+        logger.info("Starting KaleRunner");
+		
+		this.graph = graph;
+		this.config = config;
+		this.m_NumFactor = config.getDim();
+		final int[] verts = graph.getVertices().toIntArray();
+        logger.info("Vertices succesfully loaded: " +verts.length+ " in total.");
+		final int[] edges = graph.getEdges().toIntArray();
+        logger.info("Edges succesfully loaded: " +edges.length+ " in total.");
+		this.uniqueRelationTypes = new HashSet<String>();
+
+        logger.info("Determining unique predicates.");
+        String chEdges = "";
 		for (int e = 0; e < edges.length; e++) {
-			String predicate = graph.getEdgeLabelProperty().getValueAsString(edges[e]).toLowerCase();
-			if (!this.uniqueRelationTypes.contains(predicate)) this.uniqueRelationTypes.add(predicate);
+			if (System.console() != null) {
+				String predicate = graph.getEdgeLabelProperty().getValueAsString(edges[e]).toLowerCase();
+				System.out.println("Predicate #" +e+": " + predicate);
+			}
+			//
+			/*chEdges += e + ", ";
+			if (!this.uniqueRelationTypes.contains(predicate)) {
+				this.uniqueRelationTypes.add(predicate);
+				System.out.println("Unique predicate added: " + predicate);
+			}
+			//System.out.println("Checked edges: " +chEdges);
+			if (e == edges.length) System.out.println("Last edge was checked: ended with number: "+e);*/
 		}
+        logger.info("Finished with " +uniqueRelationTypes.size()+ " unique predicates.");
 		
 		this.iNumEntities = verts.length;
 		this.iNumRelations = edges.length;
 		this.iNumUniqueRelations = uniqueRelationTypes.size();
 
-		boolean isKale = true;
-		BookmarkColoring BCA = new BookmarkColoring(graph, config, isKale);
+		boolean nonDefault = true;
+        logger.info("Generating kale BookmarkColoring.");
+		BookmarkColoring BCA = new BookmarkColoring(graph, config, nonDefault);
+        logger.info("Finished generating kale BookmarkColoring.");
 		boolean undirected = true;
+        logger.info("Starting dataGenerator.");
 		DataGenerator dataGenerator = new DataGenerator(graph, undirected,
 										BCA.getInVertices(), BCA.getOutVertices(),
 										BCA.getInEdges(), BCA.getOutEdges());
+        logger.info("Finished dataGenerator.");
 		this.fileExtension = ".txt";
 		dataGenerator.Initialize();
 		dataGenerator.setFileExtension(this.fileExtension);
@@ -77,7 +106,8 @@ public class KaleRunner {
 		this.fnTestingTriples = dataGenerator.fnTestingTriples;
 		this.fnTrainingRules = dataGenerator.fnTrainingRules;
 		this.fnGloveVectors = dataGenerator.fnGloveVectors;
-		
+
+        logger.info("Creating Kale Model and initializing it.");
 		this.kale = new KaleModel();
 		this.kale.Initialization(this.iNumUniqueRelations, 
 				this.iNumEntities, 
@@ -85,8 +115,14 @@ public class KaleRunner {
 				this.fnValidateTriples, 
 				this.fnTestingTriples, 
 				this.fnTrainingRules,
-				this.fnGloveVectors);
+				this.fnGloveVectors,
+				this.graph, this.config);
+        logger.info("Start training the Kale Model using Cochez method.");
 		this.kale.CochezLearn();
+	}
+	
+	public CoOccurrenceMatrix getKaleVectors() {
+		return this.kale.kaleVectorMatrix;
 	}
 	
 	/**

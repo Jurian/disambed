@@ -25,11 +25,11 @@ public class UndirectedWeighted extends BCAJobStable {
     private int[][] vertexOut, vertexIn, edgeOut, edgeIn;
 
 
-	public UndirectedWeighted(
-			InMemoryRdfGraph graph, int bookmark,
-			double alpha, double epsilon, String callType,
-			int[][] vertexIn, int[][] vertexOut, int[][] edgeIn, int[][] edgeOut) {
-		super(bookmark, true, alpha, epsilon, graph, callType, vertexOut, vertexIn, edgeOut, edgeIn);
+	public UndirectedWeighted(InMemoryRdfGraph graph, int bookmark,
+							double alpha, double epsilon,
+							int[][] vertexIn, int[][] vertexOut,
+							int[][] edgeIn, int[][] edgeOut) {
+		super(bookmark, true, alpha, epsilon, graph, vertexOut, vertexIn, edgeOut, edgeIn);
 	}
 
 	@Override

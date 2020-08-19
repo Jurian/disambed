@@ -3,8 +3,12 @@ package org.uu.nl.embedding.bca;
 import me.tongfei.progressbar.ProgressBar;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.uu.nl.embedding.bca.jobs.ContextWinnowedUndirectedWeighted;
 import org.uu.nl.embedding.bca.jobs.DirectedWeighted;
 import org.uu.nl.embedding.bca.jobs.HybridWeighted;
+import org.uu.nl.embedding.bca.jobs.KaleUndirectedWeighted;
+import org.uu.nl.embedding.bca.jobs.KaleUndirectedWeightedNodeBased;
+import org.uu.nl.embedding.bca.jobs.KaleUndirectedWeightedSeperated;
 import org.uu.nl.embedding.bca.jobs.UndirectedWeighted;
 import org.uu.nl.embedding.bca.util.BCV;
 import org.uu.nl.embedding.bca.util.PaintedNode;
@@ -38,17 +42,12 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	private ArrayList<Integer> coOccurrenceIdx_I;
 	private ArrayList<Integer> coOccurrenceIdx_J;
 	private ArrayList<Float> coOccurrenceValues;
-	private ArrayList<Integer>  awareOccurrenceIdx_I;
-	private ArrayList<Integer>  awareOccurrenceIdx_J;
-	private ArrayList<Float>  awareOccurrenceValues;
 	private Map<String, Double> bcvMaxVals;
 	private final int vocabSize;
 	private double max;
 	private int focusVectors, contextVectors;
 	private int coOccurrenceCount;
-	private int awareOccurrenceCount;
 	private Permutation permutation;
-	private Permutation awarePermutation;
 	private final InMemoryRdfGraph graph;
 	private final Configuration graphConfig;
 
@@ -73,10 +72,6 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		this.coOccurrenceIdx_I = new ArrayList<>(vocabSize);
 		this.coOccurrenceIdx_J = new ArrayList<>(vocabSize);
 		this.coOccurrenceValues = new ArrayList<>(vocabSize);
-		// Initialization context aware co-occurrence matrix
-		this.awareOccurrenceIdx_I = new ArrayList<>(vocabSize);
-		this.awareOccurrenceIdx_J = new ArrayList<>(vocabSize);
-		this.awareOccurrenceValues = new ArrayList<>(vocabSize);
 		
 		this.bcvMaxVals = new HashMap<String, Double>();
 		final Configuration.Output output = config.getOutput();
@@ -154,7 +149,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 				case UNDIRECTED:
 					completionService.submit(new UndirectedWeighted(
 							graph, bookmark,
-							alpha, epsilon, "undirectedweighted",
+							alpha, epsilon,
 							inVertex, outVertex, inEdge, outEdge));
 					break;
 				case HYBRID:
@@ -176,18 +171,13 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 				try {
 
 					final BCV bcv = completionService.take().get();
-					
-					ExactSameDateLogic xSameDateLogic = new ExactSameDateLogic();
-					final BCV awareBcv = addDateAwareWinnow(bcv, xSameDateLogic, 0, graph, alpha, epsilon);
 
 					switch (config.getBca().getNormalizeEnum()) {
 						case UNITY:
 							bcv.toUnity();
-							awareBcv.toUnity();
 							break;
 						case COUNTS:
 							bcv.toCounts();
-							awareBcv.toCounts();
 							break;
 						default:
 						case NONE:
@@ -199,7 +189,6 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 					// It is possible to use this maximum value in GloVe, although in the
 					// literature they set this value to 100 and leave it at that
 					setMax(bcv.max());
-					setMax("exactDate", awareBcv.max());
 					
 					// Create co-occurrence matrix for standard bcv
 					for (Entry<Integer, Float> bcr : bcv.entrySet()) {
@@ -208,14 +197,6 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 						coOccurrenceValues.add(bcr.getValue());
 					}
 					coOccurrenceCount += bcv.size();
-
-					// Create co-occurrence matrix for context aware bcv
-					for (Entry<Integer, Float> bcr : awareBcv.entrySet()) {
-						this.awareOccurrenceIdx_I.add(bcv.getRootNode());
-						this.awareOccurrenceIdx_J.add(bcr.getKey());
-						this.awareOccurrenceValues.add(bcr.getValue());
-					}
-					this.awareOccurrenceCount += awareBcv.size();
 
 				} catch (InterruptedException | ExecutionException e) {
 					e.printStackTrace();
@@ -230,7 +211,6 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		}
 
 		permutation = new Permutation(coOccurrenceCount);
-		this.awarePermutation = new Permutation(this.awareOccurrenceCount);
 	}
 	
 	/**
@@ -240,7 +220,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	 * @param isKale
 	 * @author Euan Westenbroek
 	 */
-	public BookmarkColoring(final InMemoryRdfGraph graph, final Configuration config, final boolean isKale) {
+	public BookmarkColoring(final InMemoryRdfGraph graph, final Configuration config, final boolean nonDefault) {
 		
 		final double alpha = config.getBca().getAlpha();
 		final double epsilon = config.getBca().getEpsilon();
@@ -320,7 +300,6 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 
 			// Choose a graph neighborhood algorithm
 			switch (config.getBca().getTypeEnum()){
-
 				case DIRECTED:
 					completionService.submit(new DirectedWeighted(
 							graph, bookmark,
@@ -328,13 +307,37 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 							this.inVertex, this.outVertex, this.inEdge, this.outEdge));
 					break;
 				case UNDIRECTED:
-					/*
-#######				 * TODO: IN CALL() ADD OPTION FOR BCV FOR EDGES!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-					 * 					 
-					 */
 					completionService.submit(new UndirectedWeighted(
 							graph, bookmark,
-							alpha, epsilon, "kaleundirectedweighted",
+							alpha, epsilon,
+							inVertex, outVertex, inEdge, outEdge));
+					break;
+				case KALEUNDIRECTED:
+					completionService.submit(new KaleUndirectedWeighted(
+							graph, bookmark,
+							alpha, epsilon,
+							inVertex, outVertex, inEdge, outEdge));
+					break;
+				case KALESEPERATED:
+					completionService.submit(new KaleUndirectedWeightedSeperated(
+							graph, bookmark,
+							alpha, epsilon,
+							inVertex, outVertex, inEdge, outEdge));
+					break;
+				case KALENODEBASED:
+					completionService.submit(new KaleUndirectedWeightedNodeBased(
+							graph, bookmark,
+							alpha, epsilon,
+							inVertex, outVertex, inEdge, outEdge));
+					break;
+				case CONTEXTWINNOWED:
+					/*
+					 * Days difference fiksen vanuit config
+					 */
+					int daysDiff = 0;
+					completionService.submit(new ContextWinnowedUndirectedWeighted(
+							graph, bookmark, daysDiff,
+							alpha, epsilon,
 							inVertex, outVertex, inEdge, outEdge));
 					break;
 				case HYBRID:
@@ -396,307 +399,6 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		}
 
 		this.permutation = new Permutation(coOccurrenceCount);
-	}
-	
-	
-
-	/**
-	 * 
-	 * 
-	 * @author Euan Westenbroek
-	 * @version 1.0
-	 * @since 25-05-2020
-	 */
-	protected BCV addDateAwareWinnow(final BCV bcv, final DateCompareLogic dateRule, 
-										final int daysDifference, final InMemoryRdfGraph graph,
-										final double alpha, final double epsilon) {
-		
-		final int root = bcv.getRootNode();
-		BCV awareBcv = new BCV(root);
-	
-		//nodeTree.put(root, new PaintedNode(root, 1)); // nodig om bcv opnieuw te maken als neighbouring node wordt weggehaald
-
-//###--------------------------------------------------
-		int[] dateNeighbors = new int[] {}; // OMSCHRIJVEN NAAR ARRAYLIST?
-		int[] dateEdges = new int[] {};
-		
-		// Initialize for Out-edges.
-		int[][] allDateVertsOut = new int[bcv.size()][];
-		int[][] allDateEdgesOut = new int[bcv.size()][];
-		int[][] allProxyDateVertsOut = new int[bcv.size()][];
-		int[][] allProxyDateEdgesOut = new int[bcv.size()][];
-		// Initialize for In-edges
-		int[][] allDateVertsIn = new int[bcv.size()][];
-		int[][] allDateEdgesIn = new int[bcv.size()][];
-		int[][] allProxyDateVertsIn = new int[bcv.size()][];
-		int[][] allProxyDateEdgesIn= new int[bcv.size()][];
-		// Combine arrays in array for clean looping code.
-		int[][][] allDateVerts = new int[][][] {allDateVertsIn, allDateVertsOut};
-		int[][][] allDateEdges = new int[][][] {allDateEdgesIn, allDateEdgesOut};
-		int[][][] allProxyDateVerts = new int[][][] {allProxyDateVertsIn, allProxyDateVertsOut};
-		int[][][] allProxyDateEdges= new int[][][] {allProxyDateEdgesIn, allProxyDateEdgesOut};
-    	List<Map<Integer, int[]>> removedMaps = new ArrayList<>();
-	
-		final NumericalProperty nodeTypes = graph.getVertexTypeProperty();
-		final NumericalProperty edgeWeights = graph.getEdgeWeightProperty();
-		final NumericalProperty edgeTypes = graph.getEdgeTypeProperty(); // Added edges have type == 0
-		final Property vertexLabels = graph.getVertexLabelProperty();
-		final Property edgeLabels = graph.getEdgeLabelProperty();
-		
-	
-		NodeInfo rootInfo = NodeInfo.fromByte((byte) nodeTypes.getValueAsInt(root));
-		String rootLabel = vertexLabels.getValueAsString(root);
-		
-		// Keep track of the order in which the Date entries were put in.
-		int[] focusNodeOrder = new int[bcv.entrySet().size()];
-		focusNodeOrder[0] = root;
-		
-		int[][] rootNeighbors = new int[][] {};
-		int[][] rootEdges = new int[][] {};
-		
-		final int[][][] inOutVerts = new int[][][] {this.inVertex, this.outVertex};
-		final int[][][] inOutEdges = new int[][][] {this.inEdge, this.outEdge};
-		int[] rootProxyDateVerts;
-		int[] rootProxyDateEdges;
-		String neighborLabel;
-		
-		for(int direction = 0; direction < inOutVerts.length; direction++) {
-			
-			rootNeighbors[direction] = inOutVerts[direction][root];
-			rootEdges[direction] = inOutEdges[direction][root];
-			rootProxyDateVerts = new int[] {};
-			rootProxyDateEdges = new int[] {};
-			
-			// Check for edges of root not in original graph.
-			for(int i = 0; i < rootEdges[direction].length; i++) {
-				
-				// Get vertex label to check if it is a date.
-			    neighborLabel = vertexLabels.getValueAsString(rootNeighbors[direction][i]);
-		    	if(SimpleDate.isDateFormat(neighborLabel)) {
-		    		// Add the found date vertex and edge to their respective arrays.
-					dateNeighbors = ArrayUtils.addAll(dateNeighbors,
-										new int[] {rootNeighbors[direction][i]});
-					dateEdges = ArrayUtils.addAll(dateEdges,
-										new int[] {rootEdges[direction][i]});
-		    		
-					// edgeType == 0 means edge was not in original graph.
-		    		if(edgeTypes.getValueAsInt(rootEdges[direction][i]) == 0) { 
-						// Expand the added vertex list with all vertices the proxy
-			    		// edges flow to an Date Literal node.
-						rootProxyDateVerts = ArrayUtils.addAll(rootProxyDateVerts,
-												new int[] {rootNeighbors[direction][i]});
-						rootProxyDateEdges = ArrayUtils.addAll(rootProxyDateEdges,
-												new int[] {rootEdges[direction][i]});
-			    	}
-				}
-			}
-			// Add the found proxyDate arrays to their respective arrays.
-			allDateVerts[direction][0] = dateNeighbors;
-			allDateEdges[direction][0] = dateEdges;
-			allProxyDateVerts[direction][0] = rootProxyDateVerts;
-			allProxyDateEdges[direction][0] = rootProxyDateEdges;
-		}
-		
-		
-		int counter = 0;
-		int focusNode;
-		int[] neighborEdges;
-		int[] neighborVerts;
-		int[] neighborProxyDateVerts;
-		int[] neighborProxyDateEdges;
-
-		// Loop through BCV and check for context.
-		for(Map.Entry<Integer, Float> entry : bcv.entrySet()) { //START foreach-loop
-			focusNode = entry.getKey();
-			
-			// Skip rest of loop if focusNode is root
-			// counter increment is also skipped.
-			if(focusNode == root)  continue;
-			
-	    	counter++;
-	    	
-	    	// Get node info to check type.
-		    NodeInfo neighborInfo = NodeInfo.fromByte((byte) nodeTypes.getValueAsInt(focusNode));
-		    neighborLabel = vertexLabels.getValueAsString(focusNode);
-		    
-	    	// Skip literal nodes.
-			if(neighborInfo == NodeInfo.LITERAL) continue;
-			
-			// Check URI nodes for similar properties as root node above.
-		    else if(neighborInfo == NodeInfo.URI) {
-				for(int direction = 0; direction < inOutVerts.length; direction++) { // START for-loop
-			    	// Initialize variables.
-			    	dateNeighbors = new int[] {};
-			    	dateEdges = new int[] {};
-			    	neighborProxyDateVerts = new int[] {};
-			    	neighborProxyDateEdges = new int[] {};
-			    	// Initialize focusNode's out-edges and out-nodes.
-			    	neighborVerts = inOutVerts[direction][focusNode];
-			    	neighborEdges = inOutEdges[direction][focusNode];
-
-					// Check for edges of focusNode not in root graph.
-			    	for(int i = 0; i < neighborEdges.length; i++) {
-						// Get vertex label to check for date.
-					    neighborLabel = vertexLabels.getValueAsString(neighborVerts[i]);
-				    	if(SimpleDate.isDateFormat(neighborLabel)) {
-				    		// Add found date vertex and edge to their respective arrays.
-							dateNeighbors = ArrayUtils.addAll(dateNeighbors,
-												new int[] {neighborVerts[i]});
-							dateEdges = ArrayUtils.addAll(dateEdges,
-												new int[] {neighborEdges[i]});
-				    		
-							// edgeType == 0 means edge was not in original graph.
-				    		if(edgeTypes.getValueAsInt(neighborEdges[i]) == 0) {
-								// Expand added vertex list with all vertices the proxy
-					    		// edges flow to an Date Literal node.
-								neighborProxyDateVerts = ArrayUtils.addAll(neighborProxyDateVerts,
-															new int[] {neighborVerts[i]});
-								neighborProxyDateEdges = ArrayUtils.addAll(neighborProxyDateEdges,
-															new int[] {neighborEdges[i]});
-					    	}
-			    		}
-			    	}
-					// Add found proxyDate arrays to their respective arrays.
-					allDateVerts[direction][counter] = dateNeighbors;
-					allDateEdges[direction][counter] = dateEdges;
-					allProxyDateVerts[direction][counter] = neighborProxyDateVerts;
-					allProxyDateEdges[direction][counter] = neighborProxyDateEdges;
-				    
-				} //END for-loop
-
-				// Keep track of the order in which the Date entries were put in.
-		    	focusNodeOrder[counter] = focusNode;
-		    	
-		    } // END if-statement NodeInfo.URI
-		    
-			/* 
-			 * else { NodeInfo.BLANK node }
-			 * So skip this kind of nodes
-			 */
-		    
-		} //END foreach-loop
-    	
-    	/* 
-    	 * Now check if there is both a proxy date vertex and proxy date edge
-    	 * of either the root or focusNode, that are part of the other vertex'
-    	 * neighbors.
-    	 */
-		removedMaps = createRemovedMaps(allProxyDateVerts, allProxyDateEdges,
-										allDateVerts, allDateEdges,
-										vertexLabels, edgeLabels,
-										dateRule, daysDifference,
-										focusNodeOrder, counter);
-		UndirectedWeighted uw = new UndirectedWeighted(graph, root,
-														alpha, epsilon,
-														"undirectedweighted",
-														inVertex, outVertex,
-														inEdge, outEdge);
-    	// Create date aware BCV.
-    	awareBcv = uw.doWorkWithIgnore(graph, false, bcv, focusNodeOrder, removedMaps);
-		return awareBcv;
-	}
-	
-	/**
-	 * 
-	 * 
-	 * @author Euan Westenbroek
-	 * @version 1.0
-	 * @since 25-05-2020
-	 * 
-	 * @param allProxyDateVerts
-	 * @param allProxyDateEdges
-	 * @param allDateVerts
-	 * @param allDateEdges
-	 * @param vertexLabels
-	 * @param edgeLabels
-	 * @param dateRule
-	 * @param daysDifference
-	 * @param focusNodeOrder
-	 * @param counter
-	 * @param inOutSize
-	 * @return removedMaps, a list of HashMap<Integer, int[]>
-	 */
-	/*
-	 * Deze methode als aanroep methode gebruiken en die hierboven juist als private?
-	 * d.w.z. in deze methode wordt bovenstaande methode aangeroepen om de juiste 
-	 * data terug te krijgen. --> Realistisch m.b.t. de hoeveelheid arrays etc die 
-	 * aangemaakt moeten worden?
-	 * 
-	 */
-	private List<Map<Integer, int[]>> createRemovedMaps(final int[][][] allProxyDateVerts,
-									final int[][][] allProxyDateEdges, final int[][][] allDateVerts,
-									final int[][][] allDateEdges, final Property vertexLabels,
-									final Property edgeLabels, final DateCompareLogic dateRule,
-									final int daysDifference, final int[] focusNodeOrder,
-									final int counter) {
-
-		// List of HashMaps that will be returned.
-    	List<Map<Integer, int[]>> removedMaps = new ArrayList<>();
-    	// Map of nodes with their incoming or outgoing neighboring
-    	// nodes removed from original BCV.
-		Map<Integer, int[]> removedMapIn = new HashMap<Integer, int[]>();
-		Map<Integer, int[]> removedMapOut = new HashMap<Integer, int[]>();
-    	
-    	// Initialize empty new integer arrays.
-    	int[] dateNeighbors;
-    	int[] dateEdges;
-		int[] neighborProxyDateVerts;
-		int[] neighborProxyDateEdges;
-		int[] removedVerts;
-
-    	String proxyLabel, dateLabel;
-		boolean validComparison;
-		
-    	for(int iProxy = 0; iProxy < counter; iProxy++) {
-    		for(int jDate = 0; jDate < counter; jDate++) { //BEGIN outer double for-loop
-    			
-    			// Skip comparison with itself.
-    			if(iProxy == jDate) continue;
-    			
-				for(int direction = 0; direction < allProxyDateVerts.length; direction++) {
-    				// Reset arrays arrays.
-    				neighborProxyDateVerts = allProxyDateVerts[direction][iProxy]; 
-    				neighborProxyDateEdges = allProxyDateEdges[direction][iProxy];
-    				dateNeighbors = allDateVerts[direction][jDate];
-    				dateEdges = allDateEdges[direction][jDate];
-    				removedVerts = new int[] {};
-    				
-    				// Check first for proxyArray size to skip unnecessary steps.
-    				for(int i = 0; i < neighborProxyDateVerts.length; i++) {
-    					for(int j = 0; j < dateNeighbors.length; j++) { //BEGIN inner double for-loop
-    						
-    						// Compare added date node to original date node but
-    						// only if they have the same label.
-    						if(neighborProxyDateVerts[i] == dateNeighbors[j] &&
-    								neighborProxyDateEdges[i] == dateEdges[j]) {
-
-    						    proxyLabel = vertexLabels.getValueAsString(neighborProxyDateVerts[i]);
-    						    dateLabel = vertexLabels.getValueAsString(dateNeighbors[j]);
-    						    
-    						    // Get boolean value for comparing the two dates
-    							validComparison = DateCompareLogic.compareTwoDates(proxyLabel, dateLabel, daysDifference);
-    							if(!validComparison) { // validComparison == false
-    								// Add of which a neighbor is removed and the removed vertices themselves
-    								removedVerts = ArrayUtils.addAll(removedVerts,
-    													new int[] {neighborProxyDateVerts[i]});
-    							}
-    						}
-    					}
-	    			// Add array with removed neighbors to its focusNodes place
-    				if(direction == 0) 		removedMapIn.put(focusNodeOrder[iProxy], removedVerts);
-    				else if(direction == 1) removedMapOut.put(focusNodeOrder[iProxy], removedVerts);
-    				else { // direction > 1, throw Exception
-    		        	throw new IllegalArgumentException("More than 2 directions for neighboring vertices."); }
-    				} //END inner double for-loop
-				}
-
-    		}
-    	} //END outer double for-loop
-    	
-    	// Put both the generated maps in the list and return the list
-    	removedMaps.set(0, removedMapIn);
-    	removedMaps.set(1, removedMapOut);
-    	return removedMaps;
 	}
 	
 
@@ -778,7 +480,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 
 	@Override
 	public double max() {
-		return this.bcvMaxVals.get("stanard");
+		return this.bcvMaxVals.get("standard");
 	}
 	
 	public double max(String bcvName) {

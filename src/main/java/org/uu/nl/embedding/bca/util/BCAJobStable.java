@@ -13,9 +13,9 @@ import java.util.TreeMap;
 public abstract class BCAJobStable extends BCAJob {
 
 	protected BCAJobStable(int bookmark, boolean reverse, double alpha, 
-							double epsilon, InMemoryRdfGraph graph, String callType,
+							double epsilon, InMemoryRdfGraph graph,
 							int[][] vertexOut, int[][] vertexIn, int[][] edgeOut, int[][] edgeIn) {
-		super(bookmark, reverse, alpha, epsilon, graph, callType, vertexOut, vertexIn, edgeOut, edgeIn);
+		super(bookmark, reverse, alpha, epsilon, graph, vertexOut, vertexIn, edgeOut, edgeIn);
 	}
 
 	protected BCV doWork(final boolean reverse) {
