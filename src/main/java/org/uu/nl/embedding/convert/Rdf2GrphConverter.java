@@ -5,6 +5,8 @@ import me.tongfei.progressbar.ProgressBar;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.log4j.Logger;
 import org.uu.nl.embedding.compare.CompareJob;
@@ -15,6 +17,10 @@ import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.similarity.PreComputed;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
