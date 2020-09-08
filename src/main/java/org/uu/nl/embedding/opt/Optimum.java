@@ -1,15 +1,16 @@
 package org.uu.nl.embedding.opt;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
  * @author Jurian Baas
  */
-public class Optimum {
+public class Optimum implements Iterable<Optimizer.EmbeddedEntity>{
 
 	private double finalCost;
-	private float[] result;
+	private Iterator<Optimizer.EmbeddedEntity> resultIterator;
 	private final List<Double> costHistory = new ArrayList<>();
 
 	public void addIntermediaryResult(double result) {
@@ -22,12 +23,8 @@ public class Optimum {
 		}
 	}
 
-	public float[] getResult() {
-		return result;
-	}
-
-	public void setResult(float[] result) {
-		this.result = result;
+	public void setResultIterator(Iterator<Optimizer.EmbeddedEntity> resultIterator) {
+		this.resultIterator = resultIterator;
 	}
 
 	public double getFinalCost() {
@@ -37,5 +34,11 @@ public class Optimum {
 	public void setFinalCost(double finalCost) {
 		this.finalCost = finalCost;
 	}
+
+	@Override
+	public Iterator<Optimizer.EmbeddedEntity> iterator() {
+		return this.resultIterator;
+	}
+
 
 }

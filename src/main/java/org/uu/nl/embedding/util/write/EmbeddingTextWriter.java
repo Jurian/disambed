@@ -2,6 +2,7 @@ package org.uu.nl.embedding.util.write;
 
 import me.tongfei.progressbar.ProgressBar;
 import org.uu.nl.embedding.convert.util.NodeInfo;
+import org.uu.nl.embedding.opt.Optimizer;
 import org.uu.nl.embedding.opt.Optimum;
 import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.config.Configuration;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -74,11 +76,10 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 
 		Files.createDirectories(outputFolder);
 
-		byte type;
 		final int vocabSize = coMatrix.nrOfFocusVectors();
 		final int dimension = config.getDim();
 		final String[] out = new String[dimension];
-		final float[] result = optimum.getResult();
+		final Iterator<Optimizer.EmbeddedEntity> entityIterator = optimum.iterator();
 
 		// Create a tab-separated file
 		final String delimiter = "\t";
@@ -95,26 +96,22 @@ public class EmbeddingTextWriter implements EmbeddingWriter {
 
 			Configuration.Output output = config.getOutput();
 
-			for (int i = 0; i < vocabSize; i++) {
-
-				type = coMatrix.getType(i);
-
-				final String key = coMatrix.getKey(i);
-				final NodeInfo nodeInfo = NodeInfo.fromByte(type);
+			while(entityIterator.hasNext()) {
+				Optimizer.EmbeddedEntity entity = entityIterator.next();
 
 				for (int d = 0; d < out.length; d++)
-					out[d] = String.format("%11.6E", result[d + i * dimension]);
+					out[d] = String.format("%11.6E", entity.getVector()[d]);
 
 				vect.write(String.join(delimiter, out) + newLine);
-				dict.write(key
+				dict.write(entity.getKey()
 						// Remove newlines and tabs
 						.replace("\n", "")
 						.replace("\r", "")
 						.replace(delimiter, "")
 						+ delimiter
-						+ nodeInfo.name()
+						+ entity.getInfo().name()
 						+ delimiter
-						+ (nodeInfo == NodeInfo.LITERAL ? coMatrix.getGraph().getLiteralPredicateProperty().getValueAsString(coMatrix.focusIndex2Context(i)) : "")
+						+ (entity.getInfo() == NodeInfo.LITERAL ? coMatrix.getGraph().getLiteralPredicateProperty().getValueAsString(coMatrix.focusIndex2Context(entity.getIndex())) : "")
 						+ newLine
 				);
 				pb.step();

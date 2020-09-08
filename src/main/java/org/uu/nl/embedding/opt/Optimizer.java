@@ -3,11 +3,13 @@ package org.uu.nl.embedding.opt;
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.commons.math.util.FastMath;
 import org.apache.log4j.Logger;
+import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.ExtendedRandom;
 
 import java.math.BigDecimal;
+import java.util.Iterator;
 import java.util.concurrent.*;
 
 /**
@@ -116,7 +118,7 @@ public abstract class Optimizer implements IOptimizer {
 
 				if(iterDiff <= tolerance) {
 
-					opt.setResult(extractResult());
+					opt.setResultIterator(new EmbeddingIterator());
 					opt.setFinalCost(localCost);
 
 					break;
@@ -135,19 +137,69 @@ public abstract class Optimizer implements IOptimizer {
 	}
 
 	/**
-	 * Create a new double array containing the averaged values between the focus and context vectors
+	 * Instead of wasting RAM by copying the entire embedding to a new double array,
+	 * we can access it as a stream of float arrays with this iterator.
 	 */
-	@Override
-	public float[] extractResult() {
+	class EmbeddingIterator implements Iterator<EmbeddedEntity> {
 
-		float[] embedding = new float[focusVectors * dimension];
-		for (int focusIndex = 0; focusIndex < focusVectors; focusIndex++) {
-			final int contextIndex = this.coMatrix.focusIndex2Context(focusIndex);
-			for (int d = 0; d < dimension; d++) {
-				embedding[d + focusIndex * dimension] = (this.focus[focusIndex][d] + this.context[contextIndex][d]) / 2;
-			}
+		private int focusIndex = 0;
+
+		@Override
+		public boolean hasNext() {
+			return focusIndex < focusVectors;
 		}
-		return embedding;
+
+		@Override
+		public EmbeddedEntity next() {
+
+			final int contextIndex = coMatrix.focusIndex2Context(focusIndex);
+			final float[] vector = new float[dimension];
+			for (int d = 0; d < dimension; d++)  vector[d] = (focus[focusIndex][d] + context[contextIndex][d]) / 2;
+
+			final EmbeddedEntity entity = new EmbeddedEntity(
+					focusIndex,
+					coMatrix.getKey(focusIndex),
+					NodeInfo.fromByte(coMatrix.getType(focusIndex)),
+					vector
+			);
+
+			focusIndex++;
+			return entity;
+		}
+	}
+
+	/**
+	 * View of an embedded entity
+	 */
+	public static class EmbeddedEntity {
+
+		private final int index;
+		private final String key;
+		private final NodeInfo info;
+		private final float[] vector;
+
+		public EmbeddedEntity(int index, String key, NodeInfo info, float[] vector) {
+			this.index = index;
+			this.key = key;
+			this.info = info;
+			this.vector = vector;
+		}
+
+		public int getIndex() {
+			return index;
+		}
+
+		public String getKey() {
+			return key;
+		}
+
+		public NodeInfo getInfo() {
+			return info;
+		}
+
+		public float[] getVector() {
+			return vector;
+		}
 	}
 
 }
