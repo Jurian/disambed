@@ -232,7 +232,7 @@ public class Configuration {
 
         @Override
         public String toString() {
-            String out = getSourcePredicate() + " -> " + getTargetPredicate() + "\n method:" + getMethod() + ", threshold: " + getThreshold();
+            String out = getSourcePredicate() + " -> " + getTargetPredicate() + ", method:" + getMethod() + ", threshold: " + getThreshold();
             switch (getMethodEnum()) {
                 default: return out;
                 case NGRAM_COSINE:
