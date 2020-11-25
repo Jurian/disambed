@@ -5,23 +5,17 @@ import me.tongfei.progressbar.ProgressBar;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.rdf.model.Model;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.log4j.Logger;
+import org.uu.nl.embedding.compare.CompareGroup;
 import org.uu.nl.embedding.compare.CompareJob;
 import org.uu.nl.embedding.compare.CompareResult;
-import org.uu.nl.embedding.compare.CompareGroup;
 import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
-import org.uu.nl.embedding.util.similarity.PreComputed;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.*;
 
 
@@ -47,35 +41,30 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 		final InMemoryRdfGraph g = new InMemoryRdfGraph();
 
 		final Map<String, Float> predicateWeights = config.getWeights();
-		final Map<String, CompareGroup> sourceGroups = new HashMap<>();
-		final Map<String, CompareGroup> targetGroups = new HashMap<>();
 
-		if(config.getSimilarity() != null)
-			config.getSimilarity().forEach(
-					sim -> {
-						boolean upperTriangle = sim.getSourcePredicate().equals(sim.getTargetPredicate());
-						CompareGroup group = new CompareGroup(sim.toFunction(), sim.getThreshold(), upperTriangle);
-						sourceGroups.put(sim.getSourcePredicate(), group);
-						targetGroups.put(sim.getTargetPredicate(), group);
-					}
-			);
-
-		final boolean doSimilarityMatching = !sourceGroups.isEmpty();
+		final boolean doSimilarityMatching = config.getSimilarity() != null;
 		final boolean doPredicateWeighting = predicateWeights != null && !predicateWeights.isEmpty();
+
+		CompareGroup[] compareGroups = null;
+
+		if(doSimilarityMatching) {
+			compareGroups = new CompareGroup[config.getSimilarity().size()];
+			for(int i = 0; i < compareGroups.length; i++){
+				compareGroups[i] = new CompareGroup(config.getSimilarity().get(i));
+			}
+		}
 
 		final Map<Node, Map<Node, Integer>> predicateLiteralMap = new HashMap<>();
 		final Map<Node, Integer> vertexMap = new HashMap<>();
 		final Map<Node, Integer> edgeTypes = new HashMap<>();
 
 		long skippedTriples = 0;
-		int s_i, o_i;
 
-		String predicateString;
-		Node s, p, o;
-		Triple t ;
-
-		final Set<String> predicateSet = new HashSet<>();
 		final ExtendedIterator<Triple> triples = model.getGraph().find();
+
+		Triple t;
+		Node s, p, o;
+		int s_i, o_i;
 
 		try(ProgressBar pb = Configuration.progressBar("Converting", model.size(), "triples")) {
 			while (triples.hasNext()) {
@@ -85,8 +74,8 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 				p = t.getPredicate();
 				o = t.getObject();
 
-				predicateString = p.toString();
-				predicateSet.add(predicateString);
+				final String predicateString = p.toString();
+
 				// Ignore unweighted predicates
 				if(doPredicateWeighting && !predicateWeights.containsKey(predicateString)) {
 					// Adjust the total number of triples we are considering
@@ -103,18 +92,7 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 				addEdge(g, p, s_i, o_i, edgeTypes, doPredicateWeighting ? predicateWeights.get(predicateString) : 1f);
 
 				if(doSimilarityMatching) {
-					// Some similarity metrics require pre-processing
-					final CompareGroup source = sourceGroups.get(predicateString);
-					if(source != null) {
-						source.addToSource(o_i);
-						if(source.needsPrecompute()) ((PreComputed)source.similarity).preCompute(o.toString(false));
-					}
-
-					final CompareGroup target = targetGroups.get(predicateString);
-					if(target != null) {
-						target.addToTarget(o_i);
-						if(target.needsPrecompute()) ((PreComputed)target.similarity).preCompute(o.toString(false));
-					}
+					for (CompareGroup compareGroup : compareGroups) compareGroup.process(s, o, o_i, predicateString);
 				}
 
 				pb.step();
@@ -125,45 +103,47 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 					" unweighted triples (" + String.format("%.2f", (skippedTriples/(double)model.size()*100)) + " %)");
 		}
 
-		//predicateSet.stream().sorted().forEach(System.out::println);
-
-		if(!doSimilarityMatching) {
+		if(doSimilarityMatching) {
+			for (CompareGroup compareGroup : compareGroups) compareLiterals(g, compareGroup);
+		} else {
 			logger.info("Partial matching is disabled, no edges between similar literals are added");
-			return g;
 		}
 
-		for(Map.Entry<String, CompareGroup> entry : sourceGroups.entrySet()) {
+		return g;
+	}
 
-			final ExecutorService es = Executors.newWorkStealingPool(config.getThreads());
-			final CompletionService<CompareResult> completionService = new ExecutorCompletionService<>(es);
+	private void compareLiterals(InMemoryRdfGraph g, CompareGroup compareGroup) {
+		final ExecutorService es = Executors.newWorkStealingPool(config.getThreads());
+		final CompletionService<CompareResult> completionService = new ExecutorCompletionService<>(es);
 
-			final CompareGroup group = entry.getValue();
+		final int sourceSize = compareGroup.sourceNodes.size();
+		final int targetSize = compareGroup.targetNodes.size();
 
-			final int sourceSize = group.source.size();
-			final int targetSize = group.target.size();
+		final StringSimilarity metric = compareGroup.similarity;
 
-			final StringSimilarity metric = group.similarity;
+		final int[] sourceNodes = compareGroup.sourceNodes.stream().mapToInt(i -> i).toArray();
+		final int[] targetNodes = compareGroup.targetNodes.stream().mapToInt(i -> i).toArray();
 
-			final int[] sourceNodes = group.source.stream().mapToInt(i -> i).toArray();
-			final int[] targetNodes = group.target.stream().mapToInt(i -> i).toArray();
+		logger.info("Processing similarities between:");
+		logger.info(compareGroup.sourceURI + "* " +
+					compareGroup.sourcePredicate + " ("+sourceSize+") and" );
+		logger.info(compareGroup.targetURI + "* " +
+					compareGroup.targetPredicate + " ("+ targetSize +")");
 
-			logger.info("Processing similarities for predicate " + entry.getKey());
+		for (int i = 0; i < sourceSize; i++) {
+			completionService.submit(new CompareJob(sourceNodes[i], targetNodes, compareGroup.threshold, metric, g.getVertexLabelProperty()));
+		}
 
-			for (int i = 0; i < sourceSize; i++) {
-				completionService.submit(new CompareJob(group.upperTriangle, i, sourceNodes, targetNodes, group.threshold, metric, g.getVertexLabelProperty()));
-			}
+		int received = 0;
+		int edgesAdded = 0;
+		try(ProgressBar pb = Configuration.progressBar("Comparing", sourceSize, "literals")) {
+			pb.setExtraMessage(Integer.toString(edgesAdded));
+			while (received < sourceSize) {
+				try {
 
-			int received = 0;
-			int edgesAdded = 0;
-			try(ProgressBar pb = Configuration.progressBar("Comparing", sourceSize, "literals")) {
-				pb.setExtraMessage(Integer.toString(edgesAdded));
-				while (received < sourceSize) {
-					try {
-
-						final CompareResult result = completionService.take().get();
-						final int vert = result.vert;
-						final int size = result.otherVerts.size();
-						for (int i = 0; i < size; i++) {
+					final CompareResult result = completionService.take().get();
+					final int vert = result.vert;
+					for (int i = 0; i < result.otherVerts.size(); i++) {
 
 							final int otherVert = result.otherVerts.get(i);
 							final float similarity = result.similarities.get(i);
@@ -184,20 +164,17 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 							pb.setExtraMessage(Integer.toString(edgesAdded));
 						}
 
-					} catch (InterruptedException | ExecutionException e) {
-						e.printStackTrace();
-					} finally {
-						received++;
-						pb.step();
-					}
+				} catch (InterruptedException | ExecutionException e) {
+					e.printStackTrace();
+				} finally {
+					received++;
+					pb.step();
 				}
-			} finally {
-				es.shutdown();
 			}
-			logger.info("Created links for " +edgesAdded+ " literal pairs");
+		} finally {
+			es.shutdown();
 		}
-
-		return g;
+		logger.info("Created links for " +edgesAdded+ " literal pairs");
 	}
 
 	/**

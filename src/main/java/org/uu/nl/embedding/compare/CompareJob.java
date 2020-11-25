@@ -10,38 +10,34 @@ import java.util.concurrent.Callable;
  */
 public class CompareJob implements Callable<CompareResult> {
 
-    private final int index;
-    private final int startIndex;
-    private final int[] source, target;
+    private final int source;
+    private final int[]  target;
     private final double threshold;
     private final StringSimilarity metric;
     private final Property vertexLabels;
+    private final String sourceLabel;
 
-
-    public CompareJob(boolean upperTriangle, int index, int[] source, int[] target, double threshold, StringSimilarity metric, Property vertexLabels) {
-        this.index = index;
+    public CompareJob(int source, int[] target, double threshold, StringSimilarity metric, Property vertexLabels) {
         this.source = source;
         this.target = target;
         this.threshold = threshold;
         this.metric = metric;
         this.vertexLabels = vertexLabels;
-        this.startIndex = upperTriangle ? index + 1 : 0;
+        this.sourceLabel = vertexLabels.getValueAsString(source);
     }
 
     @Override
     public CompareResult call() {
 
-        final int vert = source[index];
+        final int vert = source;
         final CompareResult result = new CompareResult(vert);
 
-        for (int j = startIndex; j < target.length; j++) {
+        for (final int otherVert : target) {
 
-            final int otherVert = target[j];
-            if(otherVert == vert) continue;
+            if (otherVert == vert) continue;
 
-            final String s1 = vertexLabels.getValueAsString(vert);
-            final String s2 = vertexLabels.getValueAsString(otherVert);
-            final double similarity = metric.similarity(s1, s2);
+            final String targetLabel = vertexLabels.getValueAsString(otherVert);
+            final double similarity = metric.similarity(sourceLabel, targetLabel);
 
             if (similarity >= threshold) {
                 result.otherVerts.add(otherVert);

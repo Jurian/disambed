@@ -1,9 +1,8 @@
 package org.uu.nl.embedding.util.similarity;
 
-import info.debatty.java.stringsimilarity.interfaces.StringSimilarity;
 import org.apache.log4j.Logger;
 
-public class Numeric implements StringSimilarity {
+public class Numeric implements LiteralSimilarity {
 
     private final static Logger logger = Logger.getLogger(Numeric.class);
     private final double alpha;

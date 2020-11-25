@@ -1,6 +1,5 @@
 package org.uu.nl.embedding.util.similarity;
 
-import info.debatty.java.stringsimilarity.interfaces.StringSimilarity;
 import org.apache.log4j.Logger;
 import org.uu.nl.embedding.util.config.Configuration;
 
@@ -9,7 +8,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 
-public abstract class Date implements StringSimilarity {
+public abstract class Date implements LiteralSimilarity {
 
     private final static Logger logger = Logger.getLogger(Date.class);
     private final Configuration.SimilarityGroup.Time timeDirection;
