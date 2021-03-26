@@ -16,14 +16,16 @@ public class CompareJob implements Callable<CompareResult> {
     private final StringSimilarity metric;
     private final Property vertexLabels;
     private final String sourceLabel;
+    private final boolean inGroupComparison;
 
-    public CompareJob(int source, int[] target, double threshold, StringSimilarity metric, Property vertexLabels) {
+    public CompareJob(int source, int[] target, double threshold, StringSimilarity metric, Property vertexLabels, boolean inGroupComparison) {
         this.source = source;
         this.target = target;
         this.threshold = threshold;
         this.metric = metric;
         this.vertexLabels = vertexLabels;
         this.sourceLabel = vertexLabels.getValueAsString(source);
+        this.inGroupComparison = inGroupComparison;
     }
 
     @Override
@@ -34,6 +36,7 @@ public class CompareJob implements Callable<CompareResult> {
 
         for (final int otherVert : target) {
 
+            if(inGroupComparison && vert > otherVert) continue;
             if (otherVert == vert) continue;
 
             final String targetLabel = vertexLabels.getValueAsString(otherVert);

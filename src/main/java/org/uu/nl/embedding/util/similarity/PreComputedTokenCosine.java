@@ -6,7 +6,7 @@ import info.debatty.java.stringsimilarity.interfaces.NormalizedStringSimilarity;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PreComputedTokenCosine extends TokenCosine implements PreComputed, NormalizedStringDistance, NormalizedStringSimilarity {
+public class PreComputedTokenCosine extends TokenCosine implements PreComputed, NormalizedStringDistance, NormalizedStringSimilarity, LiteralSimilarity  {
 
     private final Map<String, Map<String, Integer>> profiles;
 
@@ -22,7 +22,7 @@ public class PreComputedTokenCosine extends TokenCosine implements PreComputed, 
 
     @Override
     public void preCompute(String string) {
-        profiles.put(string, this.getProfile(string));
+        profiles.put(string.toLowerCase(), this.getProfile(string.toLowerCase()));
     }
 
     @Override
@@ -34,7 +34,7 @@ public class PreComputedTokenCosine extends TokenCosine implements PreComputed, 
         } else if (s1.equals(s2)) {
             return 1;
         } else {
-            return similarity(this.profiles.get(s1), this.profiles.get(s2));
+            return similarity(this.profiles.get(s1.toLowerCase()), this.profiles.get(s2.toLowerCase()));
         }
     }
 

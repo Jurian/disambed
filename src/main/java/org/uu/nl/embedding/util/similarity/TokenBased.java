@@ -17,6 +17,10 @@ public abstract class TokenBased {
             "at", "or", "by", "but", "if"
     };
 
+    private static final char[] ILLEGAL_CHARS = new char[] {
+            '|',';','\'','"','<','>','?',':', '.', ',', '(', ')', '[', ']', '{', '}','-','_'
+    };
+
     public final Map<String, Integer> getProfile(String string) {
         HashMap<String, Integer> shingles = new HashMap<>();
         final Iterator<String> it = new Tokenator(string);
@@ -54,7 +58,12 @@ public abstract class TokenBased {
             for(int charPosition = tokenCharIndex; charPosition < item.length(); charPosition++) {
                 if(item.charAt(charPosition) == TOKEN_SEPARATOR || charPosition == item.length() - 1) {
 
-                    final String token = item.substring(tokenCharIndex, charPosition + 1).trim();
+                    String token = item.substring(tokenCharIndex, charPosition + 1);
+
+                    for(char illegal_char : ILLEGAL_CHARS)
+                        token = token.replace(illegal_char, ' ');
+
+                    token = token.trim();
 
                     if(isLegalToken(token)) {
                         tokenCharIndex = charPosition + 1;

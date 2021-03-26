@@ -1,5 +1,6 @@
 package org.uu.nl.embedding;
 
+import grph.GrphWebNotifications;
 import org.apache.log4j.Logger;
 import org.uu.nl.embedding.bca.BookmarkColoring;
 import org.uu.nl.embedding.convert.Rdf2GrphConverter;
@@ -10,10 +11,13 @@ import org.uu.nl.embedding.opt.grad.Adam;
 import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
+import org.uu.nl.embedding.util.config.InvalidConfigException;
 import org.uu.nl.embedding.util.read.ConfigReader;
 import org.uu.nl.embedding.util.read.JenaReader;
-import org.uu.nl.embedding.util.write.EmbeddingTextWriter;
 import org.uu.nl.embedding.util.write.EmbeddingWriter;
+import org.uu.nl.embedding.util.write.GloVeWriter;
+import org.uu.nl.embedding.util.write.SplitFileWriter;
+import org.uu.nl.embedding.util.write.Word2VecWriter;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,20 +38,32 @@ public class Main {
         logger.info("Threads: " + config.getThreads());
         logger.info("BCA Alpha: " + config.getBca().getAlpha());
         logger.info("BCA Epsilon: " + config.getBca().getEpsilon());
-        logger.info("BCA Type: " + config.getBca().getType());
-        logger.info("BCA Normalize: " + config.getBca().getNormalize());
         logger.info("Gradient Descent Algorithm: " + config.getOpt().getMethod());
         logger.info(config.getMethod() + " Tolerance: " + config.getOpt().getTolerance());
         logger.info(config.getMethod() + " Maximum Iterations: " + config.getOpt().getMaxiter());
-
-        if(config.usingPca()) logger.info("PCA Minimum Variance: " + config.getPca().getVariance());
-        else logger.info("No PCA will be performed");
-
-        if(config.usingWeights()) {
-            logger.info("Using weights, predicates that are not listed are ignored:");
-            config.getWeights().forEach((k, v) -> logger.info( k + ": " + v));
-        } else logger.info("No weights specified, using linear weight");
-
+        switch(config.getPredicates().getTypeEnum()) {
+            case NONE:
+                logger.info("# Using no predicate weights:");
+                for(String s : config.getPredicates().getFilter()) {
+                    logger.info("# " + s + ": " + 1.0F);
+                }
+                break;
+            case MANUAL:
+                logger.info("# Using manual predicate weights:");
+                for(String s : config.getPredicates().getFilter()) {
+                    logger.info("# " + s + ": " + config.getPredicates().getWeights().getOrDefault(s, 1.0F));
+                }
+                break;
+            case PAGERANK:
+                logger.info("# Pagerank weights used");
+                break;
+            case FREQUENCY:
+                logger.info("# Predicate frequency weights used");
+                break;
+            case INVERSE_FREQUENCY:
+                logger.info("# Inverse predicate frequency weights used");
+                break;
+        }
         if(config.usingSimilarity()) {
             logger.info("Using the following similarity metrics:");
             config.getSimilarity().forEach(s -> logger.info(s.toString()));
@@ -73,8 +89,17 @@ public class Main {
 
         final Optimum optimum = optimizer.optimize();
 
-        final EmbeddingWriter writer = new EmbeddingTextWriter(outFileName, config);
+        final EmbeddingWriter writer = getWriter(outFileName, config);
         writer.write(optimum, bca, Paths.get("").toAbsolutePath().resolve("out"));
+    }
+
+    private static EmbeddingWriter getWriter(String outFileName, Configuration config) {
+        switch(config.getOutput().getWriterEnum()) {
+            case GLOVE: return new GloVeWriter(outFileName, config);
+            case WORD2VEC: return new Word2VecWriter(outFileName, config);
+            default:
+            case SPLIT: return new SplitFileWriter(outFileName, config);
+        }
     }
 
     private static String createFileName(Configuration config) {
@@ -90,12 +115,9 @@ public class Main {
             outFileName += "_exact";
         }
 
-        outFileName += "_" +  config.getBca().getType().toLowerCase();
-
         outFileName += "_" + config.getBca().getAlpha() + "_" + config.getBca().getEpsilon();
         outFileName += "_" + config.getOpt().getMethod();
-        if(config.usingPca()) outFileName += "_pca_" + config.getDim();
-        else outFileName += "_" + config.getDim();
+         outFileName += "_" + config.getDim();
 
         return outFileName;
     }
@@ -139,11 +161,12 @@ public class Main {
                             logger.error("Cannot find configuration file + " + configFile.getPath());
                             System.exit(1);
                         } else {
+                            GrphWebNotifications.enabled = false;
                             Configuration config = new ConfigReader().load(configFile);
                             Configuration.check(config);
                             runProgram(config);
                         }
-                    } catch (IOException | Configuration.InvalidConfigurationException e) {
+                    } catch (IOException | InvalidConfigException e) {
                         logger.error(e.getMessage(), e);
                         System.exit(1);
                     }

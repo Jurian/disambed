@@ -14,61 +14,21 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.Map;
 
 /**
  * Writes the output of the GloVe model to 2 text files. One file stores the vectors, the other stores the node names.
  * 
  * @author Jurian Baas
  */
-public class EmbeddingTextWriter implements EmbeddingWriter {
+public class SplitFileWriter extends EmbeddingWriter {
 
 	private final String VECTORS_FILE;
 	private final String DICT_FILE;
-	private final boolean[] writeNodeTypes;
-	private final Configuration config;
 
-	public EmbeddingTextWriter(String fileName, Configuration config) {
-		String FILETYPE = ".tsv";
+	public SplitFileWriter(String fileName, Configuration config) {
+		super(fileName, config);
 		this.VECTORS_FILE = fileName + "." + "vectors" + FILETYPE;
 		this.DICT_FILE = fileName + "." + "dict" + FILETYPE;
-		this.config = config;
-		this.writeNodeTypes = new boolean[3];
-		this.writeNodeTypes[NodeInfo.URI.id] = config.getOutput().outputUriNodes();
-		this.writeNodeTypes[NodeInfo.BLANK.id]  = config.getOutput().outputBlankNodes();
-		this.writeNodeTypes[NodeInfo.LITERAL.id] = config.getOutput().outputLiteralNodes();
-	}
-
-	private void writeConfig(Writer writer) throws IOException {
-
-		writer.write("# Starting the embedding creation process with following settings:" + "\n");
-		writer.write("# Graph File: " + config.getGraph() + "\n");
-		writer.write("# Embedding dimensions: " + config.getDim() + "\n");
-		writer.write("# Threads: " + config.getThreads() + "\n");
-		writer.write("# BCA Alpha: " + config.getBca().getAlpha() + "\n");
-		writer.write("# BCA Epsilon: " + config.getBca().getEpsilon() + "\n");
-		writer.write("# BCA Type: " + config.getBca().getType() + "\n");
-		writer.write("# BCA Normalize: " + config.getBca().getNormalize() + "\n");
-		writer.write("# Gradient Descent Algorithm: " + config.getOpt().getMethod() + "\n");
-		writer.write("# " + config.getMethod() + " Tolerance: " + config.getOpt().getTolerance() + "\n");
-		writer.write("# " + config.getMethod() + " Maximum Iterations: " + config.getOpt().getMaxiter() + "\n");
-
-		if(config.usingPca()) writer.write("# PCA Minimum Variance: " + config.getPca().getVariance() + "\n");
-		else writer.write("# No PCA will be performed" + "\n");
-
-		if(config.usingWeights()) {
-			writer.write("# Using weights, predicates that are not listed are ignored:" + "\n");
-			for (Map.Entry<String, Float> entry : config.getWeights().entrySet()) {
-				writer.write("# " + entry.getKey() + ": " + entry.getValue() + "\n");
-			}
-		} else writer.write("# No weights specified, using linear weight" + "\n");
-
-		if(config.usingSimilarity()) {
-			writer.write("# Using the following similarity metrics:" + "\n");
-			for (Configuration.SimilarityGroup s : config.getSimilarity()) {
-				writer.write("# " + s.toString() + "\n");
-			}
-		} else writer.write("# No similarity matching will be performed" + "\n");
 	}
 
 	@Override

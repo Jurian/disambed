@@ -1,0 +1,1 @@
+Create a jar with: mvn clean package assembly:single

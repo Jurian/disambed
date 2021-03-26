@@ -14,35 +14,29 @@ import java.util.concurrent.Callable;
 public abstract class BCAJob implements Callable<BCV> {
 
 	protected final int bookmark;
-	protected final boolean reverse;
 	protected final double alpha, epsilon;
 	protected final InMemoryRdfGraph graph;
-	protected final int[][] vertexOut, vertexIn, edgeOut, edgeIn;
+	protected final int[][] vertexNeighborhood, edgeNeighborhood;
 
 	protected BCAJob(
-			int bookmark, boolean reverse,
+			int bookmark,
 			double alpha, double epsilon,
-			InMemoryRdfGraph graph, int[][] vertexOut, int[][] vertexIn, int[][] edgeOut, int[][] edgeIn) {
+			InMemoryRdfGraph graph, int[][] vertexNeighborhood, int[][] edgeNeighborhood) {
 
-		this.reverse = reverse;
 		this.bookmark = bookmark;
 		this.alpha = alpha;
 		this.epsilon = epsilon;
 		this.graph = graph;
-		this.vertexOut = vertexOut;
-		this.vertexIn = vertexIn;
-		this.edgeOut = edgeOut;
-		this.edgeIn = edgeIn;
+		this.vertexNeighborhood = vertexNeighborhood;
+		this.edgeNeighborhood = edgeNeighborhood;
 	}
 
 	@Override
 	public BCV call() {
-		final BCV bcv = doWork(false);
-		if (this.reverse) bcv.merge(doWork(true));
-		return bcv;
+		return doWork();
 	}
 
-	protected BCV doWork(final boolean reverse) {
+	protected BCV doWork() {
 		final NumericalProperty edgeWeights = graph.getEdgeWeightProperty();
 
 		final TreeMap<Integer, PaintedNode> nodeTree = new TreeMap<>();
@@ -67,10 +61,10 @@ public abstract class BCAJob implements Callable<BCV> {
 			// If there is not enough paint we stop and don't distribute among the neighbors
 			if (wetPaint < epsilon) continue;
 
-			neighbors = getNeighbors(reverse, focusNode);
-			edges = getEdges(reverse, focusNode);
+			neighbors = vertexNeighborhood[focusNode];
+			edges = edgeNeighborhood[focusNode];
 
-			totalWeight = getTotalWeight(neighbors, edges);
+			totalWeight = getTotalWeight(neighbors, edges, -1);
 
 			for (int i = 0; i < neighbors.length; i++) {
 
@@ -89,20 +83,13 @@ public abstract class BCAJob implements Callable<BCV> {
 		return bcv;
 	}
 
-	protected double getTotalWeight(int[] neighbors, int[] edges) {
+	protected double getTotalWeight(int[] neighbors, int[] edges, int ignore) {
 		double totalWeight = 0f;
-		for (int i = 0; i < neighbors.length; i++)
+		for (int i = 0; i < neighbors.length; i++) {
+			if(neighbors[i] == ignore) continue;
 			totalWeight += graph.getEdgeWeightProperty().getValueAsFloat(edges[i]);
+		}
 		return totalWeight;
 	}
 
-	protected int[] getNeighbors(final boolean reverse, final int focusNode) {
-		return getIndexes(reverse, focusNode, vertexIn, vertexOut);
-	}
-
-	protected int[] getEdges(final boolean reverse, final int focusNode) {
-		return getIndexes(reverse, focusNode, edgeIn, edgeOut);
-	}
-
-	protected abstract int[] getIndexes(boolean reverse, int focusNode, int[][] indexIn, int[][] indexOut);
 }

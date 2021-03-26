@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class PreComputedTokenJaccard extends TokenJaccard implements PreComputed, MetricStringDistance, NormalizedStringDistance, NormalizedStringSimilarity {
+public class PreComputedTokenJaccard extends TokenJaccard implements PreComputed, MetricStringDistance, NormalizedStringDistance, NormalizedStringSimilarity, LiteralSimilarity  {
 
     private final Map<String, Map<String, Integer>> profiles;
 
@@ -25,7 +25,7 @@ public class PreComputedTokenJaccard extends TokenJaccard implements PreComputed
 
     @Override
     public void preCompute(String string) {
-        profiles.put(string, this.getProfile(string));
+        profiles.put(string, this.getProfile(string.toLowerCase()));
     }
 
     @Override

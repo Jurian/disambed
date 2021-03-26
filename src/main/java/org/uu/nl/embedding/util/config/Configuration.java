@@ -1,8 +1,6 @@
 package org.uu.nl.embedding.util.config;
 
-import info.debatty.java.stringsimilarity.JaroWinkler;
-import info.debatty.java.stringsimilarity.NormalizedLevenshtein;
-import info.debatty.java.stringsimilarity.interfaces.StringSimilarity;
+
 import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarStyle;
 import org.uu.nl.embedding.util.rnd.ExtendedRandom;
@@ -11,10 +9,20 @@ import org.uu.nl.embedding.util.similarity.*;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class Configuration {
+
+    public enum PredicateWeightingMethod {
+        NONE, MANUAL, PAGERANK, FREQUENCY, INVERSE_FREQUENCY
+    }
+
+    public enum EmbeddingWriter {
+        GLOVE, WORD2VEC, SPLIT
+    }
 
     public enum EmbeddingMethod {
         GLOVE, PGLOVE
@@ -25,15 +33,21 @@ public class Configuration {
     }
 
     public enum SimilarityMethod {
-        NGRAM_COSINE, NGRAM_JACCARD, TOKEN_COSINE, TOKEN_JACCARD, JAROWINKLER, LEVENSHTEIN, NUMERIC, DATE_DAYS, DATE_MONTHS, DATE_YEARS
+        NGRAM_COSINE,
+        NGRAM_JACCARD,
+        TOKEN_COSINE,
+        TOKEN_JACCARD,
+        JAROWINKLER,
+        LEVENSHTEIN,
+        NUMERIC,
+        DATE_DAYS,
+        DATE_MONTHS,
+        DATE_YEARS,
+        LOCATION
     }
 
     public enum BCANormalization {
         NONE, UNITY, COUNTS
-    }
-
-    public enum BCAType {
-        DIRECTED, UNDIRECTED, HYBRID
     }
 
     private String graph;
@@ -84,20 +98,6 @@ public class Configuration {
         return EmbeddingMethod.valueOf(this.method.toUpperCase());
     }
 
-    private Map<String, Float> weights;
-
-    public boolean usingWeights() {
-        return weights != null && !weights.isEmpty();
-    }
-
-    public Map<String, Float> getWeights() {
-        return weights;
-    }
-
-    public void setWeights(Map<String, Float> weights) {
-        this.weights = weights;
-    }
-
     private List<SimilarityGroup> similarity;
 
     public List<SimilarityGroup> getSimilarity() {
@@ -110,6 +110,16 @@ public class Configuration {
 
     public void setSimilarity(List<SimilarityGroup> similarity) {
         this.similarity = similarity;
+    }
+
+    private PredicateWeights predicates;
+
+    public void setPredicates(PredicateWeights predicates) {
+        this.predicates = predicates;
+    }
+
+    public PredicateWeights getPredicates() {
+        return this.predicates;
     }
 
     private BCA bca;
@@ -130,20 +140,6 @@ public class Configuration {
 
     public void setOpt(Opt opt) {
         this.opt = opt;
-    }
-
-    private PCA pca;
-
-    public boolean usingPca(){
-        return this.pca != null;
-    }
-
-    public PCA getPca() {
-        return pca;
-    }
-
-    public void setPca(PCA pca) {
-        this.pca = pca;
     }
 
     private Output output;
@@ -183,6 +179,56 @@ public class Configuration {
         );
     }
 
+    public static class PredicateWeights {
+
+        private String type;
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
+
+        public PredicateWeightingMethod getTypeEnum() {
+            if(this.type == null) return PredicateWeightingMethod.NONE;
+            return PredicateWeightingMethod.valueOf(this.type.toUpperCase());
+        }
+
+        private Set<String> filter;
+
+        public Set<String> getFilter(){
+            return  this.filter;
+        }
+
+        public void setFilter(Set<String> filter) {
+            this.filter = filter;
+        }
+
+        private Map<String, Float> weights;
+
+        public boolean usingManualWeights() {
+            return getTypeEnum() == PredicateWeightingMethod.MANUAL;
+        }
+
+        public Map<String, Float> getWeights() {
+            return weights;
+        }
+
+        public void setWeights(Map<String, Float> weights) {
+            this.weights = weights;
+        }
+
+        public boolean usingPageRankWeights() {
+            return getTypeEnum() == PredicateWeightingMethod.PAGERANK;
+        }
+
+        public boolean usingNoWeights() {
+            return getTypeEnum() == PredicateWeightingMethod.NONE;
+        }
+    }
+
     public static class SimilarityGroup {
 
         public enum Time {
@@ -191,28 +237,48 @@ public class Configuration {
 
         private String sourcePredicate;
         private String targetPredicate;
+
+        public String getSourceType() {
+            return sourceType;
+        }
+
+        public void setSourceType(String sourceType) {
+            this.sourceType = sourceType;
+        }
+
+        public String getTargetType() {
+            return targetType;
+        }
+
+        public void setTargetType(String targetType) {
+            this.targetType = targetType;
+        }
+
+        private String sourceType;
+        private String targetType;
         private String method;
         private double threshold;
         private int ngram;
-        private double distance;
-        private double smooth;
+        private double offset;
+        private double thresholdDistance;
+        private double alpha;
         private String pattern;
         private String time;
 
         /**
          * Instantiate a similarity object from the configuration information
          */
-        public StringSimilarity toFunction() {
+        public LiteralSimilarity toFunction() {
 
             switch (getMethodEnum()) {
                 case NUMERIC:
-                    return new Numeric(getSmooth(), getDistance());
+                    return new Numeric(getAlpha(), getOffset());
                 case DATE_DAYS:
-                    return new DateDays(getPattern(), getSmooth(), getDistance(), getTimeEnum());
+                    return new DateDays(getPattern(), getAlpha(), getOffset(), getTimeEnum());
                 case DATE_MONTHS:
-                    return new DateMonths(getPattern(), getSmooth(), getDistance(), getTimeEnum());
+                    return new DateMonths(getPattern(), getAlpha(), getOffset(), getTimeEnum());
                 case DATE_YEARS:
-                    return new DateYears(getPattern(), getSmooth(), getDistance(), getTimeEnum());
+                    return new DateYears(getPattern(), getAlpha(), getOffset(), getTimeEnum());
                 case LEVENSHTEIN:
                     return new NormalizedLevenshtein();
                 case JAROWINKLER:
@@ -225,6 +291,8 @@ public class Configuration {
                     return new PreComputedTokenJaccard();
                 case TOKEN_COSINE:
                     return new PreComputedTokenCosine();
+                case LOCATION:
+                    return new Location(getAlpha(), getOffset());
                 default:
                     throw new IllegalArgumentException("Unsupported similarity method: " + getMethodEnum());
             }
@@ -237,10 +305,10 @@ public class Configuration {
                 default: return out;
                 case NGRAM_COSINE:
                 case NGRAM_JACCARD: return out + ", ngram: " + getNgram();
-                case NUMERIC: return out + ", smooth: " + getSmooth();
+                case NUMERIC: return out + ", threshold distance: " + getThresholdDistance() + " , offset: " + getOffset();
                 case DATE_DAYS:
                 case DATE_MONTHS:
-                case DATE_YEARS: return out + ", pattern:" + getPattern() + ", smooth: " + getSmooth() + ", time: " + getTime();
+                case DATE_YEARS: return out + ", threshold distance: " + getThresholdDistance() + " , offset: " + getOffset() + ", pattern:" + getPattern() + ", time: " + getTime();
             }
         }
 
@@ -272,13 +340,9 @@ public class Configuration {
             this.sourcePredicate = sourcePredicate;
         }
 
-        public double getDistance() {
-            return distance;
-        }
+        public double getOffset() { return offset; }
 
-        public void setDistance(double distance) {
-            this.distance = distance;
-        }
+        public void setOffset(double offset) { this.offset = offset; }
 
         public SimilarityMethod getMethodEnum() {
             return SimilarityMethod.valueOf(this.method.toUpperCase());
@@ -316,29 +380,21 @@ public class Configuration {
             this.ngram = ngram;
         }
 
-        public double getSmooth() {return smooth == 0 ? 1 : smooth;}
+        public double getAlpha() {return -Math.log(threshold) / Math.log(1 + thresholdDistance);}
 
-        public void setSmooth(double smooth) {this.smooth = smooth;}
+        public void setThresholdDistance(double thresholdDistance) {
+            this.thresholdDistance = thresholdDistance;
+        }
+
+        public double getThresholdDistance() {
+            return this.thresholdDistance;
+        }
     }
 
     public static class BCA {
 
         private double alpha;
         private double epsilon;
-        private String normalize;
-        private String type;
-
-        public BCANormalization getNormalizeEnum() {
-            return normalize == null ? BCANormalization.NONE : BCANormalization.valueOf(normalize.toUpperCase());
-        }
-
-        public String getNormalize() {
-            return normalize == null ? "none" : normalize;
-        }
-
-        public void setNormalize(String normalize) {
-            this.normalize = normalize;
-        }
 
         public double getAlpha() {
             return alpha;
@@ -355,16 +411,6 @@ public class Configuration {
         public void setEpsilon(double epsilon) {
             this.epsilon = epsilon;
         }
-
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
-
-        public BCAType getTypeEnum(){ return BCAType.valueOf(type.toUpperCase());}
 
     }
 
@@ -403,26 +449,29 @@ public class Configuration {
         }
     }
 
-    public static class PCA {
-
-        private double variance;
-
-        public double getVariance() {
-            return variance;
-        }
-
-        public void setVariance(double variance) {
-            this.variance = variance;
-        }
-    }
-
     public static class Output {
 
+        private String writer;
+
+        public void setWriter(String writer) {
+            this.writer = writer;
+        }
+        public String getWriter() {return this.writer;}
+        public EmbeddingWriter getWriterEnum() {
+            return EmbeddingWriter.valueOf(writer.toUpperCase());
+        }
+
         private String name;
-        private List<String> uri;
-        private List<String> blank;
-        private List<String> predicate;
-        private List<String> literal;
+
+        public List<String> getType() {
+            return type;
+        }
+
+        public void setType(List<String> type) {
+            this.type = type;
+        }
+
+        private List<String> type;
 
         public String getName() {
             return name;
@@ -432,76 +481,28 @@ public class Configuration {
             this.name = name;
         }
 
-        public boolean outputUriNodes() {
-            return uri != null;
+        private final Set<Integer> nodeIndex = new HashSet<>();
+
+        public Set<Integer> getNodeIndex() {
+            return nodeIndex;
         }
 
-        public boolean outputBlankNodes() {
-            return blank != null;
-        }
-
-        public boolean outputPredicates() {
-            return predicate != null;
-        }
-
-        public boolean outputLiteralNodes() {
-            return literal != null;
-        }
-
-        public List<String> getLiteral() {
-            return literal;
-        }
-
-        public void setLiteral(List<String> literal) {
-            this.literal = literal;
-        }
-
-        public List<String> getUri() {
-            return uri;
-        }
-
-        public void setUri(List<String> uri) {
-            this.uri = uri;
-        }
-
-        public List<String> getBlank() {
-            return blank;
-        }
-
-        public void setBlank(List<String> blank) {
-            this.blank = blank;
-        }
-
-        public List<String> getPredicate() {
-            return predicate;
-        }
-
-        public void setPredicate(List<String> predicate) {
-            this.predicate = predicate;
+        public void addNodeIndex(int index) {
+            this.nodeIndex.add(index);
         }
     }
 
-    public static void check(Configuration config) throws InvalidConfigurationException {
+    public static void check(Configuration config) throws InvalidConfigException {
         boolean hasDim = config.dim > 0;
         boolean hasGraph = config.graph != null && !config.graph.isEmpty();
         boolean hasMethod = config.method != null && !config.method.isEmpty();
         boolean hasBca = config.bca != null && config.bca.alpha > 0 && config.bca.epsilon > 0;
-        boolean hasOut = config.output != null && (
-                config.output.outputPredicates() ||
-                config.output.outputBlankNodes() ||
-                config.output.outputUriNodes() ||
-                config.output.outputLiteralNodes());
+        boolean hasOut = config.output != null && config.output.getType() != null && config.output.getType().size() != 0;
 
-        if(!hasDim) throw new InvalidConfigurationException("No dimension specified");
-        if(!hasGraph) throw new InvalidConfigurationException("No input graph specified");
-        if(!hasMethod) throw new InvalidConfigurationException("Invalid method, choose one of: glove, pglove");
-        if(!hasBca) throw new InvalidConfigurationException("Invalid BCA parameters, alpha and epsilon are mandatory");
-        if(!hasOut) throw new InvalidConfigurationException("Invalid output parameters, specify at least one group");
-    }
-
-    public static class InvalidConfigurationException extends Exception {
-        public InvalidConfigurationException(String message) {
-            super("Invalid configuration: " + message);
-        }
+        if(!hasDim) throw new InvalidConfigException("No dimension specified");
+        if(!hasGraph) throw new InvalidConfigException("No input graph specified");
+        if(!hasMethod) throw new InvalidConfigException("Invalid method, choose one of: glove, pglove");
+        if(!hasBca) throw new InvalidConfigException("Invalid BCA parameters, alpha and epsilon are mandatory");
+        if(!hasOut) throw new InvalidConfigException("Invalid output parameters, specify at least one type");
     }
 }

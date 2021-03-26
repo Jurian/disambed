@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class PreComputedNgramJaccard extends ShingleBased implements PreComputed, MetricStringDistance, NormalizedStringDistance, NormalizedStringSimilarity {
+public class PreComputedNgramJaccard extends ShingleBased implements PreComputed, MetricStringDistance, NormalizedStringDistance, NormalizedStringSimilarity, LiteralSimilarity {
 
     private final Map<String, Map<String, Integer>> profiles;
 
@@ -48,6 +48,6 @@ public class PreComputedNgramJaccard extends ShingleBased implements PreComputed
 
     @Override
     public void preCompute(String string) {
-        profiles.put(string, this.getProfile(string));
+        profiles.put(string, this.getProfile(string.toLowerCase()));
     }
 }

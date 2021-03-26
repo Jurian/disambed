@@ -73,12 +73,13 @@ public class BCV extends HashMap<Integer, Float> {
 	/**
 	 * Changes the values to sum to 1
 	 */
-	public void toUnity() {
+	public BCV toUnity() {
 		remove(rootNode);
 		final float sum = sum();
 		for(Entry<Integer, Float> entry : entrySet()) {
 			entry.setValue(entry.getValue() / sum - 1e-6f);
 		}
+		return this;
 	}
 
 	/**

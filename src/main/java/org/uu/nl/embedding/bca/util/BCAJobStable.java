@@ -12,11 +12,11 @@ import java.util.TreeMap;
  */
 public abstract class BCAJobStable extends BCAJob {
 
-	protected BCAJobStable(int bookmark, boolean reverse, double alpha, double epsilon, InMemoryRdfGraph graph, int[][] vertexOut, int[][] vertexIn, int[][] edgeOut, int[][] edgeIn) {
-		super(bookmark, reverse, alpha, epsilon, graph, vertexOut, vertexIn, edgeOut, edgeIn);
+	protected BCAJobStable(int bookmark, double alpha, double epsilon, InMemoryRdfGraph graph, int[][] vertexNeighborhood, int[][] edgeNeighborhood) {
+		super(bookmark, alpha, epsilon, graph, vertexNeighborhood, edgeNeighborhood);
 	}
 
-	protected BCV doWork(final boolean reverse) {
+	protected BCV doWork() {
 
 		final TreeMap<Integer, PaintedNode> nodeTree = new TreeMap<>();
 		final BCV bcv = new BCV(bookmark);
@@ -34,13 +34,14 @@ public abstract class BCAJobStable extends BCAJob {
 			focusNode = node.nodeID;
 			wetPaint = node.getPaint();
 
+
 			// Keep part of the available paint on this node, distribute the rest
 			bcv.add(focusNode, (alpha * wetPaint));
 
-			neighbors = getNeighbors(reverse, focusNode);
-			edges = getEdges(reverse, focusNode);
+			neighbors = vertexNeighborhood[focusNode];
+			edges = edgeNeighborhood[focusNode];
 
-			totalWeight = getTotalWeight(neighbors, edges);
+			totalWeight = getTotalWeight(neighbors, edges, -1);
 
 			for (int i = 0; i < neighbors.length; i++) {
 

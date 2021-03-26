@@ -4,19 +4,20 @@ import me.tongfei.progressbar.ProgressBar;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 
-public class EdgeNeighborhoodAlgorithm extends NeighborhoodAlgorithm {
-    public EdgeNeighborhoodAlgorithm(Configuration config) {
-        super(config, "Edge");
+public class VertexNeighborhoodAlgorithm extends NeighborhoodAlgorithm{
+    public VertexNeighborhoodAlgorithm(Configuration config) {
+        super(config, "Vertex");
     }
+
 
     @Override
     FindNeighborHood findNeighborHood(ProgressBar pb, InMemoryRdfGraph g, int threadId, int numThreads, int[] vertices, int[] verticesPerThread, int[][] v) {
-        return new FindInEdges(pb, g, threadId, numThreads, vertices, verticesPerThread, v);
+        return new FindInVertexes(pb, g, threadId, numThreads, vertices, verticesPerThread, v);
     }
 
-    static class FindInEdges extends FindNeighborHood {
+    static class FindInVertexes extends FindNeighborHood {
 
-        FindInEdges(ProgressBar pb, InMemoryRdfGraph g, int threadId, int numThreads, int[] vertices, int[] verticesPerThread, int[][] v) {
+        FindInVertexes(ProgressBar pb, InMemoryRdfGraph g, int threadId, int numThreads, int[] vertices, int[] verticesPerThread, int[][] v) {
             super(pb, g, threadId, numThreads, vertices, verticesPerThread, v);
         }
 
@@ -26,7 +27,14 @@ public class EdgeNeighborhoodAlgorithm extends NeighborhoodAlgorithm {
             int[] edges;
             for(int i = 0; i < verticesPerThread[threadId]; i++) {
                 c = vertices[offset + i];
-                v[c] = g.getInOutOnlyEdges(c).toIntArray();
+
+                edges = g.getInOutOnlyEdges(c).toIntArray();
+                v[c] = new int[edges.length];
+
+                for(int n = 0; n < edges.length; n++) {
+                    v[c][n] = g.getTheOtherVertex(edges[n], c);
+                }
+
                 pb.step();
             }
         }

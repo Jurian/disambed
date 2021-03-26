@@ -12,13 +12,13 @@ public abstract class Date implements LiteralSimilarity {
 
     private final static Logger logger = Logger.getLogger(Date.class);
     private final Configuration.SimilarityGroup.Time timeDirection;
-    private final double smooth;
-    private final double distance;
+    private final double alpha;
+    private final double offset;
     private final DateTimeFormatter format;
 
-    public Date(String pattern, double smooth, double distance, Configuration.SimilarityGroup.Time timeEnum) {
-        this.smooth = smooth;
-        this.distance = distance;
+    public Date(String pattern, double alpha, double offset, Configuration.SimilarityGroup.Time timeEnum) {
+        this.alpha = alpha;
+        this.offset = offset;
         this.timeDirection = timeEnum;
         this.format = pattern.equals("iso") ? DateTimeFormatter.BASIC_ISO_DATE : DateTimeFormatter.ofPattern(pattern);
     }
@@ -35,7 +35,7 @@ public abstract class Date implements LiteralSimilarity {
         }
 
         if(s1.isEmpty() || s2.isEmpty()) return 0;
-        if (s1.equals(s2)) return 1;
+        if(s1.equals(s2)) return 1;
 
         try {
 
@@ -50,14 +50,14 @@ public abstract class Date implements LiteralSimilarity {
 
             switch (timeDirection) {
                 case BACKWARDS:
-                    if(d1.isAfter(d2)) return 0;
-                    break;
-                case FORWARDS:
                     if(d1.isBefore(d2)) return 0;
                     break;
+                case FORWARDS:
+                    if(d1.isAfter(d2)) return 0;
+                    break;
             }
-            return Math.pow(Math.abs(Math.abs((double) unit().between(d1, d2)) - distance) + 1, smooth - 1);
-
+            long diff = Math.abs(unit().between(d1, d2));
+            return Math.pow(Math.abs(diff - offset) + 1, -alpha);
         } catch (DateTimeParseException e) {
             logger.warn("Could not compare dates: " + e.getMessage());
             return 0;

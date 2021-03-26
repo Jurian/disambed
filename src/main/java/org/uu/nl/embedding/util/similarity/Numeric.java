@@ -6,11 +6,11 @@ public class Numeric implements LiteralSimilarity {
 
     private final static Logger logger = Logger.getLogger(Numeric.class);
     private final double alpha;
-    private final double distance;
+    private final double offset;
 
-    public Numeric(double alpha, double distance) {
+    public Numeric(double alpha, double offset) {
         this.alpha = alpha;
-        this.distance = distance;
+        this.offset = offset;
     }
 
     @Override
@@ -26,16 +26,15 @@ public class Numeric implements LiteralSimilarity {
         if (s1.equals(s2)) return 1;
 
         final int s1hat = s1.indexOf('^');
-        final int s2hat = s1.indexOf('^');
+        final int s2hat = s2.indexOf('^');
 
         if(s1hat != -1) s1 = s1.substring(0, s1hat);
         if(s2hat != -1) s2 = s2.substring(0, s2hat);
 
-
         try {
-            final int a = Integer.parseInt(s1);
-            final int b = Integer.parseInt(s2);
-            return Math.pow(Math.abs(Math.abs(a - b) - distance) + 1, alpha - 1);
+            final double a = Double.parseDouble(s1);
+            final double b = Double.parseDouble(s2);
+            return Math.pow(Math.abs(Math.abs(a - b) - offset) + 1, -alpha);
         } catch (NumberFormatException e) {
             logger.warn("Could not compare numbers: " + e.getMessage());
             return 0;

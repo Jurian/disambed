@@ -1,9 +1,10 @@
 package org.uu.nl.embedding.compare;
 
 import info.debatty.java.stringsimilarity.interfaces.StringSimilarity;
+import org.apache.jena.graph.Node;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.similarity.PreComputed;
-import org.apache.jena.graph.Node;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,15 +14,18 @@ import java.util.Set;
 public class CompareGroup {
 
     public final StringSimilarity similarity;
-    public final Set<Integer> sourceNodes, targetNodes;
+    public final Set<Integer> sourceIndexes, targetIndexes;
     public final double threshold;
     public final boolean needsPrecompute;
     public final String sourceURI, sourcePredicate, targetURI, targetPredicate;
+    public final Set<Node> sourceEntities, targetEntities;
 
     public CompareGroup(StringSimilarity similarity, double threshold, String sourceURI, String sourcePredicate, String targetURI, String targetPredicate) {
         this.similarity = similarity;
-        this.sourceNodes = new HashSet<>();
-        this.targetNodes = new HashSet<>();
+        this.sourceIndexes = new HashSet<>();
+        this.targetIndexes = new HashSet<>();
+        this.sourceEntities = new HashSet<>();
+        this.targetEntities = new HashSet<>();
         this.threshold = threshold;
         this.needsPrecompute = similarity instanceof PreComputed;
         this.sourceURI = sourceURI;
@@ -33,49 +37,41 @@ public class CompareGroup {
     public CompareGroup(Configuration.SimilarityGroup similarityGroup) {
         this(similarityGroup.toFunction(),
              similarityGroup.getThreshold(),
-             similarityGroup.getSourceURI(),
+             similarityGroup.getSourceType(),
              similarityGroup.getSourcePredicate(),
-             similarityGroup.getTargetURI(),
+             similarityGroup.getTargetType(),
              similarityGroup.getTargetPredicate());
     }
 
-    public void process(Node s, Node o, int o_i, String predicate) {
+    public void process(Node o, int o_i) {
 
-        final boolean processSourceNode =
-                s.isURI() &&
-                        s.getURI().startsWith(sourceURI) &&
-                        predicate.equals(sourcePredicate);
-
-        final boolean processTargetNode =
-                s.isURI() &&
-                        s.getURI().startsWith(targetURI) &&
-                        predicate.equals(targetPredicate);
-
-        if (processSourceNode) {
-            addToSource(o_i);
-            // Some similarity metrics require pre-processing
-            if (needsPrecompute())
-                ((PreComputed) similarity).preCompute(o.toString(false));
+        if(sourceEntities.contains(o)) {
+            sourceIndexes.add(o_i);
         }
-
-        if (processTargetNode) {
-            addToTarget(o_i);
-            // Some similarity metrics require pre-processing
-            if (needsPrecompute())
-                ((PreComputed) similarity).preCompute(o.toString(false));
+        if(targetEntities.contains(o)) {
+            targetIndexes.add(o_i);
         }
-
     }
 
     public boolean needsPrecompute(){
         return needsPrecompute;
     }
 
-    public void addToSource(int i){
-        this.sourceNodes.add(i);
+    public void addSourceIndex(int i){
+        this.sourceIndexes.add(i);
     }
 
-    public void addToTarget(int i){
-        this.targetNodes.add(i);
+    public void addTargetIndex(int i){
+        this.targetIndexes.add(i);
+    }
+
+    public void addSourceEntity(Node literal) {
+        if (needsPrecompute()) ((PreComputed) similarity).preCompute(literal.toString(false));
+        this.sourceEntities.add(literal);
+    }
+
+    public void addTargetEntity(Node literal) {
+        if (needsPrecompute()) ((PreComputed) similarity).preCompute(literal.toString(false));
+        this.targetEntities.add(literal);
     }
 }
