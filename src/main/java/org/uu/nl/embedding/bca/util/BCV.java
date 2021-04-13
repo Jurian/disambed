@@ -65,7 +65,7 @@ public class BCV extends HashMap<Integer, Float> {
 		final float aMax = max();
 		final float aMin = min();
 		for(Entry<Integer, Float> entry : entrySet()) {
-			entry.setValue(scale(entry.getValue(), aMax, aMin, 1000, 1));
+			entry.setValue(scale(entry.getValue(), aMax, aMin));
 		}
 		remove(rootNode);
 	}
@@ -99,8 +99,8 @@ public class BCV extends HashMap<Integer, Float> {
 	/**
 	 * Used to scale the probabilities to some positive range
 	 */
-	private float scale(float a, float aMax, float aMin, float max, float min) {
-		return (a / ((aMax - aMin) / (max - min))) + min;
+	private float scale(float a, float aMax, float aMin) {
+		return (a / ((aMax - aMin) / ((float) 1000 - (float) 1))) + (float) 1;
 	}
 
 	/**

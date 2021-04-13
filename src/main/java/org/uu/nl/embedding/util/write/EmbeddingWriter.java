@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.Map;
 
 /**
  * @author Jurian Baas
@@ -70,7 +69,7 @@ public abstract class EmbeddingWriter {
 
 	public abstract void write(Optimum optimum, CoOccurrenceMatrix coMatrix, Path outputFolder) throws IOException;
 
-	protected void writeLines(Iterator<Optimizer.EmbeddedEntity> entityIterator, String[] out, String delimiter, String newLine, ProgressBar pb, Writer w) throws IOException {
+	protected void writeLines(Iterator<Optimizer.EmbeddedEntity> entityIterator, String[] out, ProgressBar pb, Writer w) throws IOException {
 		while(entityIterator.hasNext()) {
 			Optimizer.EmbeddedEntity entity = entityIterator.next();
 
@@ -80,9 +79,9 @@ public abstract class EmbeddingWriter {
 			w.write(entity.getKey()
 					.replace("\n", "")
 					.replace("\r", "")
-					.replace(delimiter, "")
-					+ delimiter
-					+ String.join(delimiter, out) + newLine
+					.replace("	", "")
+					+ "	"
+					+ String.join("	", out) + "\n"
 			);
 			pb.step();
 		}

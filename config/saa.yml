@@ -1,0 +1,77 @@
+graph: data/SAA/saa.trig
+method: glove
+dim: 50
+predicates:
+  type: MANUAL
+  filter:
+    [ saa:full_name,
+      saa:family_name,
+      saa:first_name,
+      #saa:church,
+      #saa:religion,
+      saa:isInRecord,
+      saa:mentionsFather,
+      saa:mentionsMother,
+      saa:burial_date_approx,
+      #saa:baptism_date_approx,
+      saa:marriage_date_approx,
+      saa:prenuptial_marriage_date_approx,
+      #saa:birth_date_approx,
+      saa:death_date_approx,
+      saa:mentionsBride,
+      saa:mentionsGroom,
+      saa:mentionsPreviousHusband,
+      saa:mentionsPreviousWife ]
+  weights:
+    saa:full_name: 10
+similarity:
+  - sourceType: saa:Person
+    targetType: saa:Person
+    sourcePredicate: saa:full_name
+    targetPredicate: saa:full_name
+    method: LEVENSHTEIN
+    threshold: 0.9
+  - sourceType: saa:Person
+    targetType: saa:Person
+    sourcePredicate: saa:family_name
+    targetPredicate: saa:family_name
+    method: LEVENSHTEIN
+    threshold: 0.9
+  - sourceType: saa:Person
+    targetType: saa:Person
+    sourcePredicate: saa:first_name
+    targetPredicate: saa:first_name
+    method: LEVENSHTEIN
+    threshold: 0.9
+  - sourceType: saa:IndexOpOndertrouwregister
+    targetType: saa:Marriage
+    sourcePredicate: saa:prenuptial_marriage_date_approx
+    targetPredicate: saa:marriage_date_approx
+    method: DATE_DAYS
+    pattern: yyyy-MM-dd
+    time: FORWARDS
+    threshold: 0.5
+    thresholdDistance: 4
+    offset: 18
+  - sourceType: saa:Person
+    targetType: saa:IndexOpBegraafregistersVoor1811
+    sourcePredicate: saa:death_date_approx
+    targetPredicate: saa:burial_date_approx
+    method: DATE_DAYS
+    pattern: yyyy-MM-dd
+    time: FORWARDS
+    threshold: 0.5
+    thresholdDistance: 2
+    offset: 2
+bca:
+  alpha: 1e-3
+  epsilon: 1e-4
+opt:
+  method: amsgrad
+  tolerance: 1e-6
+  maxiter: 1000
+output:
+  name: saa_embedding
+  writer: glove
+  type: [saa:Person]
+

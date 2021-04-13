@@ -44,7 +44,7 @@ public class GloVeWriter extends EmbeddingWriter {
         try (ProgressBar pb = Configuration.progressBar("Writing to file", vocabSize, "vectors");
              Writer w = new BufferedWriter(new FileWriter(outputFolder.resolve(VECTORS_FILE).toFile()))) {
             writeConfig(w);
-            writeLines(entityIterator, out, delimiter, newLine, pb, w);
+            writeLines(entityIterator, out, pb, w);
         }
     }
 
