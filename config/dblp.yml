@@ -1,27 +1,32 @@
-graph: data/DBLP/dblp_2015-2015.ttl
+graph: data/DBLP/dblp_2015-2015.hdt
 method: glove
 dim: 50
+prefixes:
+  dblp: http://dblp.l3s.de/d2r/resource/
 predicates:
   type: MANUAL
   filter:
-    [ dblp:name,
+    [
+      #dblp:name,
       dblp:author,
-      dblp:title ]
+      #dblp:title
+    ]
   weights:
-    dblp:name: 10
-similarity:
+    dblp:author: 1
+similarityGroups:
   - sourceType: dblp:Author
     targetType: dblp:Author
-    sourcePredicate: dblp:name
-    targetPredicate: dblp:name
-    method: LEVENSHTEIN
-    threshold: 0.80
-  - sourceType: dblp:Publication
-    targetType: dblp:Publication
-    sourcePredicate: dblp:title
-    targetPredicate: dblp:title
-    method: TOKEN_COSINE
     threshold: 0.8
+    resultFunction: HRM
+    similarities:
+      - sourcePredicate: dblp:name
+        targetPredicate: dblp:name
+        method: LEVENSHTEIN
+        threshold: 0.8
+      - sourcePredicate: ^dblp:author/dblp:title
+        targetPredicate: ^dblp:author/dblp:title
+        method: TOKEN_COSINE
+        threshold: 0.8
 bca:
   alpha: 1e-2
   epsilon: 1e-3

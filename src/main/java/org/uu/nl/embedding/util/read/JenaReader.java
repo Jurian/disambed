@@ -1,12 +1,16 @@
 package org.uu.nl.embedding.util.read;
 
+import me.tongfei.progressbar.ProgressBar;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.RDFDataMgr;
 import org.apache.log4j.Logger;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
+import org.rdfhdt.hdt.listener.ProgressListener;
+import org.rdfhdt.hdt.listener.ProgressOut;
 import org.rdfhdt.hdtjena.HDTGraph;
+import org.uu.nl.embedding.util.config.Configuration;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,10 +50,22 @@ public class JenaReader implements Reader<Model> {
 
     private Model addToModel(File file) throws IOException {
         Model model;
-        if(file.getName().endsWith(".hdt")) {
-            HDT hdt = HDTManager.loadHDT(file.getPath(), null);
-            HDTGraph graph = new HDTGraph(hdt);
-            model = ModelFactory.createModelForGraph(graph);
+        final String fileName = file.getName();
+        if(fileName.endsWith(".hdt")) {
+
+            try(ProgressBar pb = Configuration.progressBar("Loading HDT", 100, "percent")) {
+                File indexFile = new File(file.getPath()+".index");
+                HDT hdt;
+                if(indexFile.exists()) {
+                    hdt = HDTManager.loadIndexedHDT(file.getPath(), new ProgressOut());
+                } else {
+                    hdt = HDTManager.loadHDT(file.getPath(), new ProgressBarListener(pb));
+                }
+
+                HDTGraph graph = new HDTGraph(hdt, true);
+                model = ModelFactory.createModelForGraph(graph);
+            }
+
         } else {
             model = ModelFactory.createDefaultModel();
             RDFDataMgr.read(model, file.getPath()) ;
@@ -69,6 +85,22 @@ public class JenaReader implements Reader<Model> {
                     listf(file, files);
                 }
             }
+    }
+
+    public static class ProgressBarListener implements ProgressListener{
+
+        private final ProgressBar pb;
+
+        public ProgressBarListener(final ProgressBar pb) {
+            this.pb = pb;
+        }
+
+        @Override
+        public void notifyProgress(float level, String message) {
+            System.out.println(level + ": " + message);
+            pb.setExtraMessage(message);
+            pb.stepTo((long) level);
+        }
     }
 
 }

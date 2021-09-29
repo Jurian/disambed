@@ -66,7 +66,7 @@ public class Main {
         }
         if(config.usingSimilarity()) {
             logger.info("Using the following similarity metrics:");
-            config.getSimilarity().forEach(s -> logger.info(s.toString()));
+            config.getSimilarityGroups().forEach(s -> logger.info(s.toString()));
         } else logger.info("No similarity matching will be performed");
 
         String outFileName = config.getOutput().getName();
@@ -108,12 +108,6 @@ public class Main {
             outFileName = outFileName.substring(0, outFileName.lastIndexOf("."));
         }
         outFileName += "_" + config.getMethod().toLowerCase();
-
-        if(config.getSimilarity() != null && !config.getSimilarity().isEmpty()) {
-            outFileName += "_partial";
-        } else {
-            outFileName += "_exact";
-        }
 
         outFileName += "_" + config.getBca().getAlpha() + "_" + config.getBca().getEpsilon();
         outFileName += "_" + config.getOpt().getMethod();

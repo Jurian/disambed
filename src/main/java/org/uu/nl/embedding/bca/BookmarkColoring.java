@@ -8,6 +8,7 @@ import org.uu.nl.embedding.convert.util.VertexNeighborhoodAlgorithm;
 import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
+import org.uu.nl.embedding.util.config.Output;
 import org.uu.nl.embedding.util.rnd.Permutation;
 
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		final double epsilon = config.getBca().getEpsilon();
 		final int[] vertices = graph.getVertices().toIntArray();
 
-		final Configuration.Output output = config.getOutput();
+		final Output output = config.getOutput();
 
 		this.context2focus = new HashMap<>();
 		this.focus2context = new HashMap<>();

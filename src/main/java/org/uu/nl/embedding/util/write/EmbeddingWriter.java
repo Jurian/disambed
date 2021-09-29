@@ -5,6 +5,7 @@ import org.uu.nl.embedding.opt.Optimizer;
 import org.uu.nl.embedding.opt.Optimum;
 import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.config.Configuration;
+import org.uu.nl.embedding.util.config.SimilarityGroup;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -61,7 +62,7 @@ public abstract class EmbeddingWriter {
 		}
 		if(config.usingSimilarity()) {
 			writer.write("# Using the following similarity metrics:" + "\n");
-			for (Configuration.SimilarityGroup s : config.getSimilarity()) {
+			for (SimilarityGroup s : config.getSimilarityGroups()) {
 				writer.write("# " + s.toString() + "\n");
 			}
 		} else writer.write("# No similarity matching will be performed" + "\n");

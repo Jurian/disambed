@@ -6,6 +6,7 @@ import org.uu.nl.embedding.opt.Optimizer;
 import org.uu.nl.embedding.opt.Optimum;
 import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.config.Configuration;
+import org.uu.nl.embedding.util.config.Output;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -54,7 +55,7 @@ public class SplitFileWriter extends EmbeddingWriter {
 
 			dict.write("key" + delimiter + "type" + delimiter + "predicate" + newLine);
 
-			Configuration.Output output = config.getOutput();
+			Output output = config.getOutput();
 
 			while(entityIterator.hasNext()) {
 				Optimizer.EmbeddedEntity entity = entityIterator.next();

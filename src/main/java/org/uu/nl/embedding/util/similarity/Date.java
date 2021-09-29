@@ -1,7 +1,7 @@
 package org.uu.nl.embedding.util.similarity;
 
 import org.apache.log4j.Logger;
-import org.uu.nl.embedding.util.config.Configuration;
+import org.uu.nl.embedding.util.config.Similarity;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -11,12 +11,12 @@ import java.time.temporal.ChronoUnit;
 public abstract class Date implements LiteralSimilarity {
 
     private final static Logger logger = Logger.getLogger(Date.class);
-    private final Configuration.SimilarityGroup.Time timeDirection;
+    private final Similarity.Time timeDirection;
     private final double alpha;
     private final double offset;
     private final DateTimeFormatter format;
 
-    public Date(String pattern, double alpha, double offset, Configuration.SimilarityGroup.Time timeEnum) {
+    public Date(String pattern, double alpha, double offset, Similarity.Time timeEnum) {
         this.alpha = alpha;
         this.offset = offset;
         this.timeDirection = timeEnum;
@@ -39,14 +39,8 @@ public abstract class Date implements LiteralSimilarity {
 
         try {
 
-            final int s1hat = s1.indexOf('^');
-            final int s2hat = s2.indexOf('^');
-
-            if(s1hat != -1) s1 = s1.substring(0, s1hat);
-            if(s2hat != -1) s2 = s2.substring(0, s2hat);
-
-            final LocalDate d1 = LocalDate.parse(s1, format);
-            final LocalDate d2 = LocalDate.parse(s2, format);
+            final LocalDate d1 = parse(s1, format);
+            final LocalDate d2 = parse(s2, format);
 
             switch (timeDirection) {
                 case BACKWARDS:
@@ -62,5 +56,11 @@ public abstract class Date implements LiteralSimilarity {
             logger.warn("Could not compare dates: " + e.getMessage());
             return 0;
         }
+    }
+
+    public static LocalDate parse(String dateString, DateTimeFormatter format) {
+        final int hat = dateString.indexOf('^');
+        if(hat != -1) dateString = dateString.substring(0, hat);
+        return LocalDate.parse(dateString, format);
     }
 }
