@@ -7,7 +7,7 @@ Create a jar with:
 
 The program needs a configuration file to run. Examples can be found in the /config directory
 
-Then run with:
+## Then run with:
 > java -jar target/graph-embeddings.jar <additional jvm args> -c <config file>
 For example:
 > java -jar target/graph-embeddings.jar -Xmx30g -c config/saa.yml
