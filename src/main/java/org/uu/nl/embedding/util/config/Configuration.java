@@ -39,6 +39,7 @@ public class Configuration {
         TOKEN_JACCARD,
         JAROWINKLER,
         LEVENSHTEIN,
+        LEVENSHTEIN_FIRST2FULL,
         NUMERIC,
         DATE_DAYS,
         DATE_MONTHS,
@@ -92,6 +93,16 @@ public class Configuration {
 
     public void setThreads(int threads) {
         this.threads = threads;
+    }
+
+    private Map<String, String> prefixes;
+
+    public void setPrefixes(Map<String, String> prefixes) {
+        this.prefixes = prefixes;
+    }
+
+    public Map<String, String> getPrefixes() {
+        return this.prefixes;
     }
 
     public EmbeddingMethod getMethodEnum() {
@@ -281,6 +292,8 @@ public class Configuration {
                     return new DateYears(getPattern(), getAlpha(), getOffset(), getTimeEnum());
                 case LEVENSHTEIN:
                     return new NormalizedLevenshtein();
+                case LEVENSHTEIN_FIRST2FULL:
+                    return new NormalizedLevenshteinFirst2Full();
                 case JAROWINKLER:
                     return new JaroWinkler();
                 case NGRAM_JACCARD:

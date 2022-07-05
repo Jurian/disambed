@@ -67,7 +67,7 @@ public class AMSGrad extends Optimizer {
 	 * Mainly used to prevent divisions by zero, in some cases setting this to 0.1
 	 * or 1 can help improve stability
 	 */
-	private final float epsilon = 1e-1f;
+	private final float epsilon = 0.1f;
 
 	public AMSGrad(CoOccurrenceMatrix coMatrix, Configuration config, CostFunction costFunction) {
 		super(coMatrix, config, costFunction);

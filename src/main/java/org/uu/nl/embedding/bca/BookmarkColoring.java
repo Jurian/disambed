@@ -83,7 +83,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 
 				try {
 
-					final BCV bcv = completionService.take().get().toUnity();
+					final BCV bcv = completionService.take().get().centerAndScale();
 
 					// It is possible to use this maximum value in GloVe, although in the
 					// literature they set this value to 100 and leave it at that

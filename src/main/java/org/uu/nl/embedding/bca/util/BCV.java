@@ -70,10 +70,23 @@ public class BCV extends HashMap<Integer, Float> {
 		remove(rootNode);
 	}
 
+	public BCV centerAndScale() {
+		remove(rootNode);
+		final float max = max();
+		final float min = min();
+
+		for(Entry<Integer, Float> entry : entrySet()) {
+
+			entry.setValue((0.95f-0.05f)/(max-min)*(entry.getValue()-max)+0.95f);
+		}
+
+		return this;
+	}
+
 	/**
 	 * Changes the values to sum to 1
 	 */
-	public BCV toUnity() {
+	public BCV scale() {
 		remove(rootNode);
 		final float sum = sum();
 		for(Entry<Integer, Float> entry : entrySet()) {
@@ -81,6 +94,8 @@ public class BCV extends HashMap<Integer, Float> {
 		}
 		return this;
 	}
+
+
 
 	/**
 	 * @return The minimum value for this BCV

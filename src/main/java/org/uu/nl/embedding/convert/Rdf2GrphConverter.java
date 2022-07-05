@@ -56,6 +56,10 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 			final Map<String, Float> expandedWeights = new HashMap<>();
 			final Set<String> expandedFilter = new HashSet<>();
 
+			if(config.getPrefixes() != null) {
+				config.getPrefixes().forEach(model::setNsPrefix);
+			}
+
 			for(Map.Entry<String, Float> entry : prefixedWeights.entrySet()) {
 				expandedWeights.put(model.expandPrefix(entry.getKey()), entry.getValue());
 			}
@@ -162,7 +166,6 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 					// Ignore unweighted predicates
 					if(!expandedFilter.contains(predicateString)) {
 						// Adjust the total number of triples we are considering
-						// Maybe we can do pb.step() here instead to make it less confusing
 						pb.step();
 						skippedTriples++;
 						continue;

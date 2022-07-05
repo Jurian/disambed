@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 public abstract class NameSimilarity implements LiteralSimilarity {
 
-    private final NormalizedStringSimilarity method;
+    protected final NormalizedStringSimilarity method;
 
     public NameSimilarity(NormalizedStringSimilarity method) {
         this.method = method;
@@ -52,7 +52,7 @@ public abstract class NameSimilarity implements LiteralSimilarity {
         return new String(Arrays.copyOf(chars, j));
     }
 
-    private String normalize(String s) {
+    protected String normalize(String s) {
         if(s.contains(",")) {
             final String[] splitName = s.split(",", 2);
             s = splitName[1].trim() + " " + splitName[0].trim();
