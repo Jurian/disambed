@@ -33,6 +33,8 @@ public class Configuration {
     }
 
     public enum SimilarityMethod {
+        LSHCOSINE,
+        LSHJACCARD,
         NGRAM_COSINE,
         NGRAM_JACCARD,
         TOKEN_COSINE,
@@ -271,6 +273,10 @@ public class Configuration {
         public LiteralSimilarity toFunction() {
 
             switch (getMethodEnum()) {
+                case LSHCOSINE:
+                    return new LSHCosine(3, 10, 100);
+                case LSHJACCARD:
+                    return new LSHJaccard(3, 10, 100);
                 case NUMERIC:
                     return new Numeric(getAlpha(), getOffset());
                 case DATE_DAYS:

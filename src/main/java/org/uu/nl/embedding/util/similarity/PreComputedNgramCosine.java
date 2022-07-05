@@ -7,7 +7,7 @@ import info.debatty.java.stringsimilarity.interfaces.NormalizedStringSimilarity;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PreComputedNgramCosine extends ShingleBased implements PreComputed, NormalizedStringDistance, NormalizedStringSimilarity, LiteralSimilarity {
+public class PreComputedNgramCosine extends ShingleBased implements PreComputed<Map<String, Integer>>, NormalizedStringDistance, NormalizedStringSimilarity, LiteralSimilarity {
 
     private final Map<String, Map<String, Integer>> profiles;
 

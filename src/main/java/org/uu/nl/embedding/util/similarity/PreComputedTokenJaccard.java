@@ -9,7 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class PreComputedTokenJaccard extends TokenJaccard implements PreComputed, MetricStringDistance, NormalizedStringDistance, NormalizedStringSimilarity, LiteralSimilarity  {
+public class PreComputedTokenJaccard extends TokenJaccard implements PreComputed<Map<String,Integer>>, MetricStringDistance, NormalizedStringDistance, NormalizedStringSimilarity, LiteralSimilarity  {
 
     private final Map<String, Map<String, Integer>> profiles;
 

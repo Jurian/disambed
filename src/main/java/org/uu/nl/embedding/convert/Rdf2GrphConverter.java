@@ -17,6 +17,8 @@ import org.uu.nl.embedding.convert.util.NodeInfo;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.config.InvalidConfigException;
+import org.uu.nl.embedding.util.similarity.LSHSimilarity;
+import org.uu.nl.embedding.util.similarity.PostComputed;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -116,6 +118,7 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 							compareGroup.addTargetEntity(solution.get("value").asNode());
 						}
 					}
+					if(compareGroup.needsPostCompute()) ((PostComputed)compareGroup.similarity).postCompute();
 					compareGroups[i] = compareGroup;
 				}
 			}
@@ -289,8 +292,19 @@ public class Rdf2GrphConverter implements Converter<Model, InMemoryRdfGraph> {
 
 		boolean inGroupComparison = compareGroup.sourceURI.equals(compareGroup.targetURI) && compareGroup.sourcePredicate.equals(compareGroup.targetPredicate);
 
-		for (int i = 0; i < sourceSize; i++) {
-			completionService.submit(new CompareJob(sourceNodes[i], targetNodes, compareGroup.threshold, metric, g.getVertexLabelProperty(), inGroupComparison));
+		if(compareGroup.similarity instanceof LSHSimilarity) {
+			for (int i = 0; i < sourceSize; i++) {
+				// TODO candidates is wrong index at the moment!
+				final int[] candidates = ((LSHSimilarity)compareGroup.similarity).candidates(g.getVertexTypeProperty().getValueAsString(sourceNodes[i]));
+				for(int j = 0; j < candidates.length; j++) {
+					candidates[j] = targetNodes[candidates[j]];
+				}
+				completionService.submit(new CompareJob(sourceNodes[i], candidates, compareGroup.threshold, metric, g.getVertexLabelProperty(), inGroupComparison));
+			}
+		} else {
+			for (int i = 0; i < sourceSize; i++) {
+				completionService.submit(new CompareJob(sourceNodes[i], targetNodes, compareGroup.threshold, metric, g.getVertexLabelProperty(), inGroupComparison));
+			}
 		}
 
 		int received = 0;

@@ -6,7 +6,7 @@ import info.debatty.java.stringsimilarity.interfaces.NormalizedStringSimilarity;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PreComputedTokenCosine extends TokenCosine implements PreComputed, NormalizedStringDistance, NormalizedStringSimilarity, LiteralSimilarity  {
+public class PreComputedTokenCosine extends TokenCosine implements PreComputed<Map<String, Integer>>, NormalizedStringDistance, NormalizedStringSimilarity, LiteralSimilarity  {
 
     private final Map<String, Map<String, Integer>> profiles;
 

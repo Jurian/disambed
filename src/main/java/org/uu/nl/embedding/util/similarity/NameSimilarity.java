@@ -52,7 +52,7 @@ public abstract class NameSimilarity implements LiteralSimilarity {
         return new String(Arrays.copyOf(chars, j));
     }
 
-    private String normalize(String s) {
+    String normalize(String s) {
         if(s.contains(",")) {
             final String[] splitName = s.split(",", 2);
             s = splitName[1].trim() + " " + splitName[0].trim();

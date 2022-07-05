@@ -9,8 +9,8 @@ import org.uu.nl.embedding.util.CoOccurrenceMatrix;
 import org.uu.nl.embedding.util.InMemoryRdfGraph;
 import org.uu.nl.embedding.util.config.Configuration;
 import org.uu.nl.embedding.util.rnd.Permutation;
+import org.uu.nl.embedding.util.sparse.RandomAccessSparseMatrix;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -21,12 +21,9 @@ import java.util.concurrent.*;
  */
 public class BookmarkColoring implements CoOccurrenceMatrix {
 
-	private final ArrayList<Integer> coOccurrenceIdx_I;
-	private final ArrayList<Integer> coOccurrenceIdx_J;
-	private final ArrayList<Float> coOccurrenceValues;
+	private final RandomAccessSparseMatrix<Float> sparseMatrix;
 	private double max;
 	private final int focusVectors, contextVectors;
-	private int coOccurrenceCount;
 	private final Permutation permutation;
 	private final InMemoryRdfGraph graph;
 	private final Map<Integer, Integer> context2focus;
@@ -38,19 +35,13 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		final double epsilon = config.getBca().getEpsilon();
 		final int[] vertices = graph.getVertices().toIntArray();
 
-		final Configuration.Output output = config.getOutput();
-
 		this.context2focus = new HashMap<>();
 		this.focus2context = new HashMap<>();
 
-		int notSkipped = config.getOutput().getNodeIndex().size();
-
 		this.graph = graph;
-		this.focusVectors = notSkipped;
+		this.focusVectors = config.getOutput().getNodeIndex().size();
 		this.contextVectors = vertices.length;
-		this.coOccurrenceIdx_I = new ArrayList<>(notSkipped);
-		this.coOccurrenceIdx_J = new ArrayList<>(notSkipped);
-		this.coOccurrenceValues = new ArrayList<>(notSkipped);
+		this.sparseMatrix = new RandomAccessSparseMatrix<>(focusVectors, contextVectors, focusVectors*10);
 
 		final int numThreads = config.getThreads();
 
@@ -74,12 +65,12 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 					vertexNeighborhoods, edgeNeighborhoods));
 		}
 
-		try(ProgressBar pb = Configuration.progressBar("BCA", notSkipped, "nodes")) {
+		try(ProgressBar pb = Configuration.progressBar("BCA", focusVectors, "nodes")) {
 
 			//now retrieve the futures after computation (auto wait for it)
 			int received = 0;
 
-			while(received < notSkipped) {
+			while(received < focusVectors) {
 
 				try {
 
@@ -90,12 +81,8 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 					setMax(bcv.max());
 
 					for (Entry<Integer, Float> bcr : bcv.entrySet()) {
-						coOccurrenceIdx_I.add(bcv.getRootNode());
-						coOccurrenceIdx_J.add(bcr.getKey());
-						coOccurrenceValues.add(bcr.getValue());
+						sparseMatrix.add(bcv.getRootNode(), bcr.getKey(), bcr.getValue());
 					}
-
-					coOccurrenceCount += bcv.size();
 
 				} catch (InterruptedException | ExecutionException e) {
 					e.printStackTrace();
@@ -109,7 +96,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 			es.shutdown();
 		}
 
-		permutation = new Permutation(coOccurrenceCount);
+		permutation = new Permutation(sparseMatrix.getNonZero());
 	}
 
 	@Override
@@ -117,16 +104,16 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		permutation.shuffle();
 	}
 	
-	public int cIdx_I(int i) {
-		return contextIndex2Focus(coOccurrenceIdx_I.get(permutation.randomAccess(i)));
+	public int cIdx_I(int k) {
+		return contextIndex2Focus(sparseMatrix.getRow(permutation.randomAccess(k)));
 	}
 	
-	public int cIdx_J(int j) {
-		return this.coOccurrenceIdx_J.get(permutation.randomAccess(j));
+	public int cIdx_J(int k) {
+		return this.sparseMatrix.getColumn(permutation.randomAccess(k));
 	}
 	
-	public float cIdx_C(int i) {
-		return this.coOccurrenceValues.get(permutation.randomAccess(i));
+	public float cIdx_C(int k) {
+		return this.sparseMatrix.getValue(permutation.randomAccess(k));
 	}
 	
 	public byte getType(int index) {
@@ -134,7 +121,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	}
 	
 	public int coOccurrenceCount() {
-		return this.coOccurrenceCount;
+		return this.sparseMatrix.getNonZero();
 	}
 
 

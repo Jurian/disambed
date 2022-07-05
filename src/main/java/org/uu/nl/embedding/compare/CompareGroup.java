@@ -3,6 +3,7 @@ package org.uu.nl.embedding.compare;
 import info.debatty.java.stringsimilarity.interfaces.StringSimilarity;
 import org.apache.jena.graph.Node;
 import org.uu.nl.embedding.util.config.Configuration;
+import org.uu.nl.embedding.util.similarity.PostComputed;
 import org.uu.nl.embedding.util.similarity.PreComputed;
 
 import java.util.HashSet;
@@ -16,7 +17,8 @@ public class CompareGroup {
     public final StringSimilarity similarity;
     public final Set<Integer> sourceIndexes, targetIndexes;
     public final double threshold;
-    public final boolean needsPrecompute;
+    public final boolean needsPreCompute;
+    public final boolean needsPostCompute;
     public final String sourceURI, sourcePredicate, targetURI, targetPredicate;
     public final Set<Node> sourceEntities, targetEntities;
 
@@ -27,7 +29,8 @@ public class CompareGroup {
         this.sourceEntities = new HashSet<>();
         this.targetEntities = new HashSet<>();
         this.threshold = threshold;
-        this.needsPrecompute = similarity instanceof PreComputed;
+        this.needsPreCompute = similarity instanceof PreComputed;
+        this.needsPostCompute = similarity instanceof PostComputed;
         this.sourceURI = sourceURI;
         this.sourcePredicate = sourcePredicate;
         this.targetURI = targetURI;
@@ -53,25 +56,18 @@ public class CompareGroup {
         }
     }
 
-    public boolean needsPrecompute(){
-        return needsPrecompute;
+    public boolean needsPreCompute(){
+        return needsPreCompute;
     }
-
-    public void addSourceIndex(int i){
-        this.sourceIndexes.add(i);
-    }
-
-    public void addTargetIndex(int i){
-        this.targetIndexes.add(i);
-    }
+    public boolean needsPostCompute() { return needsPostCompute; }
 
     public void addSourceEntity(Node literal) {
-        if (needsPrecompute()) ((PreComputed) similarity).preCompute(literal.toString(false));
+        if (needsPreCompute()) ((PreComputed<?>) similarity).preCompute(literal.toString(false));
         this.sourceEntities.add(literal);
     }
 
     public void addTargetEntity(Node literal) {
-        if (needsPrecompute()) ((PreComputed) similarity).preCompute(literal.toString(false));
+        if (needsPreCompute()) ((PreComputed<?>) similarity).preCompute(literal.toString(false));
         this.targetEntities.add(literal);
     }
 }
