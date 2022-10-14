@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.similarity;
+package org.uu.nl.disembed.embedding.similarity;
 
 import info.debatty.java.stringsimilarity.interfaces.NormalizedStringSimilarity;
 
@@ -53,11 +53,32 @@ public abstract class NameSimilarity implements LiteralSimilarity {
     }
 
     public String normalize(String s) {
-        if(s.contains(",")) {
-            final String[] splitName = s.split(",", 2);
-            s = splitName[1].trim() + " " + splitName[0].trim();
+
+        //if(s.contains(",")) {
+        //    final String[] splitName = s.split(",", 2);
+        //    s = splitName[1].trim() + " " + splitName[0].trim();
+        //}
+
+        return s.toLowerCase().trim();
+
+        /*
+        s = s.replace('.', ' ');
+
+        StringBuilder initials = new StringBuilder();
+
+        for(String nameEntity : s.split(" ")){
+            initials.append(nameEntity.toCharArray()[0]);
         }
-        s = removeIllegalChars(s).toLowerCase().trim();
-        return s;
+
+
+
+        for(char c : s.toCharArray() ){
+            if(!Character.isLowerCase(c)){
+                initials.append(c);
+            }
+        }
+
+        return initials.toString();
+        */
     }
 }

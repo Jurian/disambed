@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.opt;
+package org.uu.nl.disembed.embedding.opt;
 
 public interface CostFunction {
     float innerCost(Optimizer opt, float Xij, int u, int v);

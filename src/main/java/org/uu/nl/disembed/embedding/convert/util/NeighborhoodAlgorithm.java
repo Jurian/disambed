@@ -1,11 +1,11 @@
-package org.uu.nl.embedding.convert.util;
+package org.uu.nl.disembed.embedding.convert.util;
 
 
 import grph.Grph;
 import grph.GrphAlgorithm;
 import me.tongfei.progressbar.ProgressBar;
-import org.uu.nl.embedding.util.InMemoryRdfGraph;
-import org.uu.nl.embedding.util.Progress;
+import org.uu.nl.disembed.embedding.convert.InMemoryRdfGraph;
+import org.uu.nl.disembed.util.progress.Progress;
 
 import java.util.concurrent.*;
 

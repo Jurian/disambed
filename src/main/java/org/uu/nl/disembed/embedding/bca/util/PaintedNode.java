@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.bca.util;
+package org.uu.nl.disembed.embedding.bca.util;
 
 /**
  * Used for storing information about how we got to a focus node

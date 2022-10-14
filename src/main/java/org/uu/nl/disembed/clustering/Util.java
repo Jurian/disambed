@@ -1,11 +1,14 @@
-package org.uu.nl.embedding.cluster;
+package org.uu.nl.disembed.clustering;
 
 import com.carrotsearch.hppc.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import org.apache.commons.math.util.FastMath;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class Util {
 
@@ -218,5 +221,54 @@ public class Util {
             }
         }
         return triangles;
+    }
+
+    public static List<IntArrayList> getClusters(int[][] components, int[][] clusters, int minSize, int maxSize) {
+
+        final Map<Integer, IntArrayList> clusterMap = new HashMap<>();
+
+        for (int i = 0; i < components.length; i++) {
+
+            int[] component = components[i];
+            int[] clustering = clusters[i];
+
+            final int compSize = component.length;
+            boolean[] clustered = new boolean[compSize];
+
+            for (int j = 0; j < compSize; j++) {
+
+                if (clustered[j]) continue;
+
+                IntArrayList cluster = new IntArrayList();
+                cluster.add(component[j]);
+                clusterMap.put(component[j], cluster);
+
+                clustered[j] = true;
+
+                for (int k = j + 1; k < compSize; k++) {
+
+                    if (clustered[k]) continue;
+
+                    if (clustering[j] == clustering[k]) {
+
+                        cluster = clusterMap.get(component[j]);
+                        cluster.add(component[k]);
+                        clusterMap.put(component[j], cluster);
+                        clustered[k] = true;
+                    }
+                }
+            }
+        }
+        return clusterMap.values().stream()
+                .filter(cluster -> {
+                    int size = cluster.size();
+                    return size >= minSize && (maxSize <= 0 || size <= maxSize);
+                }).collect(Collectors.toList());
+    }
+
+    public static int nEdges(int n) {
+        // Cast to long here, so we don't get negative values
+        // even though the total number of edges would fit in the integer range
+        return (int) (((long) n * ((long) n - 1)) / 2);
     }
 }

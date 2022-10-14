@@ -1,4 +1,7 @@
-package org.uu.nl.embedding.util.config;
+package org.uu.nl.disembed.util.config;
+
+import org.uu.nl.disembed.util.write.EmbeddingWriter;
+import org.uu.nl.disembed.util.write.HnswIndexWriter;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -6,24 +9,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class ClusterConfiguration {
+public class ClusterConfiguration  implements Configurable {
 
     private String embedding;
+    private String hnsw;
 
-    private int threads;
     private float theta;
     private int k;
-    private int correlationClusteringMaxSize;
+    private int maxCorrelationClusteringSize;
+    private int maxComponentSize;
 
     private ClusterSize clustersize;
-
-    public int getThreads() {
-        return threads == 0 ? (Runtime.getRuntime().availableProcessors() -1) : threads;
-    }
-
-    public void setThreads(int threads) {
-        this.threads = threads;
-    }
 
     public float getTheta() {
         return theta;
@@ -41,12 +37,20 @@ public class ClusterConfiguration {
         this.k = k;
     }
 
-    public int getCorrelationClusteringMaxSize() {
-        return correlationClusteringMaxSize == 0 ? 100 : correlationClusteringMaxSize;
+    public int getMaxCorrelationClusteringSize() {
+        return maxCorrelationClusteringSize == 0 ? 100 : maxCorrelationClusteringSize;
     }
 
-    public void setCorrelationClusteringMaxSize(int correlationClusteringMaxSize) {
-        this.correlationClusteringMaxSize = correlationClusteringMaxSize;
+    public void setMaxCorrelationClusteringSize(int maxCorrelationClusteringSize) {
+        this.maxCorrelationClusteringSize = maxCorrelationClusteringSize;
+    }
+
+    public int getMaxComponentSize() {
+        return maxComponentSize;
+    }
+
+    public void setMaxComponentSize(int maxComponentSize) {
+        this.maxComponentSize = maxComponentSize;
     }
 
     public ClusterSize getClustersize() {
@@ -67,6 +71,14 @@ public class ClusterConfiguration {
 
     public void setEmbedding(String embedding) {
         this.embedding = embedding;
+    }
+
+    public String getHnsw() {
+        return hnsw;
+    }
+
+    public void setHnsw(String hnsw) {
+        this.hnsw = hnsw;
     }
 
     public static class RuleConfiguration implements Iterable<ClusterConfiguration.Rule> {
@@ -254,10 +266,6 @@ public class ClusterConfiguration {
             return object != null;
         }
 
-        public boolean hasPredicate() {
-            return predicate != null;
-        }
-
         public String getSubject() {
             return subject;
         }
@@ -289,6 +297,7 @@ public class ClusterConfiguration {
         public void setOptional(boolean optional) {
             this.optional = optional;
         }
+
     }
 
     public static abstract class Rule {
@@ -335,6 +344,11 @@ public class ClusterConfiguration {
         }
     }
 
+    @Override
+    public String toString() {
+        return getBuilder().toString();
+    }
+
     public void check() throws InvalidConfigException {
 
         boolean endPoint = getRules().hasEndPoint();
@@ -344,5 +358,158 @@ public class ClusterConfiguration {
         if(getK() <= 0) throw new InvalidConfigException("Error: k must be larger than 0");
         if(getTheta() <= -1) throw new InvalidConfigException("Error: theta must be larger than -1");
         if(getRules().getMaxQuerySize() <= 0) throw new InvalidConfigException("Error: maximum query size must be larger than 0");
+        if(getMaxComponentSize() <= 0) throw new InvalidConfigException("Error: maximum component size must be larger than 0");
+        if(getMaxCorrelationClusteringSize() <= 2) throw new InvalidConfigException("Error: maximum correlation clustering size must be larger than 0");
+    }
+
+    @Override
+    public CommentStringBuilder getBuilder() {
+        CommentStringBuilder builder = new CommentStringBuilder();
+
+        builder.appendLine("Cluster Configuration:");
+        builder.appendKeyValueLine("k", getK());
+        builder.appendKeyValueLine("Theta", getTheta());
+        builder.appendKeyValueLine("Component max size", getMaxComponentSize());
+        builder.appendKeyValueLine("Correlation clustering max size", getMaxCorrelationClusteringSize());
+        builder.appendKeyValueLine("Theta", getTheta());
+
+        if(getClustersize() != null) {
+            builder.appendKeyValueLine("Clustering min size", getClustersize().getMin());
+            builder.appendKeyValueLine("Clustering min size", getClustersize().getMax());
+        }
+
+        if(getEmbedding() != null) {
+            builder.appendLine("Loading embedding from:");
+            builder.append(EmbeddingWriter.OUTPUT_DIRECTORY);
+            builder.append("/");
+            builder.append(getEmbedding());
+            builder.appendLine(EmbeddingWriter.FILETYPE);
+        }
+
+        if(getHnsw() != null) {
+            builder.appendLine("Loading HNSW index from:");
+            builder.append(HnswIndexWriter.OUTPUT_DIRECTORY);
+            builder.append("/");
+            builder.append(getHnsw());
+            builder.appendLine(HnswIndexWriter.FILETYPE);
+        }
+
+        if(getRules() != null) {
+
+            builder.appendLine("Rule Configuration:");
+
+            if(getRules().hasGraph())
+                builder.appendKeyValueLine("RDF Graph", getRules().getGraph());
+            if(getRules().hasEndPoint())
+                builder.appendKeyValueLine("Endpoint", getRules().getEndpoint());
+
+            builder.appendKeyValueLine("Max Query Size", getRules().getMaxQuerySize());
+            builder.appendKeyValueLine("Type From", getRules().getTypeFrom());
+            builder.appendKeyValueLine("Type To", getRules().getTypeTo());
+
+            if(getRules().getPrefixes() != null) {
+                builder.appendLine("Prefixes:");
+                for(Map.Entry<String, String> entry : getRules().getPrefixes().entrySet()) {
+                    builder.appendKeyValueLine(entry.getKey(), entry.getValue());
+                }
+                builder.appendLine();
+            } else {
+                builder.appendLine("No prefixes specified.");
+            }
+
+            if(getRules().hasDefiniteRules()) {
+                builder.appendLine("Definite Rules:");
+
+                int i = 1;
+
+                for(DefiniteRule rule : getRules().getDefinite()) {
+
+                    builder.appendLine();
+                    builder.appendKeyValueLine("Rule", i++);
+
+                    if(rule.getTriples1() != null && !rule.getTriples1().isEmpty()) {
+                        for(Pattern p : rule.getTriples1()) {
+                            builder.append(p.hasSubject() ? p.getSubject() : "?e1");
+                            builder.appendNoComment("\t");
+                            builder.appendNoComment(p.getPredicate());
+                            builder.appendNoComment("\t");
+                            builder.appendNoComment(p.hasObject() ? p.getObject() : "?e1");
+                            builder.appendLine();
+                        }
+                        builder.appendLine();
+                    }
+
+                    if(rule.getTriples2() != null && !rule.getTriples2().isEmpty()) {
+                        for(Pattern p : rule.getTriples2()){
+                            builder.append(p.hasSubject() ? p.getSubject() : "?e2");
+                            builder.appendNoComment("\t");
+                            builder.appendNoComment(p.getPredicate());
+                            builder.appendNoComment("\t");
+                            builder.appendNoComment(p.hasObject() ? p.getObject() : "?e2");
+                            builder.appendLine();
+                        }
+                        builder.appendLine();
+                    }
+
+
+                    for(int j = 0; j < rule.getRule().size(); j++){
+                        builder.append(rule.getRule().get(j));
+                        if(j < rule.getRule().size() - 1) {
+                            builder.appendNoComment("\tOR\n");
+                        }
+                    }
+                }
+
+                builder.appendLine();
+            }
+
+            if(getRules().hasProbabilisticRules()) {
+
+                builder.appendLine("Probabilistic Rules:");
+
+                int i = 1;
+
+                for(ProbabilisticRule rule : getRules().getProbabilistic()) {
+
+                    builder.appendLine();
+                    builder.appendKeyValueLine("Rule", i++);
+
+                    builder.appendKeyValueLine("Probability", rule.getProbability());
+
+                    for(Pattern p : rule.getTriples1()) {
+                        builder.append(p.hasSubject() ? p.getSubject() : "?e1");
+                        builder.appendNoComment("\t");
+                        builder.appendNoComment(p.getPredicate());
+                        builder.appendNoComment("\t");
+                        builder.appendNoComment(p.hasObject() ? p.getObject() : "?e1");
+                        builder.appendLineNoComment();
+                    }
+                    builder.appendLine();
+
+                    for(Pattern p : rule.getTriples2()){
+                        builder.append(p.hasSubject() ? p.getSubject() : "?e2");
+                        builder.appendNoComment("\t");
+                        builder.appendNoComment(p.getPredicate());
+                        builder.appendNoComment("\t");
+                        builder.appendNoComment(p.hasObject() ? p.getObject() : "?e2");
+                        builder.appendLineNoComment();
+                    }
+                    builder.appendLine();
+
+                    for(int j = 0; j < rule.getRule().size(); j++){
+                        builder.append(rule.getRule().get(j));
+                        if(j < rule.getRule().size() - 1) {
+                            builder.appendNoComment("\tOR\n");
+                        }else {
+                            builder.appendLineNoComment();
+                        }
+                    }
+                }
+
+                builder.appendLine();
+            }
+        }
+
+        return builder;
     }
 }

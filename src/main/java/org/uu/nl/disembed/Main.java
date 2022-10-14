@@ -1,25 +1,23 @@
-package org.uu.nl.embedding;
+package org.uu.nl.disembed;
 
 import grph.GrphWebNotifications;
 import org.apache.jena.rdf.model.Model;
 import org.apache.log4j.Logger;
-import org.uu.nl.embedding.bca.BookmarkColoring;
-import org.uu.nl.embedding.cluster.PerformClustering;
-import org.uu.nl.embedding.convert.Rdf2GrphConverter;
-import org.uu.nl.embedding.opt.*;
-import org.uu.nl.embedding.opt.grad.AMSGrad;
-import org.uu.nl.embedding.opt.grad.Adagrad;
-import org.uu.nl.embedding.opt.grad.Adam;
-import org.uu.nl.embedding.util.CoOccurrenceMatrix;
-import org.uu.nl.embedding.util.InMemoryRdfGraph;
-import org.uu.nl.embedding.util.config.*;
-import org.uu.nl.embedding.util.read.ConfigurationReader;
-import org.uu.nl.embedding.util.read.EmbeddingReader;
-import org.uu.nl.embedding.util.read.JenaReader;
-import org.uu.nl.embedding.util.write.ClusterWriter;
-import org.uu.nl.embedding.util.write.EmbeddingWriter;
-import org.uu.nl.embedding.util.write.GloVeWriter;
-import org.uu.nl.embedding.util.write.Word2VecWriter;
+import org.uu.nl.disembed.clustering.PerformClustering;
+import org.uu.nl.disembed.embedding.bca.BookmarkColoring;
+import org.uu.nl.disembed.embedding.bca.CoOccurrenceMatrix;
+import org.uu.nl.disembed.embedding.convert.InMemoryRdfGraph;
+import org.uu.nl.disembed.embedding.convert.Rdf2GrphConverter;
+import org.uu.nl.disembed.embedding.opt.*;
+import org.uu.nl.disembed.embedding.opt.grad.AMSGrad;
+import org.uu.nl.disembed.embedding.opt.grad.Adagrad;
+import org.uu.nl.disembed.embedding.opt.grad.Adam;
+import org.uu.nl.disembed.util.config.*;
+import org.uu.nl.disembed.util.read.BCAReader;
+import org.uu.nl.disembed.util.read.ConfigurationReader;
+import org.uu.nl.disembed.util.read.EmbeddingReader;
+import org.uu.nl.disembed.util.read.JenaReader;
+import org.uu.nl.disembed.util.write.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +36,8 @@ public class Main {
         ClusterConfiguration  clusterConfig = config.getClustering();
         OutputConfiguration outputConfig = config.getOutput();
 
+        logger.info(config.toString());
+
         Embedding embedding = null;
 
         if(embeddingConfig == null) {
@@ -46,54 +46,36 @@ public class Main {
 
         } else {
 
-            logger.info("Starting the embedding creation process with following settings:");
-            logger.info("Graph File: " + embeddingConfig.getGraph());
-            logger.info("Embedding dimensions: " + embeddingConfig.getDim());
-            logger.info("Threads: " + embeddingConfig.getThreads());
-            logger.info("BCA Alpha: " + embeddingConfig.getBca().getAlpha());
-            logger.info("BCA Epsilon: " + embeddingConfig.getBca().getEpsilon());
-            logger.info("Gradient Descent Algorithm: " + embeddingConfig.getOpt().getMethod());
-            logger.info(embeddingConfig.getMethod() + " Tolerance: " + embeddingConfig.getOpt().getTolerance());
-            logger.info(embeddingConfig.getMethod() + " Maximum Iterations: " + embeddingConfig.getOpt().getMaxiter());
-            switch (embeddingConfig.getPredicates().getTypeEnum()) {
-                case NONE -> {
-                    logger.info("# Using no predicate weights:");
-                    for (String s : embeddingConfig.getPredicates().getFilter()) {
-                        logger.info("# " + s + ": " + 1.0F);
-                    }
-                }
-                case MANUAL -> {
-                    logger.info("# Using manual predicate weights:");
-                    for (String s : embeddingConfig.getPredicates().getFilter()) {
-                        logger.info("# " + s + ": " + embeddingConfig.getPredicates().getWeights().getOrDefault(s, 1.0F));
-                    }
-                }
-                case PAGERANK -> logger.info("# Pagerank weights used");
-                case FREQUENCY -> logger.info("# Predicate frequency weights used");
-                case INVERSE_FREQUENCY -> logger.info("# Inverse predicate frequency weights used");
-            }
-            if(embeddingConfig.usingSimilarity()) {
-                logger.info("Using the following similarity metrics:");
-                embeddingConfig.getSimilarity().forEach(s -> logger.info(s.toString()));
-            } else logger.info("No similarity matching will be performed");
-
-
-            EmbeddingConfiguration.setThreadLocalRandom();
+            Configuration.setThreadLocalRandom();
 
             {
-                InMemoryRdfGraph graph;
-                {
-                    JenaReader reader = new JenaReader();
-                    Rdf2GrphConverter converter = new Rdf2GrphConverter(embeddingConfig);
-                    graph = converter.convert(reader.load(embeddingConfig.getGraphFile()));
+
+                BookmarkColoring bca;
+
+                if(config.getEmbedding().getBca().getReadFile() != null) {
+                    logger.info("Loading in pre-computed co-occurrence matrix...");
+                    bca = new BookmarkColoring(new BCAReader().load(config.getEmbedding().getBca().getImportFile()), config);
+                } else {
+
+                    InMemoryRdfGraph graph;
+                    {
+                        JenaReader reader = new JenaReader();
+                        Rdf2GrphConverter converter = new Rdf2GrphConverter(config);
+                        graph = converter.convert(reader.load(embeddingConfig.getGraphFile()));
+                    }
+
+                    System.gc();
+
+                    logger.info("Loaded in graph, approximate RAM usage: " + graph.calculateMemoryMegaBytes() + " MB");
+                    bca = new BookmarkColoring(graph, config);
                 }
 
-                System.gc();
+                if(outputConfig != null && config.getOutput().getBca() != null) {
+                    new BCAWriter(config, bca).write();
+                }
 
-                logger.info("Loaded in graph, approximate RAM usage: " + graph.calculateMemoryMegaBytes() + " MB");
-                CoOccurrenceMatrix bca = new BookmarkColoring(graph, embeddingConfig);
                 logger.info("Loaded in BCA sparse matrix, approximate RAM usage: " + bca.calculateMemoryMegaBytes() + " MB");
-                embedding = createOptimizer(embeddingConfig, bca).optimize();
+                embedding = createOptimizer(config, bca).optimize();
 
                 System.gc();
             }
@@ -136,7 +118,7 @@ public class Main {
                     model = reader.load(clusterConfig.getRules().getGraphFile());
                 }
 
-                PerformClustering clustering = new PerformClustering(clusterConfig);
+                PerformClustering clustering = new PerformClustering(config);
                 result = clustering.perform(model, embedding);
             }
 
@@ -148,7 +130,7 @@ public class Main {
                 }
 
                 if(outputConfig.getLinkset() != null) {
-                    throw new UnsupportedOperationException("Writing a linkset not supported at the moment");
+                    new LinksetWriter(config, embedding.getKeys(), result.components(), result.clusters()).write();
                 }
             }
         }
@@ -161,14 +143,14 @@ public class Main {
         };
     }
 
-    private static IOptimizer createOptimizer(final EmbeddingConfiguration config, final CoOccurrenceMatrix coMatrix) {
+    private static IOptimizer createOptimizer(final Configuration config, final CoOccurrenceMatrix coMatrix) {
 
-        CostFunction cf = switch (config.getMethodEnum()) {
+        CostFunction cf = switch (config.getEmbedding().getMethodEnum()) {
             case GLOVE -> new GloveCost();
             case PGLOVE -> new PGloveCost();
         };
 
-        return switch (config.getOpt().getMethodEnum()) {
+        return switch (config.getEmbedding().getOpt().getMethodEnum()) {
             case ADAGRAD -> new Adagrad(coMatrix, config, cf);
             case ADAM -> new Adam(coMatrix, config, cf);
             case AMSGRAD -> new AMSGrad(coMatrix, config, cf);

@@ -1,13 +1,13 @@
-package org.uu.nl.embedding.opt;
+package org.uu.nl.disembed.embedding.opt;
 
 import com.github.jelmerk.knn.Item;
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.commons.math.util.FastMath;
 import org.apache.log4j.Logger;
-import org.uu.nl.embedding.util.CoOccurrenceMatrix;
-import org.uu.nl.embedding.util.Progress;
-import org.uu.nl.embedding.util.config.EmbeddingConfiguration;
-import org.uu.nl.embedding.util.rnd.ExtendedRandom;
+import org.uu.nl.disembed.embedding.bca.CoOccurrenceMatrix;
+import org.uu.nl.disembed.util.config.Configuration;
+import org.uu.nl.disembed.util.progress.Progress;
+import org.uu.nl.disembed.util.rnd.ExtendedRandom;
 
 import java.math.BigDecimal;
 import java.util.Iterator;
@@ -19,7 +19,7 @@ import java.util.concurrent.*;
 public abstract class Optimizer implements IOptimizer {
 
 	private final static Logger logger = Logger.getLogger(Optimizer.class);
-	private static final ExtendedRandom random = EmbeddingConfiguration.getThreadLocalRandom();
+	private static final ExtendedRandom random = Configuration.getThreadLocalRandom();
 
 	protected final CoOccurrenceMatrix coMatrix;
 	protected final int dimension;
@@ -46,17 +46,17 @@ public abstract class Optimizer implements IOptimizer {
 		return (double) Math.round(mb * 100) / 100;
 	}
 
-    protected Optimizer(CoOccurrenceMatrix coMatrix, EmbeddingConfiguration config, CostFunction costFunction) {
+    protected Optimizer(CoOccurrenceMatrix coMatrix, Configuration config, CostFunction costFunction) {
 
 		this.costFunction = costFunction;
 		this.coMatrix = coMatrix;
-		this.maxIterations = config.getOpt().getMaxiter();
-		this.tolerance = config.getOpt().getTolerance();
+		this.maxIterations = config.getEmbedding().getOpt().getMaxiter();
+		this.tolerance = config.getEmbedding().getOpt().getTolerance();
 		this.contextVectors = coMatrix.nrOfContextVectors();
 		this.focusVectors = coMatrix.nrOfFocusVectors();
 		this.numThreads = config.getThreads();
 		this.coCount = coMatrix.coOccurrenceCount();
-		this.dimension = config.getDim();
+		this.dimension = config.getEmbedding().getDim();
 
 		double ramUsageMB = calculateMemoryMegaBytes();
 		if(ramUsageMB < 1024) {
@@ -148,7 +148,7 @@ public abstract class Optimizer implements IOptimizer {
 
 		for (EmbeddingIterator it = new EmbeddingIterator(); it.hasNext(); ) {
 			EmbeddedEntity entity = it.next();
-			int i = entity.getIndex();
+			int i = entity.index();
 			embedding.setKey(i, entity.key);
 			embedding.setVector(i, entity.vector);
 		}
@@ -164,7 +164,7 @@ public abstract class Optimizer implements IOptimizer {
 	 * Instead of wasting RAM by copying the entire embedding to a new double array,
 	 * we can access it as a stream of float arrays with this iterator.
 	 */
-	class EmbeddingIterator implements Iterator<EmbeddedEntity> {
+	private class EmbeddingIterator implements Iterator<EmbeddedEntity> {
 
 		private int focusIndex = 0;
 
@@ -178,9 +178,19 @@ public abstract class Optimizer implements IOptimizer {
 
 			final int contextIndex = coMatrix.focusIndex2Context(focusIndex);
 			final float[] vector = new float[dimension];
-			for (int d = 0; d < dimension; d++)  vector[d] = (focus[focusIndex][d] + context[contextIndex][d]) / 2;
+			float squaredSum = 0;
+			for (int d = 0; d < dimension; d++)  {
+				vector[d] = (focus[focusIndex][d] + context[contextIndex][d]) / 2;
+				squaredSum += vector[d] * vector[d];
+			}
 
-			final EmbeddedEntity entity = new EmbeddedEntity(
+			// Normalize the vector
+			float magnitude = (float) Math.sqrt(squaredSum);
+			for (int d = 0; d < dimension; d++)  {
+				vector[d] /= magnitude;
+			}
+
+			final EmbeddedEntity entity = new EmbeddedEntity (
 					focusIndex,
 					coMatrix.getKey(focusIndex),
 					vector
@@ -195,16 +205,10 @@ public abstract class Optimizer implements IOptimizer {
 	 * View of an embedded entity
 	 */
 	public record EmbeddedEntity(int index, String key, float[] vector) implements Item<String, float[]> {
-
-		public int getIndex() {
-			return index;
-		}
-
 		@Override
 		public String id() {
 			return key;
 		}
-
 
 		@Override
 		public int dimensions() {

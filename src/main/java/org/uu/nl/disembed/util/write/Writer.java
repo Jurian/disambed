@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.write;
+package org.uu.nl.disembed.util.write;
 
 import java.io.IOException;
 

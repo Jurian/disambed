@@ -1,6 +1,6 @@
-package org.uu.nl.embedding.util.similarity.lsh;
+package org.uu.nl.disembed.embedding.similarity.lsh;
 
-import org.uu.nl.embedding.util.sparse.BMatrixSparseCSR;
+import org.uu.nl.disembed.util.sparse.BMatrixSparseCSR;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +22,7 @@ public abstract class LSHNgram extends LSHSimilarity {
     @Override
     public void preCompute(String token, int index) {
 
+        token = normalize(token);
         int nShingles = (token.length() - shingleSize + 1);
         if(nShingles < 1) {
             shingleAllocation.setRowIndexes(index, new int[0]);

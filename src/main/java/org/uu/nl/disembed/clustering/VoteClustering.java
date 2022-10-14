@@ -1,19 +1,23 @@
-package org.uu.nl.embedding.cluster;
+package org.uu.nl.disembed.clustering;
 
 import com.carrotsearch.hppc.IntArrayList;
+import org.uu.nl.disembed.clustering.rules.RuleChecker;
 
 public class VoteClustering extends ClusterAlgorithm {
 
-    public VoteClustering(int index, int[] component, float[] penalties, float[][] vectors, float theta, float epsilon) {
-        super(index, component, penalties, vectors, theta, epsilon);
+    public VoteClustering(int index, int[] component, RuleChecker ruleChecker, float[][] vectors, float theta, float epsilon, int threads) {
+        super(index, component, ruleChecker, vectors, theta, epsilon, threads);
     }
 
     @Override
     public ClusterResult cluster() {
 
         final int n = component.length;
+        final int edges = Util.nEdges(n); // number of edges
 
-        if(n < 3) return skip(n);
+        final float[] penalties = usingRules() ? ruleChecker.checkComponent(component) : null;
+
+        if(n < 3) return skip(n, penalties);
 
         int nClust = 0;
         IntArrayList clusterIndex = new IntArrayList();
@@ -32,8 +36,8 @@ public class VoteClustering extends ClusterAlgorithm {
 
             for(int j = 0; j < i; j++) {
 
-                int k = Util.combinationToIndex(i+1, j+1, n) - 1;
-                sums[clusterIndex.get(j)] += Util.weight(component[i], component[j], vectors, theta, epsilon, penalties[k]);
+                int k = Util.combinationToIndex(i, j, n);
+                sums[clusterIndex.get(j)] += Util.weight(component[i], component[j], vectors, theta, epsilon, penalties != null ? penalties[k] : 0);
 
                 if(sums[clusterIndex.get(j)] > bestSum) {
                     bestSum = sums[clusterIndex.get(j)];

@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util;
+package org.uu.nl.disembed.util.progress;
 
 import me.tongfei.progressbar.*;
 import org.apache.log4j.Logger;

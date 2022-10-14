@@ -1,6 +1,6 @@
-package org.uu.nl.embedding.util.read;
+package org.uu.nl.disembed.util.read;
 
-import org.uu.nl.embedding.util.config.Configuration;
+import org.uu.nl.disembed.util.config.Configuration;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;

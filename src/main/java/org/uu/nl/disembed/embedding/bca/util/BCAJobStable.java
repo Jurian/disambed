@@ -1,7 +1,7 @@
-package org.uu.nl.embedding.bca.util;
+package org.uu.nl.disembed.embedding.bca.util;
 
 import it.unimi.dsi.fastutil.ints.Int2FloatRBTreeMap;
-import org.uu.nl.embedding.util.InMemoryRdfGraph;
+import org.uu.nl.disembed.embedding.convert.InMemoryRdfGraph;
 
 /**
  * One BCAJob represents performing the bookmark coloring algorithm for a single node. This version does early stopping,
@@ -9,9 +9,9 @@ import org.uu.nl.embedding.util.InMemoryRdfGraph;
  * @author Jurian Baas
  *
  */
-public abstract class BCAJobStable extends BCAJob {
+public class BCAJobStable extends BCAJob {
 
-	protected BCAJobStable(int bookmark, float alpha, float epsilon, InMemoryRdfGraph graph, int[][] vertexNeighborhood, int[][] edgeNeighborhood) {
+	public BCAJobStable(int bookmark, float alpha, float epsilon, InMemoryRdfGraph graph, int[][] vertexNeighborhood, int[][] edgeNeighborhood) {
 		super(bookmark, alpha, epsilon, graph, vertexNeighborhood, edgeNeighborhood);
 	}
 

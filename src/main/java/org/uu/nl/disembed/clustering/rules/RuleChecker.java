@@ -1,25 +1,57 @@
-package org.uu.nl.embedding.cluster.rules;
+package org.uu.nl.disembed.clustering.rules;
 
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.Model;
 import org.apache.log4j.Logger;
-import org.uu.nl.embedding.cluster.Util;
-import org.uu.nl.embedding.util.Progress;
-import org.uu.nl.embedding.util.config.ClusterConfiguration;
+import org.uu.nl.disembed.clustering.Util;
+import org.uu.nl.disembed.util.config.ClusterConfiguration;
+import org.uu.nl.disembed.util.progress.Progress;
 
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-public record RuleChecker(ClusterConfiguration ruleConfig) {
+public class RuleChecker {
 
     private final static Logger logger = Logger.getLogger(RuleChecker.class);
 
+    private final int nRules;
+
+    private final float[] weights;
+    private final boolean[] definite;
+
+    private final String[] dict;
+
+    private final Model model;
+    private final ClusterConfiguration ruleConfig;
+    private final String queryFormat;
     public static final float DEFINITE_PENALTY = 1e6f;
 
-    public int[][] pruneCandidatePairs(final Model model, int[][] pairs, String[] dict, int maxQuerySize) {
+    public RuleChecker(Model model, String[] dict, ClusterConfiguration config) {
+
+        this.model = model;
+        this.ruleConfig = config;
+        this.nRules = ruleConfig.getRules().ruleCount();
+        this.weights = new float[nRules];
+        this.definite = new boolean[nRules];
+        this.dict = dict;
+        this.queryFormat = constructBatchQueryBase(false);
+
+        int r = 0;
+        for (ClusterConfiguration.Rule rule : ruleConfig.getRules()) {
+            if (rule instanceof ClusterConfiguration.DefiniteRule) {
+                definite[r] = true;
+                weights[r] = 1;
+            } else if (rule instanceof ClusterConfiguration.ProbabilisticRule) {
+                definite[r] = false;
+                weights[r] = ((ClusterConfiguration.ProbabilisticRule) rule).getProbability();
+            }
+        }
+    }
+
+    public int[][] pruneCandidatePairs(final Model model, int[][] pairs, int maxQuerySize) {
 
         int currentPair = 0;
         int nPairs = pairs.length;
@@ -31,7 +63,7 @@ public record RuleChecker(ClusterConfiguration ruleConfig) {
 
         try (ProgressBar pb = Progress.progressBar("Prune candidate pairs", nPairs, "pairs")) {
             while (currentPair < nPairs) {
-                PruneQueryInfo info = constructPruneQuery(queryFormat, pairs, dict, maxQuerySize, currentPair);
+                PruneQueryInfo info = constructPruneQuery(queryFormat, pairs, maxQuerySize, currentPair);
 
                 final ParameterizedSparqlString query = new ParameterizedSparqlString();
                 query.setCommandText(info.pruneQuery);
@@ -82,45 +114,80 @@ public record RuleChecker(ClusterConfiguration ruleConfig) {
         return cleanPairs;
     }
 
-    public float[][] checkComponents(final Model model, int[][] components, String[] dict, int maxQuerySize) {
+    public float[] checkComponent(int[] component) {
+
+        final int n = component.length;
+
+        // Result of Integer.MAX_VALUE = (n * (n - 1)) / 2; solve for n
+        if(n >= 65536) {
+            return null;
+        }
+
+        final int e = Util.nEdges(n);
+
+        if(e > ruleConfig.getRules().getMaxQuerySize()) {
+            return null;
+        }
+
+        float[] penalties = new float[e];
+
+        final ParameterizedSparqlString query = new ParameterizedSparqlString();
+        query.setCommandText(constructComponentQuery(component, dict));
+        query.setNsPrefixes(model.getNsPrefixMap());
+
+        try (QueryExecution exec = QueryExecutionFactory.create(query.asQuery(), model)) {
+
+            final ResultSet pairViolations = exec.execSelect();
+
+            while (pairViolations.hasNext()) {
+
+                final QuerySolution solution = pairViolations.nextSolution();
+
+                int i = solution.get("i").asLiteral().getInt();
+
+                boolean[] violations = new boolean[nRules];
+
+                for (Iterator<String> it = solution.varNames(); it.hasNext(); ) {
+
+                    String name = it.next();
+                    if (name.startsWith("r")) {
+
+                        int r = Integer.parseInt(name.substring(1));
+                        boolean v = solution.get(name).asLiteral().getBoolean();
+                        violations[r - 1] = v;
+                    }
+                }
+
+                penalties[i] = violationsToPenalties(violations);
+            }
+        }
+
+        return penalties;
+    }
+
+    public float[][] checkComponents(int[][] components, int maxQuerySize) {
 
         final int nRules = ruleConfig.getRules().ruleCount();
         final int nComponents = components.length;
         final long totalPairs = totalPairs(components);
-        final String queryFormat = constructBatchQueryBase(false);
 
         final float[][] penalties = new float[nComponents][];
 
         for (int c = 0; c < nComponents; c++) {
             int n = components[c].length;
-            penalties[c] = new float[(n * (n - 1)) / 2];
+            penalties[c] = new float[Util.nEdges(n)];
         }
-
-        final float[] weights = new float[nRules];
-        final boolean[] definite = new boolean[nRules];
-
-        int r = 0;
-        for (ClusterConfiguration.Rule rule : ruleConfig.getRules()) {
-            if (rule instanceof ClusterConfiguration.DefiniteRule) {
-                definite[r] = true;
-                weights[r] = 1;
-            } else if (rule instanceof ClusterConfiguration.ProbabilisticRule) {
-                definite[r] = false;
-                weights[r] = ((ClusterConfiguration.ProbabilisticRule) rule).getProbability();
-            }
-        }
-
 
         int currentComponent = 0;
         int currentPair = 0;
         int processedPairs = 0;
 
-        int i, c;
+        int i, c, r;
 
         try (ProgressBar pb = Progress.progressBar("Querying violations", totalPairs, "pairs")) {
             while (currentComponent < nComponents) {
 
-                BatchQueryInfo info = constructBatchQuery(queryFormat, components, dict, maxQuerySize, currentComponent, currentPair);
+                BatchQueryInfo info = constructBatchQuery(components, maxQuerySize, currentComponent, currentPair);
 
                 final ParameterizedSparqlString query = new ParameterizedSparqlString();
                 query.setCommandText(info.batchQuery);
@@ -150,7 +217,7 @@ public record RuleChecker(ClusterConfiguration ruleConfig) {
                             }
                         }
 
-                        penalties[c][i] = violationsToPenalties(violations, weights, definite);
+                        penalties[c][i] = violationsToPenalties(violations);
                     }
                 }
 
@@ -165,7 +232,30 @@ public record RuleChecker(ClusterConfiguration ruleConfig) {
         return penalties;
     }
 
-    public BatchQueryInfo constructBatchQuery(String queryFormat, int[][] components, String[] dict, final int maxQuerySize, int currentComponent, int currentPair) {
+    public String constructComponentQuery(int[] component, String[] dict) {
+
+        StringBuilder builder = new StringBuilder();
+
+        final int n = component.length;
+        final int nPairs = ((n - 1) * n) / 2;
+
+        int[][] pairs = Util.possiblePairs(component);
+
+        for (int i = 0; i < nPairs; i++) {
+            builder.append("\t\t(")
+                    .append(0)
+                    .append(" ")
+                    .append(i)
+                    .append(" <")
+                    .append(dict[pairs[i][0]])
+                    .append("><")
+                    .append(dict[pairs[i][1]])
+                    .append(">)\n");
+        }
+        return String.format(queryFormat, builder);
+    }
+
+    public BatchQueryInfo constructBatchQuery(int[][] components, final int maxQuerySize, int currentComponent, int currentPair) {
 
         int processedPairs;
 
@@ -180,10 +270,10 @@ public record RuleChecker(ClusterConfiguration ruleConfig) {
 
         for (; c < nComp; c++) {
 
-            int[] index = components[c];
-            int[][] pairs = Util.possiblePairs(index);
+            int[] component = components[c];
+            int[][] pairs = Util.possiblePairs(component);
 
-            final int n = index.length;
+            final int n = component.length;
             final int nPairs = ((n - 1) * n) / 2;
 
             for (; i < nPairs; i++, j++) {
@@ -216,10 +306,9 @@ public record RuleChecker(ClusterConfiguration ruleConfig) {
         return new BatchQueryInfo(currentPair, currentComponent, processedPairs, String.format(queryFormat, builder));
     }
 
-    public record BatchQueryInfo(int currentPair, int currentComponent, int processedPairs, String batchQuery) {
-    }
+    public record BatchQueryInfo(int currentPair, int currentComponent, int processedPairs, String batchQuery) {}
 
-    public PruneQueryInfo constructPruneQuery(String queryFormat, int[][] pairs, String[] dict, final int maxQuerySize, int currentPair) {
+    public PruneQueryInfo constructPruneQuery(String queryFormat, int[][] pairs, final int maxQuerySize, int currentPair) {
 
         final int nPairs = pairs.length;
 
@@ -351,7 +440,7 @@ public record RuleChecker(ClusterConfiguration ruleConfig) {
     }
 
 
-    float violationsToPenalties(boolean[] violations, float[] weights, boolean[] definite) {
+    float violationsToPenalties(boolean[] violations) {
 
         final int n = violations.length;
         double p = 1;

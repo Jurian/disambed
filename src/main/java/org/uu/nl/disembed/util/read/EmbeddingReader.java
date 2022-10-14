@@ -1,6 +1,6 @@
-package org.uu.nl.embedding.util.read;
+package org.uu.nl.disembed.util.read;
 
-import org.uu.nl.embedding.opt.Embedding;
+import org.uu.nl.disembed.embedding.opt.Embedding;
 
 import java.io.BufferedReader;
 import java.io.File;

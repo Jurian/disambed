@@ -1,7 +1,7 @@
-package org.uu.nl.embedding.util.write;
+package org.uu.nl.disembed.util.write;
 
-import org.uu.nl.embedding.opt.Embedding;
-import org.uu.nl.embedding.util.config.Configuration;
+import org.uu.nl.disembed.embedding.opt.Embedding;
+import org.uu.nl.disembed.util.config.Configuration;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -23,6 +23,7 @@ public class Word2VecWriter extends EmbeddingWriter {
 
     @Override
     public void customWrite(Writer w, Embedding embedding) throws IOException {
+        w.write(config.getEmbedding().toString());
         w.write(embedding.getSize() + DELIMITER + embeddingConfig.getDim());
     }
 

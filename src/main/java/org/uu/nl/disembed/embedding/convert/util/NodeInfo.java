@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.convert.util;
+package org.uu.nl.disembed.embedding.convert.util;
 
 import org.apache.jena.graph.Node;
 

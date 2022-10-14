@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.read;
+package org.uu.nl.disembed.util.read;
 
 import java.io.File;
 import java.io.IOException;

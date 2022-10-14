@@ -4,30 +4,39 @@
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.uu.nl</groupId>
-	<artifactId>graph-embeddings</artifactId>
+	<artifactId>disembed</artifactId>
 	<version>1.0</version>
-	<name>Creating embeddings from RDF graphs</name>
+	<name>Disambiguate entities in RDF graphs using Embeddings</name>
 	<packaging>jar</packaging>
 
 	<properties>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
 	</properties>
 
 	<dependencies>
 
-		<!-- Processing RDF data -->
 		<dependency>
 			<groupId>org.apache.jena</groupId>
 			<artifactId>jena-arq</artifactId>
-			<version>3.6.0</version>
+			<version>4.3.2</version>
 		</dependency>
 
-		<!-- For loading in hdt files -->
 		<dependency>
-			<groupId>eu.wdaqua</groupId>
+			<groupId>org.apache.jena</groupId>
+			<artifactId>jena-core</artifactId>
+			<version>4.3.2</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.rdfhdt</groupId>
+			<artifactId>hdt-api</artifactId>
+			<version>3.0.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.rdfhdt</groupId>
 			<artifactId>hdt-jena</artifactId>
-			<version>2.1</version>
+			<version>3.0.3</version>
 		</dependency>
 
 		<!-- Parsing YAML configuration file -->
@@ -62,7 +71,31 @@
 		<dependency>
 			<groupId>me.tongfei</groupId>
 			<artifactId>progressbar</artifactId>
-			<version>0.8.1</version>
+			<version>0.9.3</version>
+		</dependency>
+
+		<!-- High Performance Primitive Collections -->
+		<!-- https://mvnrepository.com/artifact/com.carrotsearch/hppc -->
+		<dependency>
+			<groupId>com.carrotsearch</groupId>
+			<artifactId>hppc</artifactId>
+			<version>0.9.1</version>
+		</dependency>
+
+		<!-- Approximate Nearest Neighbor -->
+		<!-- https://mvnrepository.com/artifact/com.github.jelmerk/hnswlib-core -->
+		<dependency>
+			<groupId>com.github.jelmerk</groupId>
+			<artifactId>hnswlib-core</artifactId>
+			<version>1.0.1</version>
+		</dependency>
+
+
+		<!-- Integer Linear Programming -->
+		<dependency>
+			<groupId>org.ojalgo</groupId>
+			<artifactId>ojalgo</artifactId>
+			<version>51.4.0</version>
 		</dependency>
 
 		<!-- Logging -->
@@ -76,21 +109,6 @@
 			<artifactId>slf4j-log4j12</artifactId>
 			<version>1.7.36</version>
 		</dependency>
-
-		<!-- For calculating eigen-vectors and eigen-values -->
-		<dependency>
-			<groupId>com.github.fommil.netlib</groupId>
-			<artifactId>core</artifactId>
-			<version>1.1.2</version>
-		</dependency>
-
-		<dependency>
-			<groupId>com.github.github</groupId>
-			<artifactId>site-maven-plugin</artifactId>
-			<version>0.12</version>
-			<type>maven-plugin</type>
-		</dependency>
-
 	</dependencies>
 
 	<repositories>
@@ -103,8 +121,7 @@
 
 	<build>
 
-		<finalName>graph-embeddings</finalName>
-
+		<finalName>DisEmbed</finalName>
 		<sourceDirectory>src/main/java</sourceDirectory>
 
 		<plugins>
@@ -114,10 +131,10 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>org.uu.nl.embedding.Main</mainClass>
+							<mainClass>org.uu.nl.disembed.Main</mainClass>
 						</manifest>
 					</archive>
-					<finalName>graph-embeddings</finalName>
+					<finalName>DisEmbed</finalName>
 					<appendAssemblyId>false</appendAssemblyId>
 					<descriptorRefs>
 						<descriptorRef>jar-with-dependencies</descriptorRef>
@@ -134,14 +151,22 @@
 					<archive>
 						<manifest>
 							<addClasspath>true</addClasspath>
-							<mainClass>org.uu.nl.embedding.Main</mainClass>
+							<mainClass>org.uu.nl.disembed.Main</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
 
 			</plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                </configuration>
+            </plugin>
 
-		</plugins>
+        </plugins>
 	</build>
 
 

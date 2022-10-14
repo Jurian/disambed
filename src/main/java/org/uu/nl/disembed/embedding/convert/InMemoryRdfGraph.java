@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util;
+package org.uu.nl.disembed.embedding.convert;
 
 import com.carrotsearch.hppc.IntHashSet;
 import grph.in_memory.InMemoryGrph;
@@ -8,11 +8,11 @@ import grph.properties.StringProperty;
 
 import java.io.Closeable;
 
-public class InMemoryRdfGraph extends InMemoryGrph implements Closeable {
+public class InMemoryRdfGraph extends InMemoryGrph implements Closeable, GraphInformation {
 
     private final IntHashSet focusNodes = new IntHashSet();
 
-    public IntHashSet getFocusNodes() {
+    public IntHashSet focusNodes() {
         return focusNodes;
     }
 
@@ -65,5 +65,20 @@ public class InMemoryRdfGraph extends InMemoryGrph implements Closeable {
     @Override
     public void close() {
         super.clear();
+    }
+
+    @Override
+    public int nrOfFocusNodes() {
+        return focusNodes.size();
+    }
+
+    @Override
+    public int nrOfVertices() {
+        return getNumberOfVertices();
+    }
+
+    @Override
+    public String key(int i) {
+        return getVertexLabelProperty().getValueAsString(i);
     }
 }

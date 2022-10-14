@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.rnd;
+package org.uu.nl.disembed.util.rnd;
 
 import java.util.Random;
 

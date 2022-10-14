@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.rnd;
+package org.uu.nl.disembed.util.rnd;
 
 
 public class ThreadLocalSeededRandom extends ThreadLocal<ExtendedRandom> {

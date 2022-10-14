@@ -1,6 +1,6 @@
-package org.uu.nl.embedding.util.similarity;
+package org.uu.nl.disembed.embedding.similarity;
 
-import org.uu.nl.embedding.util.config.EmbeddingConfiguration;
+import org.uu.nl.disembed.util.config.EmbeddingConfiguration;
 
 import java.time.temporal.ChronoUnit;
 

@@ -1,6 +1,6 @@
-package org.uu.nl.embedding.bca.util;
+package org.uu.nl.disembed.embedding.bca.util;
 
-import org.uu.nl.embedding.util.InMemoryRdfGraph;
+import org.uu.nl.disembed.embedding.convert.InMemoryRdfGraph;
 
 import java.util.TreeMap;
 
@@ -10,7 +10,7 @@ import java.util.TreeMap;
  * @author Jurian Baas
  *
  */
-public abstract class BCAJobNoBacksies extends BCAJobStable {
+public class BCAJobNoBacksies extends BCAJobStable {
 
 	static class PaintedNodeWithMemory extends PaintedNode {
 
@@ -29,7 +29,7 @@ public abstract class BCAJobNoBacksies extends BCAJobStable {
 		}
 	}
 
-	protected BCAJobNoBacksies(int bookmark, float alpha, float epsilon, InMemoryRdfGraph graph, int[][] vertexNeighborhood, int[][] edgeNeighborhood) {
+	public BCAJobNoBacksies(int bookmark, float alpha, float epsilon, InMemoryRdfGraph graph, int[][] vertexNeighborhood, int[][] edgeNeighborhood) {
 		super(bookmark, alpha, epsilon, graph, vertexNeighborhood, edgeNeighborhood);
 	}
 

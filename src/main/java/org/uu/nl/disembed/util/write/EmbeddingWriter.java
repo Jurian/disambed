@@ -1,13 +1,13 @@
-package org.uu.nl.embedding.util.write;
+package org.uu.nl.disembed.util.write;
 
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.log4j.Logger;
-import org.uu.nl.embedding.opt.Embedding;
-import org.uu.nl.embedding.opt.Optimizer;
-import org.uu.nl.embedding.util.Progress;
-import org.uu.nl.embedding.util.config.Configuration;
-import org.uu.nl.embedding.util.config.EmbeddingConfiguration;
-import org.uu.nl.embedding.util.config.OutputConfiguration;
+import org.uu.nl.disembed.embedding.opt.Embedding;
+import org.uu.nl.disembed.embedding.opt.Optimizer;
+import org.uu.nl.disembed.util.config.Configuration;
+import org.uu.nl.disembed.util.config.EmbeddingConfiguration;
+import org.uu.nl.disembed.util.config.OutputConfiguration;
+import org.uu.nl.disembed.util.progress.Progress;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -21,7 +21,7 @@ import java.util.Iterator;
 /**
  * @author Jurian Baas
  */
-public abstract class EmbeddingWriter implements org.uu.nl.embedding.util.write.Writer {
+public abstract class EmbeddingWriter implements org.uu.nl.disembed.util.write.Writer {
 
 	public final static Logger logger = Logger.getLogger(EmbeddingWriter.class);
 
@@ -31,12 +31,14 @@ public abstract class EmbeddingWriter implements org.uu.nl.embedding.util.write.
 	public static final String FILETYPE = ".tsv";
 	public static final String OUTPUT_DIRECTORY = "embeddings";
 	protected final String fileName;
+	protected final Configuration config;
 	protected final EmbeddingConfiguration embeddingConfig;
 	protected final OutputConfiguration outputConfig;
 	protected final Embedding embedding;
 
 	public EmbeddingWriter(Embedding embedding, Configuration config) {
 
+		this.config = config;
 		this.embeddingConfig = config.getEmbedding();
 		this.outputConfig = config.getOutput();
 		this.embedding = embedding;
@@ -78,7 +80,7 @@ public abstract class EmbeddingWriter implements org.uu.nl.embedding.util.write.
 			for (int d = 0; d < out.length; d++)
 				out[d] = String.format("%11.6E", entity.vector()[d]);
 
-			w.write(entity.id()
+			w.write(entity.key()
 					.replace("\n", "")
 					.replace("\r", "")
 					.replace("	", "")

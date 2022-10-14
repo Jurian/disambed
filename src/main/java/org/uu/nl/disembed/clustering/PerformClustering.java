@@ -1,45 +1,74 @@
-package org.uu.nl.embedding.cluster;
+package org.uu.nl.disembed.clustering;
 
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.jena.rdf.model.Model;
 import org.apache.log4j.Logger;
-import org.uu.nl.embedding.cluster.rules.RuleChecker;
-import org.uu.nl.embedding.opt.Embedding;
-import org.uu.nl.embedding.opt.Optimizer;
-import org.uu.nl.embedding.util.Progress;
-import org.uu.nl.embedding.util.config.ClusterConfiguration;
+import org.uu.nl.disembed.clustering.rules.RuleChecker;
+import org.uu.nl.disembed.embedding.opt.Embedding;
+import org.uu.nl.disembed.util.config.Configuration;
+import org.uu.nl.disembed.util.progress.Progress;
+import org.uu.nl.disembed.util.read.HnswIndexReader;
+import org.uu.nl.disembed.util.write.HnswIndexWriter;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.*;
 
-public record PerformClustering(ClusterConfiguration config) {
+public record PerformClustering(Configuration config) {
 
     public static final float EPSILON = 1e-6f;
     private final static Logger logger = Logger.getLogger(PerformClustering.class);
 
-    public ClusteringResult perform(Model model, Embedding embedding) {
+    public ClusteringResult perform(Model model, Embedding embedding) throws IOException {
 
         try {
             final int n = embedding.getSize();
             final int dim = embedding.getDimension();
-            final int k = config.getK();
+            final int k = config.getClustering().getK();
             final int numThreads = config.getThreads();
-            final float theta = config.getTheta();
-            final int maxQuerySize = config.getRules().getMaxQuerySize();
+            final float theta = config.getClustering().getTheta();
+            final int maxQuerySize = config.getClustering().getRules().getMaxQuerySize();
 
-            RuleChecker ruleChecker = new RuleChecker(config);
-            CandidatePairs cp = new CandidatePairs(embedding);
+            final boolean usingRules = config.getClustering().getRules() != null;
+            RuleChecker ruleChecker = usingRules ? new RuleChecker(model, embedding.getKeys(), config.getClustering()) : null;
 
-            for (Optimizer.EmbeddedEntity embeddedEntity : embedding) {
-                cp.add(embeddedEntity);
+            int[][] components;
+
+            {
+                CandidatePairs cp;
+                if(config.getClustering().getHnsw() != null) {
+                    logger.info("Loading pre-computed HNSW index...");
+                    HnswIndexReader reader = new HnswIndexReader();
+                    cp = new CandidatePairs(embedding, reader.load(new File(config.getClustering().getHnsw())), config);
+                } else {
+                    cp = new CandidatePairs(embedding, config);
+                    if(config.getOutput().getHnsw() != null) {
+                        HnswIndexWriter writer = new HnswIndexWriter(cp.getIndex(), config);
+                        writer.write();
+                    }
+                }
+
+                logger.info("Retrieving " + k + " approximate nearest neighbors");
+
+                int[][] candidatePairs = cp.getNearestNeighborPairs(embedding, k, theta);
+
+                if (usingRules && config.getClustering().getRules().hasDefiniteRules()) {
+                    candidatePairs = ruleChecker.pruneCandidatePairs(model, candidatePairs, maxQuerySize);
+                }
+
+                logger.info("Finding connected components...");
+                components = Util.connectedComponents(n, candidatePairs);
+                logger.info("Found " + components.length + " components");
+
+                int largestComponentSize = 0;
+                for (int[] component : components) {
+                    largestComponentSize = Math.max(component.length, largestComponentSize);
+                }
+
+                logger.info("Largest component is size " + largestComponentSize);
+
+                System.gc();
             }
-
-            int[][] candidatePairs = cp.getNearestNeighborPairs(embedding, k, theta);
-
-            if (config.getRules().hasDefiniteRules()) {
-                candidatePairs = ruleChecker.pruneCandidatePairs(model, candidatePairs, embedding.getKeys(), maxQuerySize);
-            }
-
-            final int[][] components = Util.connectedComponents(n, candidatePairs);
 
             final int nComponents = components.length;
 
@@ -47,7 +76,7 @@ public record PerformClustering(ClusterConfiguration config) {
                 logger.warn("Only 1 connected component found, consider increasing value of theta > " + theta);
             }
 
-            final float[][] penalties = ruleChecker.checkComponents(model, components, embedding.getKeys(), maxQuerySize);
+            //final float[][] penalties = usingRules ? ruleChecker.checkComponents(model, components, embedding.getKeys(), maxQuerySize) : null;
 
             final ExecutorService es = Executors.newWorkStealingPool(numThreads);
             CompletionService<ClusterAlgorithm.ClusterResult> completionService = new ExecutorCompletionService<>(es);
@@ -55,31 +84,60 @@ public record PerformClustering(ClusterConfiguration config) {
             int ccJobs = 0;
             int vJobs = 0;
             int maxSize = 0;
+            int skipped = 0;
 
             for (int i = 0; i < nComponents; i++) {
                 int size = components[i].length;
+
+                if(size > config.getClustering().getMaxComponentSize()) {
+                    skipped++;
+                    continue;
+                }
+
                 maxSize = Math.max(size, maxSize);
-                if(size <= config.getCorrelationClusteringMaxSize()) {
+
+                if(size <= config.getClustering().getMaxCorrelationClusteringSize()) {
                     ccJobs++;
-                    completionService.submit(new CorrelationClustering(i, components[i], penalties[i], embedding.getVectors(), theta, EPSILON));
+                    completionService.submit(
+                            new CorrelationClustering(
+                                    i,
+                                    components[i],
+                                    ruleChecker,
+                                    embedding.getVectors(),
+                                    theta,
+                                    EPSILON,
+                                    config.getThreads())
+                    );
                 } else {
                     vJobs++;
-                    completionService.submit(new VoteClustering(i, components[i], penalties[i], embedding.getVectors(), theta, EPSILON));
+                    completionService.submit(
+                            new VoteClustering(
+                                    i,
+                                    components[i],
+                                    ruleChecker,
+                                    embedding.getVectors(),
+                                    theta,
+                                    EPSILON,
+                                    config.getThreads())
+                    );
                 }
             }
 
+            final int totalJobs = ccJobs + vJobs;
+
             logger.info("Submitted " + ccJobs + " correlation clustering jobs");
             logger.info("Submitted " + vJobs + " vote clustering jobs");
-            logger.info("Largest component: " + maxSize + " elements");
+            logger.info("Skipped " + skipped + " components that were too large");
+            logger.info("Largest valid component: " + maxSize + " entities");
 
-            int[][] clusters = new int[nComponents][];
+            int[][] clusters = new int[totalJobs][];
 
-            try (ProgressBar pb = Progress.progressBar("Clustering", nComponents, "components")) {
+            try (ProgressBar pb = Progress.progressBar("Clustering", totalJobs, "components")) {
 
-                //now retrieve the futures after computation (auto wait for it)
+                // Retrieve the futures after computation (auto wait for it)
                 int received = 0;
 
-                while (received < nComponents) {
+                while (received < totalJobs) {
 
                     try {
                         ClusterAlgorithm.ClusterResult clusterResult = completionService.take().get();
@@ -99,9 +157,7 @@ public record PerformClustering(ClusterConfiguration config) {
         } finally {
             model.close();
         }
-
     }
 
-    public static record ClusteringResult(int[][] components, int[][] clusters) {
-    }
+    public static record ClusteringResult(int[][] components, int[][] clusters) { }
 }

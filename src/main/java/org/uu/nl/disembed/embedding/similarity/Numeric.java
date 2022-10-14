@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.similarity;
+package org.uu.nl.disembed.embedding.similarity;
 
 import org.apache.log4j.Logger;
 
@@ -27,7 +27,7 @@ public record Numeric(double alpha, double offset) implements LiteralSimilarity 
         try {
             final double a = Double.parseDouble(s1);
             final double b = Double.parseDouble(s2);
-            return Math.pow(Math.abs(Math.abs(a - b) - offset) + 1, -alpha);
+            return Math.pow(Math.abs(Math.abs(a - b) - offset) + 1, alpha);
         } catch (NumberFormatException e) {
             logger.warn("Could not compare numbers: " + e.getMessage());
             return 0;

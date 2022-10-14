@@ -1,11 +1,11 @@
-package org.uu.nl.embedding.opt.grad;
+package org.uu.nl.disembed.embedding.opt.grad;
 
 import org.apache.commons.math.util.FastMath;
-import org.uu.nl.embedding.opt.CostFunction;
-import org.uu.nl.embedding.opt.OptimizeJob;
-import org.uu.nl.embedding.opt.Optimizer;
-import org.uu.nl.embedding.util.CoOccurrenceMatrix;
-import org.uu.nl.embedding.util.config.EmbeddingConfiguration;
+import org.uu.nl.disembed.embedding.bca.CoOccurrenceMatrix;
+import org.uu.nl.disembed.embedding.opt.CostFunction;
+import org.uu.nl.disembed.embedding.opt.OptimizeJob;
+import org.uu.nl.disembed.embedding.opt.Optimizer;
+import org.uu.nl.disembed.util.config.Configuration;
 
 
 @SuppressWarnings("DuplicatedCode")
@@ -21,7 +21,7 @@ public class Adagrad extends Optimizer {
         return (double) Math.round(super.calculateMemoryMegaBytes() * 2 * 100) / 100;
     }
 
-    public Adagrad(CoOccurrenceMatrix coMatrix, EmbeddingConfiguration config, CostFunction costFunction) {
+    public Adagrad(CoOccurrenceMatrix coMatrix, Configuration config, CostFunction costFunction) {
         super(coMatrix, config, costFunction);
 
         this.gradSqFocus = new float[focusVectors][dimension];

@@ -1,10 +1,10 @@
-package org.uu.nl.embedding.bca.util;
+package org.uu.nl.disembed.embedding.bca.util;
 
 import com.carrotsearch.hppc.IntFloatHashMap;
 import com.carrotsearch.hppc.cursors.IntFloatCursor;
 import org.apache.commons.math.util.FastMath;
-import org.uu.nl.embedding.util.config.EmbeddingConfiguration;
-import org.uu.nl.embedding.util.rnd.ExtendedRandom;
+import org.uu.nl.disembed.util.config.Configuration;
+import org.uu.nl.disembed.util.rnd.ExtendedRandom;
 
 
 /**
@@ -14,7 +14,7 @@ import org.uu.nl.embedding.util.rnd.ExtendedRandom;
  */
 public class BCV extends IntFloatHashMap {
 
-	private static final ExtendedRandom random = EmbeddingConfiguration.getThreadLocalRandom();
+	private static final ExtendedRandom random = Configuration.getThreadLocalRandom();
 	private static final long serialVersionUID = 1L;
 
 	private final int rootNode;

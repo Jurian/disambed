@@ -1,11 +1,11 @@
-package org.uu.nl.embedding.opt.grad;
+package org.uu.nl.disembed.embedding.opt.grad;
 
 import org.apache.commons.math.util.FastMath;
-import org.uu.nl.embedding.opt.CostFunction;
-import org.uu.nl.embedding.opt.OptimizeJob;
-import org.uu.nl.embedding.opt.Optimizer;
-import org.uu.nl.embedding.util.CoOccurrenceMatrix;
-import org.uu.nl.embedding.util.config.EmbeddingConfiguration;
+import org.uu.nl.disembed.embedding.bca.CoOccurrenceMatrix;
+import org.uu.nl.disembed.embedding.opt.CostFunction;
+import org.uu.nl.disembed.embedding.opt.OptimizeJob;
+import org.uu.nl.disembed.embedding.opt.Optimizer;
+import org.uu.nl.disembed.util.config.Configuration;
 
 /**
  * <p>
@@ -52,7 +52,7 @@ public class Adam extends Optimizer {
 	 */
 	private final float epsilon = 1e-1f;
 	
-	public Adam(CoOccurrenceMatrix coMatrix, EmbeddingConfiguration config, CostFunction costFunction) {
+	public Adam(CoOccurrenceMatrix coMatrix, Configuration config, CostFunction costFunction) {
 		super(coMatrix, config, costFunction);
 
 		this.M1focus = new float[focusVectors][dimension];

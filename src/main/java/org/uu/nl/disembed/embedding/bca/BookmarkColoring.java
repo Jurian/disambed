@@ -1,19 +1,21 @@
-package org.uu.nl.embedding.bca;
+package org.uu.nl.disembed.embedding.bca;
 
 import com.carrotsearch.hppc.IntIntHashMap;
 import com.carrotsearch.hppc.cursors.IntCursor;
 import com.carrotsearch.hppc.cursors.IntFloatCursor;
 import me.tongfei.progressbar.ProgressBar;
-import org.uu.nl.embedding.bca.jobs.UndirectedWeighted;
-import org.uu.nl.embedding.bca.util.BCV;
-import org.uu.nl.embedding.convert.util.EdgeNeighborhoodAlgorithm;
-import org.uu.nl.embedding.convert.util.VertexNeighborhoodAlgorithm;
-import org.uu.nl.embedding.util.CoOccurrenceMatrix;
-import org.uu.nl.embedding.util.InMemoryRdfGraph;
-import org.uu.nl.embedding.util.Progress;
-import org.uu.nl.embedding.util.config.EmbeddingConfiguration;
-import org.uu.nl.embedding.util.rnd.Permutation;
-import org.uu.nl.embedding.util.sparse.RandomAccessSparseMatrix;
+import org.uu.nl.disembed.embedding.bca.util.BCAJobNoBacksies;
+import org.uu.nl.disembed.embedding.bca.util.BCAJobStable;
+import org.uu.nl.disembed.embedding.bca.util.BCV;
+import org.uu.nl.disembed.embedding.convert.GraphInformation;
+import org.uu.nl.disembed.embedding.convert.InMemoryRdfGraph;
+import org.uu.nl.disembed.embedding.convert.util.EdgeNeighborhoodAlgorithm;
+import org.uu.nl.disembed.embedding.convert.util.VertexNeighborhoodAlgorithm;
+import org.uu.nl.disembed.util.config.Configuration;
+import org.uu.nl.disembed.util.progress.Progress;
+import org.uu.nl.disembed.util.read.BCAReader;
+import org.uu.nl.disembed.util.rnd.Permutation;
+import org.uu.nl.disembed.util.sparse.RandomAccessSparseMatrix;
 
 import java.util.concurrent.*;
 
@@ -26,22 +28,48 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	private float max;
 	private final int focusVectors, contextVectors;
 	private final Permutation permutation;
-	private final InMemoryRdfGraph graph;
+	private final GraphInformation graph;
 	private final IntIntHashMap context2focus;
 	private final int[] focus2context;
 
-	public BookmarkColoring(final InMemoryRdfGraph graph, final EmbeddingConfiguration config) {
-
-		final float alpha = config.getBca().getAlpha();
-		final float epsilon = config.getBca().getEpsilon();
-
-		this.graph = graph;
-		this.focusVectors = graph.getFocusNodes().size();
-		this.contextVectors = graph.getNumberOfVertices();
-		this.sparseMatrix = new RandomAccessSparseMatrix(focusVectors, contextVectors, focusVectors*100);
+	public BookmarkColoring(final BCAReader.SkeletonBCA skeleton, final Configuration config) {
+		this.graph = skeleton;
+		this.focusVectors = skeleton.nrOfFocusNodes();
+		this.contextVectors = skeleton.getNrOfContextNodes();
 
 		this.context2focus = new IntIntHashMap();
 		this.focus2context = new int[focusVectors];
+
+		this.max = skeleton.getMax();
+
+		this.sparseMatrix = skeleton.getMatrix();
+
+		int j = 0;
+
+		for(IntCursor c : graph.focusNodes()) {
+			int bookmark = c.value;
+			context2focus.put(bookmark, j);
+			focus2context[j] = j;
+			j++;
+		}
+
+		this.permutation = new Permutation(sparseMatrix.getNonZero());
+	}
+
+	public BookmarkColoring(final InMemoryRdfGraph graph, final Configuration config){
+
+		final float alpha = config.getEmbedding().getBca().getAlpha();
+		final float epsilon = config.getEmbedding().getBca().getEpsilon();
+
+		this.graph = graph;
+		this.focusVectors = graph.nrOfFocusNodes();
+		this.contextVectors = graph.nrOfVertices();
+
+		this.context2focus = new IntIntHashMap();
+		this.focus2context = new int[focusVectors];
+
+
+		this.sparseMatrix = new RandomAccessSparseMatrix(focusVectors, contextVectors, focusVectors*100);
 
 		final int numThreads = config.getThreads();
 
@@ -54,16 +82,24 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 
 		int j = 0;
 
-		for(IntCursor c : graph.getFocusNodes()) {
+		for(IntCursor c : graph.focusNodes()) {
+
 			int bookmark = c.value;
 			context2focus.put(bookmark, j);
 			focus2context[j] = bookmark;
 			j++;
 
-			completionService.submit(new UndirectedWeighted(
-					graph, bookmark,
-					alpha, epsilon,
-					vertexNeighborhoods, edgeNeighborhoods));
+			switch (config.getEmbedding().getBca().getTypeEnum()) {
+				case DEFAULT -> completionService.submit(new BCAJobStable(
+						bookmark, alpha,
+						epsilon, graph,
+						vertexNeighborhoods, edgeNeighborhoods));
+				case NO_RETURN -> completionService.submit(new BCAJobNoBacksies(
+						bookmark, alpha,
+						epsilon, graph,
+						vertexNeighborhoods, edgeNeighborhoods) {
+				});
+			}
 		}
 
 		double avgSize = 0;
@@ -93,7 +129,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 				} finally {
 					received ++;
 					pb.step();
-					pb.setExtraMessage(Math.round(avgSize * 100.0) / 100.0 + " " + calculateMemoryMegaBytes() +"MB");
+					pb.setExtraMessage( (Math.round(avgSize * 100.0) / 100.0) + " " + calculateMemoryMegaBytes() +" MB");
 				}
 			}
 
@@ -102,6 +138,10 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 		}
 
 		permutation = new Permutation(sparseMatrix.getNonZero());
+	}
+
+	public RandomAccessSparseMatrix getSparseMatrix() {
+		return sparseMatrix;
 	}
 
 	@Override
@@ -116,35 +156,25 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	@Override
 	public double calculateMemoryMegaBytes() {
 		int matrixRAM = sparseMatrix.count32BitNumbers(); // Approx number of 32-bit numbers in graph
-		int mapRAM = (context2focus.size() * 3) + focus2context.length; // Approx number of 32-bit numbers in maps
+		int mapRAM = (context2focus.size() * 2); // Approx number of 32-bit numbers in maps
 		double mb = (matrixRAM + mapRAM) / 262144d;
 		return (double) Math.round(mb * 100) / 100;
 	}
-
+	@Override
 	public int cIdx_I(int k) {
 		return contextIndex2Focus(sparseMatrix.getRow(permutation.randomAccess(k)));
 	}
-	
+	@Override
 	public int cIdx_J(int k) {
 		return this.sparseMatrix.getColumn(permutation.randomAccess(k));
 	}
-	
+	@Override
 	public float cIdx_C(int k) {
 		return this.sparseMatrix.getValue(permutation.randomAccess(k));
 	}
-	
-	public byte getType(int index) {
-		return (byte) this.graph.getVertexTypeProperty().getValueAsInt(focusIndex2Context(index));
-	}
-	
+	@Override
 	public int coOccurrenceCount() {
 		return this.sparseMatrix.getNonZero();
-	}
-
-
-	@Override
-	public InMemoryRdfGraph getGraph() {
-		return graph;
 	}
 
 	@Override
@@ -174,7 +204,7 @@ public class BookmarkColoring implements CoOccurrenceMatrix {
 	
 	@Override
 	public String getKey(int index) {
-		return this.graph.getVertexLabelProperty().getValueAsString(focusIndex2Context(index));
+		return this.graph.key(focusIndex2Context(index));
 	}
 	
 	private void setMax(float newMax) {

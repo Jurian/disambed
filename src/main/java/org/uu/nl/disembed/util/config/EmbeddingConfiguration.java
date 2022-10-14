@@ -1,13 +1,11 @@
-package org.uu.nl.embedding.util.config;
+package org.uu.nl.disembed.util.config;
 
 
-import org.uu.nl.embedding.util.rnd.ExtendedRandom;
-import org.uu.nl.embedding.util.rnd.ThreadLocalSeededRandom;
-import org.uu.nl.embedding.util.similarity.*;
-import org.uu.nl.embedding.util.similarity.lsh.LSHByteCharCosine;
-import org.uu.nl.embedding.util.similarity.lsh.LSHByteCharJaccard;
-import org.uu.nl.embedding.util.similarity.lsh.LSHNgramCosine;
-import org.uu.nl.embedding.util.similarity.lsh.LSHNgramJaccard;
+import org.uu.nl.disembed.embedding.similarity.*;
+import org.uu.nl.disembed.embedding.similarity.lsh.LSHByteCharCosine;
+import org.uu.nl.disembed.embedding.similarity.lsh.LSHByteCharJaccard;
+import org.uu.nl.disembed.embedding.similarity.lsh.LSHNgramCosine;
+import org.uu.nl.disembed.embedding.similarity.lsh.LSHNgramJaccard;
 
 import java.io.File;
 import java.nio.file.Paths;
@@ -15,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class EmbeddingConfiguration {
+public class EmbeddingConfiguration  implements Configurable {
 
     public enum PredicateWeightingMethod {
         NONE, MANUAL, PAGERANK, FREQUENCY, INVERSE_FREQUENCY
@@ -39,16 +37,13 @@ public class EmbeddingConfiguration {
         TOKEN_COSINE,
         TOKEN_JACCARD,
         JAROWINKLER,
+        MYERS,
         LEVENSHTEIN,
         NUMERIC,
         DATE_DAYS,
         DATE_MONTHS,
         DATE_YEARS,
         LOCATION
-    }
-
-    public enum BCANormalization {
-        NONE, UNITY, COUNTS
     }
 
     private String graph;
@@ -83,16 +78,6 @@ public class EmbeddingConfiguration {
 
     public void setDim(int dim) {
         this.dim = dim;
-    }
-
-    private int threads;
-
-    public int getThreads() {
-        return threads == 0 ? (Runtime.getRuntime().availableProcessors() -1) : threads;
-    }
-
-    public void setThreads(int threads) {
-        this.threads = threads;
     }
 
     private List<String> targetTypes;
@@ -165,20 +150,6 @@ public class EmbeddingConfiguration {
 
     public void setOpt(Opt opt) {
         this.opt = opt;
-    }
-
-    private static ThreadLocalSeededRandom threadLocalRandom;
-
-    public static void setThreadLocalRandom() {
-        threadLocalRandom = new ThreadLocalSeededRandom(System.currentTimeMillis());
-    }
-
-    public static void setThreadLocalRandom(long seed) {
-        threadLocalRandom = new ThreadLocalSeededRandom(seed);
-    }
-
-    public static ExtendedRandom getThreadLocalRandom() {
-        return threadLocalRandom.get();
     }
 
     public static class PredicateWeights {
@@ -284,6 +255,7 @@ public class EmbeddingConfiguration {
                 case DATE_MONTHS -> new DateMonths(getPattern(), getAlpha(), getOffset(), getTimeEnum());
                 case DATE_YEARS -> new DateYears(getPattern(), getAlpha(), getOffset(), getTimeEnum());
                 case LEVENSHTEIN -> new NormalizedLevenshtein();
+                case MYERS -> new NormalizedMyers();
                 case JAROWINKLER -> new JaroWinkler();
                 case NGRAM_JACCARD -> new PreComputedNgramJaccard(getNgram());
                 case NGRAM_COSINE -> new PreComputedNgramCosine(getNgram());
@@ -401,8 +373,26 @@ public class EmbeddingConfiguration {
 
     public static class BCA {
 
+        public  enum Type {
+            DEFAULT, NO_RETURN
+        }
+
+        private String type;
         private float alpha;
         private float epsilon;
+        private String readFile;
+
+        public Type getTypeEnum() {
+            return Type.valueOf(getType().toUpperCase());
+        }
+
+        public String getType() {
+            return type == null || type.isEmpty() ? Type.DEFAULT.name() : this.type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
 
         public float getAlpha() {
             return alpha;
@@ -420,6 +410,17 @@ public class EmbeddingConfiguration {
             this.epsilon = epsilon;
         }
 
+        public File getImportFile() {
+            return Paths.get("").toAbsolutePath().resolve(readFile).toFile();
+        }
+
+        public String getReadFile() {
+            return readFile;
+        }
+
+        public void setReadFile(String readFile) {
+            this.readFile = readFile;
+        }
     }
 
     public static class Opt {
@@ -457,6 +458,10 @@ public class EmbeddingConfiguration {
         }
     }
 
+    @Override
+    public String toString() {
+        return getBuilder().toString();
+    }
 
     public void check() throws InvalidConfigException {
         boolean hasDim = dim > 0;
@@ -480,5 +485,103 @@ public class EmbeddingConfiguration {
             throw new InvalidConfigException("Currently LSH only supports in group comparisons");
         }
 
+    }
+
+    @Override
+    public CommentStringBuilder getBuilder() {
+        CommentStringBuilder builder = new CommentStringBuilder();
+
+        builder.appendLine("Embedding Configuration:");
+
+        builder.appendKeyValueLine("Embedding method", getMethodEnum().toString());
+        builder.appendKeyValueLine("Input RDF graph", getGraph());
+        builder.appendKeyValueLine("Dimensions", getDim());
+
+        if(getTargetTypes() != null && !getTargetTypes().isEmpty()) {
+            builder.appendLine("Embedding entities of type:");
+            builder.appendLine("\t"+String.join(", ", getTargetTypes()));
+        } else {
+            builder.appendLine("No target types specified, all entities will be embedded");
+        }
+
+        if(getPredicates().getFilter() != null && !getPredicates().getFilter().isEmpty()) {
+            builder.appendLine("Predicate filter:");
+            for(String filter : getPredicates().getFilter()) {
+                builder.appendLine("\t"+filter);
+            }
+        } else {
+            builder.appendLine("No predicate filter specified");
+        }
+
+        builder.appendKeyValueLine("Predicate weighing method", getPredicates().getTypeEnum().toString());
+        if(getPredicates().getTypeEnum() == PredicateWeightingMethod.MANUAL) {
+            for (String s : getPredicates().getFilter()) {
+                builder.appendKeyValueLine("\t"+s, getPredicates().getWeights().getOrDefault(s, 1.0F));
+            }
+        }
+
+        if(getSimilarity() != null && !getSimilarity().isEmpty()) {
+            builder.appendLine("Similarity groups:");
+            int i = 1;
+            for(SimilarityGroup group : getSimilarity()) {
+
+                builder.appendKeyValueLine("Group", i++);
+                builder.appendKeyValueLine("Threshold", group.getThreshold());
+                builder.appendKeyValueLine("Threshold distance", group.getThresholdDistance());
+                builder.appendKeyValueLine("Source predicate", group.getSourcePredicate());
+                builder.appendKeyValueLine("Source type", group.getSourceType());
+                builder.appendKeyValueLine("Target predicate", group.getTargetPredicate());
+                builder.appendKeyValueLine("Target type", group.getTargetType());
+
+                builder.appendKeyValueLine("Comparison method", group.getMethodEnum().toString());
+
+                switch (group.getMethodEnum()) {
+                    case LSH_NGRAM_COSINE, LSH_NGRAM_JACCARD -> {
+                        builder.appendKeyValueLine("Bands", group.getBands());
+                        builder.appendKeyValueLine("Buckets", group.getBuckets());
+                        builder.appendKeyValueLine("N-gram size", group.getNgram());
+                    }
+
+                    case LSH_BIT_COSINE, LSH_BIT_JACCARD -> {
+                        builder.appendKeyValueLine("Bands", group.getBands());
+                        builder.appendKeyValueLine("Buckets", group.getBuckets());
+                    }
+
+                    case NGRAM_COSINE, NGRAM_JACCARD -> builder.appendKeyValueLine("N-gram size", group.getNgram());
+
+                    case NUMERIC -> builder.appendKeyValueLine("Offset", group.getOffset());
+
+                    case LOCATION -> builder.appendKeyValueLine("Kilometer offset", group.getOffset());
+
+                    case DATE_YEARS, DATE_MONTHS, DATE_DAYS -> {
+                        builder.appendKeyValueLine("Pattern", group.getPattern());
+                        builder.appendKeyValueLine("Time direction", group.getTimeEnum().toString());
+                        builder.appendKeyValueLine("Time offset", group.getOffset());
+                    }
+                }
+
+                builder.appendLine();
+            }
+
+        } else {
+            builder.appendLine("No similarity comparisons specified");
+        }
+
+        builder.appendLine("BCA Configuration:");
+        builder.appendKeyValueLine("Alpha",getBca().getAlpha());
+        builder.appendKeyValueLine("Epsilon", getBca().getEpsilon());
+
+        if(getBca().getReadFile() != null) {
+            builder.appendKeyValueLine("Reading from file", getBca().getReadFile());
+        }
+
+        builder.appendLine();
+
+        builder.appendLine("Gradient Descent Configuration:");
+        builder.appendKeyValueLine("Method", getOpt().getMethodEnum().toString());
+        builder.appendKeyValueLine("Maximum iterations", getOpt().getMaxiter());
+        builder.appendKeyValueLine("Tolerance", getOpt().getTolerance());
+
+        return builder;
     }
 }

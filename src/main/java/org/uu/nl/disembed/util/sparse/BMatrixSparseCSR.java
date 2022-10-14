@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.sparse;
+package org.uu.nl.disembed.util.sparse;
 
 import java.util.Arrays;
 import java.util.Set;

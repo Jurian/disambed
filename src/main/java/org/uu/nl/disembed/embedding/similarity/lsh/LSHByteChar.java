@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.similarity.lsh;
+package org.uu.nl.disembed.embedding.similarity.lsh;
 
 public abstract class LSHByteChar extends LSHSimilarity {
 
@@ -45,7 +45,6 @@ public abstract class LSHByteChar extends LSHSimilarity {
         int[] bucketIndexes = new int[bands];
         for(int j = 0; j < bucketIndexes.length; j++) {
             bucketIndexes[j] = (j * buckets) + hash[j];}
-
 
         bucketAllocation.setRowIndexes(index, bucketIndexes);
     }

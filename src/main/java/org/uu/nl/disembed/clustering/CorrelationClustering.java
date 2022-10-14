@@ -1,8 +1,11 @@
-package org.uu.nl.embedding.cluster;
+package org.uu.nl.disembed.clustering;
 
+import org.ojalgo.concurrent.Parallelism;
 import org.ojalgo.optimisation.ExpressionsBasedModel;
 import org.ojalgo.optimisation.Optimisation;
 import org.ojalgo.optimisation.Variable;
+import org.ojalgo.optimisation.integer.IntegerStrategy;
+import org.uu.nl.disembed.clustering.rules.RuleChecker;
 
 import java.math.BigDecimal;
 
@@ -10,21 +13,25 @@ public class CorrelationClustering extends ClusterAlgorithm {
 
     public static final int MAX_SIZE = 100;
 
-    public CorrelationClustering(int index, int[] component, float[] penalties, float[][] vectors, float theta, float epsilon) {
-        super(index, component, penalties, vectors, theta, epsilon);
+    public CorrelationClustering(int index, int[] component, RuleChecker ruleChecker, float[][] vectors, float theta, float epsilon, int threads) {
+        super(index, component, ruleChecker, vectors, theta, epsilon, threads);
     }
 
     @Override
     public ClusterResult cluster() {
 
         final int n = component.length; // number of vertices
+        final int edges = Util.nEdges(n); // number of edges
 
-        if(n < 3) return skip(n);
+        final float[] penalties = usingRules() ? ruleChecker.checkComponent(component) : null;
+        if(n < 3) return skip(n, penalties);
 
-        final int edges = (n*(n-1))/2; // number of edges
         final ExpressionsBasedModel model = new ExpressionsBasedModel();
-        final Variable[] vars = new Variable[edges];
+        // Suggested by the author of ojalgo library to prevent concurrency bug
+        model.options.integer(IntegerStrategy.newConfigurable().withParallelism(Parallelism.FOUR));
 
+        // Set up binary variables (one for each edge) with weights
+        final Variable[] vars = new Variable[edges];
         for(int i = 0, e = 0; i < n ; i++) {
             for(int j = i + 1; j < n; j++) {
                 Variable x = model
@@ -32,7 +39,7 @@ public class CorrelationClustering extends ClusterAlgorithm {
                         .integer() // constrain to binary
                         .lower(0)  // constrain to binary
                         .upper(1)  // constrain to binary
-                        .weight(Util.weight(component[i], component[j], vectors, theta, epsilon, penalties[e]));
+                        .weight(Util.weight(component[i], component[j], vectors, theta, epsilon, penalties != null ? penalties[e] : 0));
                 vars[e] = x;
                 e++;
             }
@@ -59,7 +66,7 @@ public class CorrelationClustering extends ClusterAlgorithm {
 
 
         Optimisation.Result result = model.maximise();
-        // The solution is an array with F for no edge and T for an edge
+        // The solution is an array with false for no edge and true for an edge
         boolean[] solution = new boolean[edges];
         int solutionEdges = 0;
         for(int e = 0; e < edges; e++) {

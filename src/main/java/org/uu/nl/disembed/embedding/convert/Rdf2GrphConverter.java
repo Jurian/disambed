@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.convert;
+package org.uu.nl.disembed.embedding.convert;
 
 import grph.algo.distance.PageRank;
 import info.debatty.java.stringsimilarity.interfaces.StringSimilarity;
@@ -10,13 +10,13 @@ import org.apache.jena.rdf.model.Model;
 import org.apache.jena.shared.PrefixMapping;
 import org.apache.jena.util.iterator.ExtendedIterator;
 import org.apache.log4j.Logger;
-import org.uu.nl.embedding.compare.CompareGroup;
-import org.uu.nl.embedding.compare.CompareJob;
-import org.uu.nl.embedding.compare.CompareResult;
-import org.uu.nl.embedding.convert.util.NodeInfo;
-import org.uu.nl.embedding.util.InMemoryRdfGraph;
-import org.uu.nl.embedding.util.Progress;
-import org.uu.nl.embedding.util.config.EmbeddingConfiguration;
+import org.uu.nl.disembed.embedding.compare.CompareGroup;
+import org.uu.nl.disembed.embedding.compare.CompareJob;
+import org.uu.nl.disembed.embedding.compare.CompareResult;
+import org.uu.nl.disembed.embedding.convert.util.NodeInfo;
+import org.uu.nl.disembed.util.config.Configuration;
+import org.uu.nl.disembed.util.config.EmbeddingConfiguration;
+import org.uu.nl.disembed.util.progress.Progress;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -28,8 +28,7 @@ import java.util.stream.Collectors;
  *
  * @author Jurian Baas
  */
-public record Rdf2GrphConverter(
-		EmbeddingConfiguration config) implements Converter<Model, InMemoryRdfGraph> {
+public record Rdf2GrphConverter(Configuration config) implements Converter<Model, InMemoryRdfGraph> {
 
 	private static final Logger logger = Logger.getLogger(Rdf2GrphConverter.class);
 
@@ -43,18 +42,23 @@ public record Rdf2GrphConverter(
 	public InMemoryRdfGraph convert(Model model) {
 
 		logger.info("Converting RDF data into fast graph representation");
-
+		EmbeddingConfiguration embeddingConfig = config.getEmbedding();
 		try {
 
 			final InMemoryRdfGraph g = new InMemoryRdfGraph();
 
-			final Map<String, Float> prefixedWeights = config.getPredicates().getWeights();
-			final Set<String> prefixedFilter = config.getPredicates().getFilter();
+			final boolean doSimilarityMatching = embeddingConfig.hasSimilarity();
+			final boolean useManualWeights = embeddingConfig.getPredicates().usingManualWeights();
+			final boolean usePageRankWeights = embeddingConfig.getPredicates().usingPageRankWeights();
+			final boolean useNoWeights = embeddingConfig.getPredicates().usingNoWeights();
+
+			final Map<String, Float> prefixedWeights = embeddingConfig.getPredicates().getWeights();
+			final Set<String> prefixedFilter = embeddingConfig.getPredicates().getFilter();
 			final Map<String, Float> expandedWeights = new HashMap<>();
 			final Set<String> expandedFilter = new HashSet<>();
 
-			if (config.getPrefixes() != null) {
-				config.getPrefixes().forEach(model::setNsPrefix);
+			if (embeddingConfig.getPrefixes() != null) {
+				embeddingConfig.getPrefixes().forEach(model::setNsPrefix);
 			}
 
 			for (Map.Entry<String, Float> entry : prefixedWeights.entrySet()) {
@@ -65,15 +69,12 @@ public record Rdf2GrphConverter(
 				expandedFilter.add(model.expandPrefix(prefixed));
 			}
 
-			config.getPredicates().setWeights(expandedWeights);
-			config.getPredicates().setFilter(expandedFilter);
+			embeddingConfig.getPredicates().setWeights(expandedWeights);
+			embeddingConfig.getPredicates().setFilter(expandedFilter);
 
-			final boolean doSimilarityMatching = config.hasSimilarity();
-			final boolean useManualWeights = config.getPredicates().usingManualWeights();
-			final boolean usePageRankWeights = config.getPredicates().usingPageRankWeights();
-			final boolean useNoWeights = config.getPredicates().usingNoWeights();
 
-			final CompareGroup[] compareGroups = doSimilarityMatching ? new CompareGroup[config.getSimilarity().size()] : null;
+
+			final CompareGroup[] compareGroups = doSimilarityMatching ? new CompareGroup[embeddingConfig.getSimilarity().size()] : null;
 
 			if (doSimilarityMatching) {
 				logger.info("Creating compare groups");
@@ -81,7 +82,7 @@ public record Rdf2GrphConverter(
 				try (ProgressBar pb = Progress.progressBar("Created", compareGroups.length, "groups")) {
 					for (int i = 0; i < compareGroups.length; i++) {
 
-						final EmbeddingConfiguration.SimilarityGroup configGroup = config.getSimilarity().get(i);
+						final EmbeddingConfiguration.SimilarityGroup configGroup = embeddingConfig.getSimilarity().get(i);
 						final CompareGroup compareGroup = new CompareGroup(configGroup);
 
 						final String sourceQueryString =
@@ -135,7 +136,7 @@ public record Rdf2GrphConverter(
 
 			final Set<Node> outputNodes = new HashSet<>();
 
-			for (String type : config.getTargetTypes()) {
+			for (String type : embeddingConfig.getTargetTypes()) {
 
 				final ParameterizedSparqlString query = new ParameterizedSparqlString();
 				query.setCommandText(String.format(QUERY_OUTPUT_FORMAT, type));
@@ -204,7 +205,7 @@ public record Rdf2GrphConverter(
 			}
 
 
-			EmbeddingConfiguration.PredicateWeights predicateWeights = config.getPredicates();
+			EmbeddingConfiguration.PredicateWeights predicateWeights = embeddingConfig.getPredicates();
 
 			switch (predicateWeights.getTypeEnum()) {
 				case NONE -> {
@@ -214,10 +215,8 @@ public record Rdf2GrphConverter(
 						}
 					}
 				}
-				case MANUAL -> {
-					statistics.manual().forEach((key, weight) ->
-							g.getEdgeWeightProperty().setValue(key, weight));
-				}
+				case MANUAL -> statistics.manual().forEach((key, weight) ->
+						g.getEdgeWeightProperty().setValue(key, weight));
 				case PAGERANK -> {
 					logger.info("Computing pagerank");
 					PageRank pr = g.getPageRanking(new Random());
@@ -238,14 +237,10 @@ public record Rdf2GrphConverter(
 						}
 					}
 				}
-				case FREQUENCY -> {
-					statistics.frequency().forEach((key, weight) ->
-							g.getEdgeWeightProperty().setValue(key, weight));
-				}
-				case INVERSE_FREQUENCY -> {
-					statistics.inverseFrequency().forEach((key, weight) ->
-							g.getEdgeWeightProperty().setValue(key, weight));
-				}
+				case FREQUENCY -> statistics.frequency().forEach((key, weight) ->
+						g.getEdgeWeightProperty().setValue(key, weight));
+				case INVERSE_FREQUENCY -> statistics.inverseFrequency().forEach((key, weight) ->
+						g.getEdgeWeightProperty().setValue(key, weight));
 			}
 
 
@@ -285,6 +280,7 @@ public record Rdf2GrphConverter(
 
 		int received = 0;
 		int edgesAdded = 0;
+		float avgCompareSize = 0;
 		try (ProgressBar pb = Progress.progressBar("Comparing", sourceSize, "literals")) {
 			pb.setExtraMessage(Integer.toString(edgesAdded));
 			while (received < sourceSize) {
@@ -292,6 +288,7 @@ public record Rdf2GrphConverter(
 
 					final CompareResult result = completionService.take().get();
 					final int vert = result.vert;
+					avgCompareSize += (result.targetSize - avgCompareSize) / (float)(received + 1);
 					for (int i = 0; i < result.otherVerts.size(); i++) {
 
 						final int otherVert = result.otherVerts.get(i);
@@ -307,7 +304,7 @@ public record Rdf2GrphConverter(
 						g.getEdgeTypeProperty().setValue(e, 0);
 
 						edgesAdded++;
-						pb.setExtraMessage(Integer.toString(edgesAdded));
+						pb.setExtraMessage(edgesAdded + "|" + (int) avgCompareSize);
 					}
 
 				} catch (InterruptedException | ExecutionException e) {

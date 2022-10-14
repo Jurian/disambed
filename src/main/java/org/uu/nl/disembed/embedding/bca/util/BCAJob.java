@@ -1,7 +1,7 @@
-package org.uu.nl.embedding.bca.util;
+package org.uu.nl.disembed.embedding.bca.util;
 
 import grph.properties.NumericalProperty;
-import org.uu.nl.embedding.util.InMemoryRdfGraph;
+import org.uu.nl.disembed.embedding.convert.InMemoryRdfGraph;
 
 import java.util.TreeMap;
 import java.util.concurrent.Callable;

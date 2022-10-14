@@ -1,7 +1,7 @@
-package org.uu.nl.embedding.util.similarity;
+package org.uu.nl.disembed.embedding.similarity;
 
 import org.apache.log4j.Logger;
-import org.uu.nl.embedding.util.config.EmbeddingConfiguration;
+import org.uu.nl.disembed.util.config.EmbeddingConfiguration;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

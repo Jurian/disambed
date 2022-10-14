@@ -1,16 +1,16 @@
-package org.uu.nl.embedding.util.similarity.lsh;
+package org.uu.nl.disembed.embedding.similarity.lsh;
 
 import info.debatty.java.lsh.LSH;
 import info.debatty.java.stringsimilarity.interfaces.NormalizedStringDistance;
 import info.debatty.java.stringsimilarity.interfaces.NormalizedStringSimilarity;
-import org.uu.nl.embedding.util.similarity.NameSimilarity;
-import org.uu.nl.embedding.util.similarity.PostComputed;
-import org.uu.nl.embedding.util.similarity.PreComputed;
-import org.uu.nl.embedding.util.sparse.BMatrixSparseCSR;
+import org.uu.nl.disembed.embedding.similarity.NormalizedMyers;
+import org.uu.nl.disembed.embedding.similarity.PostComputed;
+import org.uu.nl.disembed.embedding.similarity.PreComputed;
+import org.uu.nl.disembed.util.sparse.BMatrixSparseCSR;
 
 import java.util.Arrays;
 
-public abstract class LSHSimilarity extends NameSimilarity implements PreComputed<int[]>, PostComputed, NormalizedStringDistance, NormalizedStringSimilarity {
+public abstract class LSHSimilarity extends NormalizedMyers implements PreComputed<int[]>, PostComputed, NormalizedStringDistance, NormalizedStringSimilarity {
 
     protected final BMatrixSparseCSR bucketAllocation;
     protected BMatrixSparseCSR bucketAllocationT;
@@ -18,7 +18,6 @@ public abstract class LSHSimilarity extends NameSimilarity implements PreCompute
     protected final int bands, buckets;
 
     public LSHSimilarity(int bands, int buckets) {
-        super(new info.debatty.java.stringsimilarity.NormalizedLevenshtein());
         this.bands = bands;
         this.buckets = buckets;
         this.bucketAllocation = new BMatrixSparseCSR(0, bands * buckets);

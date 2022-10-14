@@ -1,10 +1,10 @@
-package org.uu.nl.embedding.compare;
+package org.uu.nl.disembed.embedding.compare;
 
 import info.debatty.java.stringsimilarity.interfaces.StringSimilarity;
 import org.apache.jena.graph.Node;
-import org.uu.nl.embedding.util.config.EmbeddingConfiguration;
-import org.uu.nl.embedding.util.similarity.PostComputed;
-import org.uu.nl.embedding.util.similarity.PreComputed;
+import org.uu.nl.disembed.embedding.similarity.PostComputed;
+import org.uu.nl.disembed.embedding.similarity.PreComputed;
+import org.uu.nl.disembed.util.config.EmbeddingConfiguration;
 
 import java.util.HashMap;
 import java.util.Map;

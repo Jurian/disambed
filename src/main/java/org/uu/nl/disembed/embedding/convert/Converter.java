@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.convert;
+package org.uu.nl.disembed.embedding.convert;
 
 /**
  * @author Jurian Baas

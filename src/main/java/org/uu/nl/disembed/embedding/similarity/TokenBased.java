@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.similarity;
+package org.uu.nl.disembed.embedding.similarity;
 
 import net.jcip.annotations.Immutable;
 

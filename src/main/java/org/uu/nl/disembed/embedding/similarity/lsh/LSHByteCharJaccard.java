@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.similarity.lsh;
+package org.uu.nl.disembed.embedding.similarity.lsh;
 
 import info.debatty.java.lsh.LSH;
 

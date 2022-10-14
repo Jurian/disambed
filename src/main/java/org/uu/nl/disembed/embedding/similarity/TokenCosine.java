@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.similarity;
+package org.uu.nl.disembed.embedding.similarity;
 
 import info.debatty.java.stringsimilarity.interfaces.NormalizedStringDistance;
 import info.debatty.java.stringsimilarity.interfaces.NormalizedStringSimilarity;

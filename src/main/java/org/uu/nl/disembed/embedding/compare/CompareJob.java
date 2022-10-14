@@ -1,8 +1,8 @@
-package org.uu.nl.embedding.compare;
+package org.uu.nl.disembed.embedding.compare;
 
 import grph.properties.Property;
 import info.debatty.java.stringsimilarity.interfaces.StringSimilarity;
-import org.uu.nl.embedding.util.similarity.lsh.LSHSimilarity;
+import org.uu.nl.disembed.embedding.similarity.lsh.LSHSimilarity;
 
 import java.util.concurrent.Callable;
 
@@ -35,9 +35,12 @@ public class CompareJob implements Callable<CompareResult> {
     public CompareResult call() {
 
         final int vert = source;
-        final CompareResult result = new CompareResult(vert);
 
-        for (final int otherVert : (metric instanceof LSHSimilarity) ? ((LSHSimilarity)metric).candidates(index, target) : target) {
+        final int[] otherVerts =
+                (metric instanceof LSHSimilarity) ? ((LSHSimilarity)metric).candidates(index, target) : target;
+        final CompareResult result = new CompareResult(vert, otherVerts.length);
+
+        for (final int otherVert : target) {
 
             if(inGroupComparison && vert > otherVert) continue;
             if (otherVert == vert) continue;
@@ -49,7 +52,6 @@ public class CompareJob implements Callable<CompareResult> {
                 result.otherVerts.add(otherVert);
                 result.similarities.add((float) similarity);
             }
-
         }
         return result;
     }

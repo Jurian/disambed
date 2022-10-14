@@ -12,6 +12,14 @@
 hs_err_pid*
 /bin/
 /target/
+/embeddings/
+/data/
+/config/
+/out/
+/clusters/
+/ann/
+/bca/
+/linksets/
 /log/
 /src/main/resources/dumps/
 /src/main/resources/bin/
@@ -60,6 +68,5 @@ Thumbs.db
 *.iml
 ui-src/
 
-data/
-out/
+
 *.yml

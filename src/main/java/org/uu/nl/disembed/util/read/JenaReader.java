@@ -1,4 +1,4 @@
-package org.uu.nl.embedding.util.read;
+package org.uu.nl.disembed.util.read;
 
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
