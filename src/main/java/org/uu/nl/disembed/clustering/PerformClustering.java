@@ -36,13 +36,13 @@ public record PerformClustering(Configuration config) {
 
             {
                 CandidatePairs cp;
-                if(config.getClustering().getHnsw() != null) {
+                if(config.getIntermediateInput() != null && config.getIntermediateInput().getHnsw().getFilename() != null) {
                     logger.info("Loading pre-computed HNSW index...");
                     HnswIndexReader reader = new HnswIndexReader();
-                    cp = new CandidatePairs(embedding, reader.load(new File(config.getClustering().getHnsw())), config);
+                    cp = new CandidatePairs(embedding, reader.load(new File(config.getIntermediateInput().getHnsw().getFilename())), config);
                 } else {
                     cp = new CandidatePairs(embedding, config);
-                    if(config.getOutput().getHnsw() != null) {
+                    if(config.getIntermediateOutput().getHnsw() != null) {
                         HnswIndexWriter writer = new HnswIndexWriter(cp.getIndex(), config);
                         writer.write();
                     }

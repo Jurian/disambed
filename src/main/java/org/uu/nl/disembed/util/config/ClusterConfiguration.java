@@ -1,8 +1,5 @@
 package org.uu.nl.disembed.util.config;
 
-import org.uu.nl.disembed.util.write.EmbeddingWriter;
-import org.uu.nl.disembed.util.write.HnswIndexWriter;
-
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.Iterator;
@@ -10,9 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 public class ClusterConfiguration  implements Configurable {
-
-    private String embedding;
-    private String hnsw;
 
     private float theta;
     private int k;
@@ -59,26 +53,6 @@ public class ClusterConfiguration  implements Configurable {
 
     public void setClustersize(ClusterSize clustersize) {
         this.clustersize = clustersize;
-    }
-
-    public File getEmbeddingFile() {
-        return Paths.get("").toAbsolutePath().resolve(embedding).toFile();
-    }
-
-    public String getEmbedding(){
-        return this.embedding;
-    }
-
-    public void setEmbedding(String embedding) {
-        this.embedding = embedding;
-    }
-
-    public String getHnsw() {
-        return hnsw;
-    }
-
-    public void setHnsw(String hnsw) {
-        this.hnsw = hnsw;
     }
 
     public static class RuleConfiguration implements Iterable<ClusterConfiguration.Rule> {
@@ -376,22 +350,6 @@ public class ClusterConfiguration  implements Configurable {
         if(getClustersize() != null) {
             builder.appendKeyValueLine("Clustering min size", getClustersize().getMin());
             builder.appendKeyValueLine("Clustering min size", getClustersize().getMax());
-        }
-
-        if(getEmbedding() != null) {
-            builder.appendLine("Loading embedding from:");
-            builder.append(EmbeddingWriter.OUTPUT_DIRECTORY);
-            builder.append("/");
-            builder.append(getEmbedding());
-            builder.appendLine(EmbeddingWriter.FILETYPE);
-        }
-
-        if(getHnsw() != null) {
-            builder.appendLine("Loading HNSW index from:");
-            builder.append(HnswIndexWriter.OUTPUT_DIRECTORY);
-            builder.append("/");
-            builder.append(getHnsw());
-            builder.appendLine(HnswIndexWriter.FILETYPE);
         }
 
         if(getRules() != null) {

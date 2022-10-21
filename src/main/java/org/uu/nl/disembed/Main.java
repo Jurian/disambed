@@ -32,29 +32,30 @@ public class Main {
 
     private static void runProgram(Configuration config) throws IOException {
 
+        IntermediateInputConfiguration inputConfig = config.getIntermediateInput();
         EmbeddingConfiguration embeddingConfig = config.getEmbedding();
         ClusterConfiguration  clusterConfig = config.getClustering();
         OutputConfiguration outputConfig = config.getOutput();
+        IntermediateOutputConfiguration intermediateOutputConfig = config.getIntermediateOutput();
+
+        if((outputConfig == null || outputConfig.isEmpty()) && (intermediateOutputConfig == null || intermediateOutputConfig.isEmpty())) {
+            logger.error("No (valid) output configuration found, exiting...");
+            System.exit(1);
+        }
 
         logger.info(config.toString());
 
-        Embedding embedding = null;
+        Embedding embedding;
 
-        if(embeddingConfig == null) {
-
-            logger.info("No embedding configuration file specified, skipping to clustering...");
-
-        } else {
-
+        {
             Configuration.setThreadLocalRandom();
-
             {
 
                 BookmarkColoring bca;
 
-                if(config.getEmbedding().getBca().getReadFile() != null) {
+                if(inputConfig != null && inputConfig.getBca().getFilename() != null) {
                     logger.info("Loading in pre-computed co-occurrence matrix...");
-                    bca = new BookmarkColoring(new BCAReader().load(config.getEmbedding().getBca().getImportFile()), config);
+                    bca = new BookmarkColoring(new BCAReader().load(inputConfig.getBca().getImportFile()), config);
                 } else {
 
                     InMemoryRdfGraph graph;
@@ -68,42 +69,50 @@ public class Main {
 
                     logger.info("Loaded in graph, approximate RAM usage: " + graph.calculateMemoryMegaBytes() + " MB");
                     bca = new BookmarkColoring(graph, config);
-                }
 
-                if(outputConfig != null && config.getOutput().getBca() != null) {
-                    new BCAWriter(config, bca).write();
+                    if(config.getIntermediateOutput().getBca() != null) {
+                        new BCAWriter(config, bca).write();
+                    }
                 }
 
                 logger.info("Loaded in BCA sparse matrix, approximate RAM usage: " + bca.calculateMemoryMegaBytes() + " MB");
-                embedding = createOptimizer(config, bca).optimize();
 
-                System.gc();
-            }
+                if(inputConfig != null && inputConfig.getEmbedding().getFilename() != null) {
 
-            if(outputConfig != null && outputConfig.getEmbedding() != null) {
+                    // check cluster config for location of embedding to load
+                    EmbeddingReader reader = new EmbeddingReader();
+                    logger.info("Loading embedding from file...");
+                    embedding = reader.load(inputConfig.getEmbedding().getImportFile());
 
-                if(embedding == null) {
-                    logger.error("No embedding to write, exiting...");
                 } else {
-                    getWriter(embedding, config).write();
+
+                    logger.info("Creating new embedding...");
+                    embedding = createOptimizer(config, bca).optimize();
+
+                    if(intermediateOutputConfig.getEmbedding() != null) {
+                        getWriter(embedding, config).write();
+                    }
                 }
+                // Hopefully GC is smart enough to remove BCA data here, as it is no longer needed
+                // This should happen as the bca object goes out of scope!
+                System.gc();
             }
         }
 
+        // Embedding phase is over
 
         if(clusterConfig == null) {
-            logger.info("No clustering configuration found, skipping...");
-        } else {
+            // In case the user only wanted to do the embedding phase
+            logger.info("No clustering configuration found, exiting...");
+            System.exit(0);
+        }
 
-            if(embeddingConfig == null) {
-                // check cluster config for location of embedding to load
-                EmbeddingReader reader = new EmbeddingReader();
-                logger.info("Loading embedding from file...");
-                embedding = reader.load(clusterConfig.getEmbeddingFile());
-            }
+        // Start clustering phase
 
-            if(embedding == null) {
-                logger.error("No embedding to perform clustering on, exiting...");
+        {
+
+            if(outputConfig == null) {
+                logger.info("No output configuration found, exiting...");
                 System.exit(1);
             }
 
@@ -124,20 +133,18 @@ public class Main {
 
             System.gc();
 
-            if(outputConfig != null) {
-                if(outputConfig.getClusters() != null) {
-                    new ClusterWriter(config, embedding.getKeys(), result.components(), result.clusters()).write();
-                }
+            if(outputConfig.getClusters() != null) {
+                new ClusterWriter(config, embedding.getKeys(), result.components(), result.clusters()).write();
+            }
 
-                if(outputConfig.getLinkset() != null) {
-                    new LinksetWriter(config, embedding.getKeys(), result.components(), result.clusters()).write();
-                }
+            if(outputConfig.getLinkset() != null) {
+                new LinksetWriter(config, embedding.getKeys(), result.components(), result.clusters()).write();
             }
         }
     }
 
     private static EmbeddingWriter getWriter(Embedding embedding, Configuration config) {
-        return switch (config.getOutput().getEmbedding().getWriterEnum()) {
+        return switch (config.getIntermediateOutput().getEmbedding().getWriterEnum()) {
             case GLOVE -> new GloVeWriter(embedding, config);
             case WORD2VEC -> new Word2VecWriter(embedding, config);
         };

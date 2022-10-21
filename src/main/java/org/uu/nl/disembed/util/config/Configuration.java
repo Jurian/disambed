@@ -32,6 +32,8 @@ public class Configuration implements Configurable {
     EmbeddingConfiguration embedding;
     ClusterConfiguration clustering;
     OutputConfiguration output;
+    IntermediateOutputConfiguration intermediateOutput;
+    IntermediateInputConfiguration intermediateInput;
 
     public EmbeddingConfiguration getEmbedding() {
         return embedding;
@@ -57,11 +59,28 @@ public class Configuration implements Configurable {
         this.output = output;
     }
 
+    public IntermediateInputConfiguration getIntermediateInput() {
+        return intermediateInput;
+    }
+
+    public void setIntermediateInput(IntermediateInputConfiguration intermediateInput) {
+        this.intermediateInput = intermediateInput;
+    }
+
+    public IntermediateOutputConfiguration getIntermediateOutput() {
+        return intermediateOutput;
+    }
+
+    public void setIntermediateOutput(IntermediateOutputConfiguration intermediateOutput) {
+        this.intermediateOutput = intermediateOutput;
+    }
+
     @Override
     public void check() throws InvalidConfigException {
-
+        if(intermediateInput != null) intermediateInput.check();
         if(embedding != null) embedding.check();
         if(clustering != null) clustering.check();
+        if(intermediateOutput != null) intermediateOutput.check();
         if(output != null) output.check();
     }
 
@@ -71,14 +90,21 @@ public class Configuration implements Configurable {
 
         builder.appendKeyValueLine("Nr of threads", getThreads());
 
+        if(intermediateInput != null)
+            builder.appendLine(intermediateInput.getBuilder());
+        else
+            builder.appendLine("# No input configuration specified");
+
         if(embedding != null)
             builder.appendLine(embedding.getBuilder());
         else
             builder.appendLine("# No embedding configuration specified");
+
         if(clustering != null)
             builder.appendLine(clustering.getBuilder());
         else
             builder.appendLine("# No clustering configuration specified");
+
         if(output != null)
             builder.appendLine(output.getBuilder());
         else

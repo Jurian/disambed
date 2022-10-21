@@ -24,7 +24,7 @@ public record HnswIndexWriter(
         Path outputFolder = Paths.get("").toAbsolutePath().resolve(OUTPUT_DIRECTORY);
         Files.createDirectories(outputFolder);
 
-        final String fileName = config.getOutput().getHnsw().getFilename() + FILETYPE;
+        final String fileName = config.getIntermediateOutput().getHnsw().getFilename() + FILETYPE;
 
         index.save(outputFolder.resolve(fileName));
     }

@@ -3,7 +3,7 @@ package org.uu.nl.disembed.util.write;
 import org.apache.log4j.Logger;
 import org.uu.nl.disembed.embedding.bca.BookmarkColoring;
 import org.uu.nl.disembed.util.config.Configuration;
-import org.uu.nl.disembed.util.config.OutputConfiguration;
+import org.uu.nl.disembed.util.config.IntermediateOutputConfiguration;
 import org.uu.nl.disembed.util.sparse.RandomAccessSparseMatrix;
 
 import java.io.BufferedOutputStream;
@@ -28,7 +28,7 @@ public record BCAWriter(Configuration config, BookmarkColoring bca) implements W
     @Override
     public void write() throws IOException {
 
-        OutputConfiguration outputConfig = config.getOutput();
+        IntermediateOutputConfiguration outputConfig = config.getIntermediateOutput();
 
         String fileName = outputConfig.getBca().getFilename() + FILETYPE;
         logger.info("Writing file: " + fileName);

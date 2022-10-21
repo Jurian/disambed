@@ -132,23 +132,23 @@ public class EmbeddingConfiguration  implements Configurable {
         return this.predicates;
     }
 
-    private BCA bca;
+    private OptionsBCA bca;
 
-    public BCA getBca() {
+    public OptionsBCA getBca() {
         return bca;
     }
 
-    public void setBca(BCA bca) {
+    public void setBca(OptionsBCA bca) {
         this.bca = bca;
     }
 
-    private Opt opt;
+    private OptionsOpt opt;
 
-    public Opt getOpt() {
+    public OptionsOpt getOpt() {
         return opt;
     }
 
-    public void setOpt(Opt opt) {
+    public void setOpt(OptionsOpt opt) {
         this.opt = opt;
     }
 
@@ -371,7 +371,7 @@ public class EmbeddingConfiguration  implements Configurable {
         }
     }
 
-    public static class BCA {
+    public static class OptionsBCA {
 
         public  enum Type {
             DEFAULT, NO_RETURN
@@ -380,7 +380,6 @@ public class EmbeddingConfiguration  implements Configurable {
         private String type;
         private float alpha;
         private float epsilon;
-        private String readFile;
 
         public Type getTypeEnum() {
             return Type.valueOf(getType().toUpperCase());
@@ -409,21 +408,9 @@ public class EmbeddingConfiguration  implements Configurable {
         public void setEpsilon(float epsilon) {
             this.epsilon = epsilon;
         }
-
-        public File getImportFile() {
-            return Paths.get("").toAbsolutePath().resolve(readFile).toFile();
-        }
-
-        public String getReadFile() {
-            return readFile;
-        }
-
-        public void setReadFile(String readFile) {
-            this.readFile = readFile;
-        }
     }
 
-    public static class Opt {
+    public static class OptionsOpt {
 
         private String method;
         private double tolerance;
@@ -570,10 +557,6 @@ public class EmbeddingConfiguration  implements Configurable {
         builder.appendLine("BCA Configuration:");
         builder.appendKeyValueLine("Alpha",getBca().getAlpha());
         builder.appendKeyValueLine("Epsilon", getBca().getEpsilon());
-
-        if(getBca().getReadFile() != null) {
-            builder.appendKeyValueLine("Reading from file", getBca().getReadFile());
-        }
 
         builder.appendLine();
 

@@ -1,7 +1,6 @@
 package org.uu.nl.disembed.util.write;
 
 import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.cursors.IntCursor;
 import me.tongfei.progressbar.ProgressBar;
 import org.apache.log4j.Logger;
 import org.uu.nl.disembed.clustering.Util;

@@ -6,7 +6,7 @@ import org.uu.nl.disembed.embedding.opt.Embedding;
 import org.uu.nl.disembed.embedding.opt.Optimizer;
 import org.uu.nl.disembed.util.config.Configuration;
 import org.uu.nl.disembed.util.config.EmbeddingConfiguration;
-import org.uu.nl.disembed.util.config.OutputConfiguration;
+import org.uu.nl.disembed.util.config.IntermediateOutputConfiguration;
 import org.uu.nl.disembed.util.progress.Progress;
 
 import java.io.BufferedWriter;
@@ -33,14 +33,14 @@ public abstract class EmbeddingWriter implements org.uu.nl.disembed.util.write.W
 	protected final String fileName;
 	protected final Configuration config;
 	protected final EmbeddingConfiguration embeddingConfig;
-	protected final OutputConfiguration outputConfig;
+	protected final IntermediateOutputConfiguration outputConfig;
 	protected final Embedding embedding;
 
 	public EmbeddingWriter(Embedding embedding, Configuration config) {
 
 		this.config = config;
 		this.embeddingConfig = config.getEmbedding();
-		this.outputConfig = config.getOutput();
+		this.outputConfig = config.getIntermediateOutput();
 		this.embedding = embedding;
 
 		String outFileName = outputConfig.getEmbedding().getFilename();
