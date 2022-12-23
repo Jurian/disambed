@@ -48,6 +48,7 @@ public class RuleChecker {
                 definite[r] = false;
                 weights[r] = ((ClusterConfiguration.ProbabilisticRule) rule).getProbability();
             }
+            r++;
         }
     }
 
@@ -134,6 +135,8 @@ public class RuleChecker {
         final ParameterizedSparqlString query = new ParameterizedSparqlString();
         query.setCommandText(constructComponentQuery(component, dict));
         query.setNsPrefixes(model.getNsPrefixMap());
+
+        //logger.info(query.asQuery().toString());
 
         try (QueryExecution exec = QueryExecutionFactory.create(query.asQuery(), model)) {
 
