@@ -59,21 +59,22 @@ public record ClusterWriter(Configuration config, String[] dict, int[][][] clust
             for(int[][] clusterGroup : clusters) {
                 for (int[] cluster : clusterGroup) {
 
-                    for (int c : cluster) {
+                    if(Util.isValidCluster(cluster, clusterConfig.getClustersize().min, clusterConfig.getClustersize().max)) {
+                        for (int c : cluster) {
 
-                        w.write(Integer.toString(id));
-                        w.write(DELIMITER);
-                        w.write(dict[c]);
+                            w.write(Integer.toString(id));
+                            w.write(DELIMITER);
+                            w.write(dict[c]);
 
-                        //w.write(DELIMITER);
-                        //w.write(Integer.toString(i));
+                            //w.write(DELIMITER);
+                            //w.write(Integer.toString(i));
+                            w.write(NEWLINE);
+                            //i++;
+                        }
                         w.write(NEWLINE);
-                        //i++;
+                        id++;
+                        pb.step();
                     }
-                    w.write(NEWLINE);
-                    id++;
-                    pb.step();
-
                 }
             }
         }
