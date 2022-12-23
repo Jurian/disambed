@@ -39,7 +39,7 @@ public record PerformClustering(Configuration config) {
                 if(config.getIntermediateInput() != null && config.getIntermediateInput().getHnsw() != null) {
                     logger.info("Loading pre-computed HNSW index...");
                     HnswIndexReader reader = new HnswIndexReader();
-                    cp = new CandidatePairs(embedding, reader.load(new File(config.getIntermediateInput().getHnsw().getFilename())), config);
+                    cp = new CandidatePairs(embedding, reader.load(config.getIntermediateInput().getHnsw().getImportFile()), config);
                 } else {
                     cp = new CandidatePairs(embedding, config);
                     if(config.getIntermediateOutput().getHnsw() != null) {
