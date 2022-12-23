@@ -45,39 +45,19 @@ public class Main {
 
         logger.info(config.toString());
 
+        boolean precomputedBCA = inputConfig != null && inputConfig.getBca().getFilename() != null;
+        boolean precomputedEmbedding = inputConfig != null && inputConfig.getEmbedding().getFilename() != null;
+        //boolean precomputedHNSW = inputConfig != null && inputConfig.getHnsw().getFilename() != null;
+
         Embedding embedding;
 
         {
             Configuration.setThreadLocalRandom();
             {
 
-                BookmarkColoring bca;
 
-                if(inputConfig != null && inputConfig.getBca().getFilename() != null) {
-                    logger.info("Loading in pre-computed co-occurrence matrix...");
-                    bca = new BookmarkColoring(new BCAReader().load(inputConfig.getBca().getImportFile()), config);
-                } else {
 
-                    InMemoryRdfGraph graph;
-                    {
-                        JenaReader reader = new JenaReader();
-                        Rdf2GrphConverter converter = new Rdf2GrphConverter(config);
-                        graph = converter.convert(reader.load(embeddingConfig.getGraphFile()));
-                    }
-
-                    System.gc();
-
-                    logger.info("Loaded in graph, approximate RAM usage: " + graph.calculateMemoryMegaBytes() + " MB");
-                    bca = new BookmarkColoring(graph, config);
-
-                    if(config.getIntermediateOutput().getBca() != null) {
-                        new BCAWriter(config, bca).write();
-                    }
-                }
-
-                logger.info("Loaded in BCA sparse matrix, approximate RAM usage: " + bca.calculateMemoryMegaBytes() + " MB");
-
-                if(inputConfig != null && inputConfig.getEmbedding().getFilename() != null) {
+                if(precomputedEmbedding) {
 
                     // check cluster config for location of embedding to load
                     EmbeddingReader reader = new EmbeddingReader();
@@ -87,6 +67,33 @@ public class Main {
                 } else {
 
                     logger.info("Creating new embedding...");
+
+                    BookmarkColoring bca;
+
+                    if(precomputedBCA) {
+                        logger.info("Loading in pre-computed co-occurrence matrix...");
+                        bca = new BookmarkColoring(new BCAReader().load(inputConfig.getBca().getImportFile()), config);
+                    } else {
+
+                        InMemoryRdfGraph graph;
+                        {
+                            JenaReader reader = new JenaReader();
+                            Rdf2GrphConverter converter = new Rdf2GrphConverter(config);
+                            graph = converter.convert(reader.load(embeddingConfig.getGraphFile()));
+                        }
+
+                        System.gc();
+
+                        logger.info("Loaded in graph, approximate RAM usage: " + graph.calculateMemoryMegaBytes() + " MB");
+                        bca = new BookmarkColoring(graph, config);
+
+                        if(config.getIntermediateOutput().getBca() != null) {
+                            new BCAWriter(config, bca).write();
+                        }
+                    }
+                    logger.info("Loaded in BCA sparse matrix, approximate RAM usage: " + bca.calculateMemoryMegaBytes() + " MB");
+
+
                     embedding = createOptimizer(config, bca).optimize();
 
                     if(intermediateOutputConfig.getEmbedding() != null) {
