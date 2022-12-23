@@ -86,7 +86,7 @@ public record PerformClustering(Configuration config) {
             int maxSize = 0;
             int skipped = 0;
 
-            for (int i = 0; i < nComponents; i++) {
+            for (int i = 0, j = 0; i < nComponents; i++) {
                 int size = components[i].length;
 
                 if(size > config.getClustering().getMaxComponentSize()) {
@@ -100,7 +100,7 @@ public record PerformClustering(Configuration config) {
                     ccJobs++;
                     completionService.submit(
                             new CorrelationClustering(
-                                    i,
+                                    j,
                                     components[i],
                                     ruleChecker,
                                     embedding.getVectors(),
@@ -112,7 +112,7 @@ public record PerformClustering(Configuration config) {
                     vJobs++;
                     completionService.submit(
                             new VoteClustering(
-                                    i,
+                                    j,
                                     components[i],
                                     ruleChecker,
                                     embedding.getVectors(),
@@ -121,6 +121,7 @@ public record PerformClustering(Configuration config) {
                                     config.getThreads())
                     );
                 }
+                j++;
             }
 
             final int totalJobs = ccJobs + vJobs;
