@@ -76,8 +76,6 @@ public record PerformClustering(Configuration config) {
                 logger.warn("Only 1 connected component found, consider increasing value of theta > " + theta);
             }
 
-            //final float[][] penalties = usingRules ? ruleChecker.checkComponents(model, components, embedding.getKeys(), maxQuerySize) : null;
-
             final ExecutorService es = Executors.newWorkStealingPool(numThreads);
             CompletionService<ClusterAlgorithm.ClusterResult> completionService = new ExecutorCompletionService<>(es);
 
@@ -131,7 +129,8 @@ public record PerformClustering(Configuration config) {
             logger.info("Skipped " + skipped + " components that were too large");
             logger.info("Largest valid component: " + maxSize + " entities");
 
-            int[][] clusters = new int[totalJobs][];
+            // We don't know how many clusters we will find, so we use a ragged array for each valid component (i.e. job)
+            int[][][] clusters = new int[totalJobs][][];
 
             try (ProgressBar pb = Progress.progressBar("Clustering", totalJobs, "components")) {
 
@@ -154,11 +153,11 @@ public record PerformClustering(Configuration config) {
                 es.shutdown();
             }
 
-            return new ClusteringResult(components, clusters);
+            return new ClusteringResult(clusters);
         } finally {
             model.close();
         }
     }
 
-    public static record ClusteringResult(int[][] components, int[][] clusters) { }
+    public record ClusteringResult(int[][][] clusters) { }
 }

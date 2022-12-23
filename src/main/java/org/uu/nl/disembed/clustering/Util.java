@@ -223,47 +223,23 @@ public class Util {
         return triangles;
     }
 
-    public static List<IntArrayList> getClusters(int[][] components, int[][] clusters, int minSize, int maxSize) {
+    public static boolean isValidCluster(int[] cluster, int minSize, int maxSize) {
+        return cluster.length >= minSize && (maxSize <= 0 || cluster.length <= maxSize);
+    }
 
-        final Map<Integer, IntArrayList> clusterMap = new HashMap<>();
+    public static int countValidClusters(int[][][] clusters, int minSize, int maxSize) {
+        int validClusterCount = 0;
 
-        for (int i = 0; i < components.length; i++) {
-
-            int[] component = components[i];
-            int[] clustering = clusters[i];
-
-            final int compSize = component.length;
-            boolean[] clustered = new boolean[compSize];
-
-            for (int j = 0; j < compSize; j++) {
-
-                if (clustered[j]) continue;
-
-                IntArrayList cluster = new IntArrayList();
-                cluster.add(component[j]);
-                clusterMap.put(component[j], cluster);
-
-                clustered[j] = true;
-
-                for (int k = j + 1; k < compSize; k++) {
-
-                    if (clustered[k]) continue;
-
-                    if (clustering[j] == clustering[k]) {
-
-                        cluster = clusterMap.get(component[j]);
-                        cluster.add(component[k]);
-                        clusterMap.put(component[j], cluster);
-                        clustered[k] = true;
-                    }
+        for(int[][] clusterGroup : clusters) {
+            for(int [] cluster : clusterGroup) {
+                final int clusterSize = cluster.length;
+                if(isValidCluster(cluster, minSize, maxSize)){
+                    validClusterCount++;
                 }
             }
         }
-        return clusterMap.values().stream()
-                .filter(cluster -> {
-                    int size = cluster.size();
-                    return size >= minSize && (maxSize <= 0 || size <= maxSize);
-                }).collect(Collectors.toList());
+
+        return validClusterCount;
     }
 
     public static int nEdges(int n) {

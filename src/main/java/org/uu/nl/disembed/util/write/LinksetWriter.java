@@ -17,8 +17,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-public record LinksetWriter(Configuration config,
-                           String[] dict, int[][] components, int[][] clusters) implements Writer {
+public record LinksetWriter(Configuration config, String[] dict, int[][][] clusters) implements Writer {
 
     public final static Logger logger = Logger.getLogger(LinksetWriter.class);
     public static final String NEWLINE = "\n";
@@ -41,9 +40,9 @@ public record LinksetWriter(Configuration config,
         Path outputFolder = Paths.get("").toAbsolutePath().resolve(OUTPUT_DIRECTORY);
         Files.createDirectories(outputFolder);
 
-        List<IntArrayList> validClusters = Util.getClusters(components, clusters, clusterConfig.getClustersize().min, clusterConfig.getClustersize().max);
+        final int validClusterCount = Util.countValidClusters(clusters, clusterConfig.getClustersize().min, clusterConfig.getClustersize().max);
 
-        try (ProgressBar pb = Progress.progressBar("Writing to linkset file", validClusters.size(), "clusters");
+        try (ProgressBar pb = Progress.progressBar("Writing to linkset file", validClusterCount, "clusters");
              java.io.Writer w = new BufferedWriter(new FileWriter(outputFolder.resolve(fileName).toFile()))) {
 
             // Write configuration
@@ -56,28 +55,31 @@ public record LinksetWriter(Configuration config,
             w.write(NEWLINE);
             w.write(NEWLINE);
 
-            for (IntArrayList cList : validClusters) {
+            for(int[][] clusterGroup : clusters) {
+                for(int [] cluster : clusterGroup) {
 
-                int[] cluster = cList.toArray();
+                    if(Util.isValidCluster(cluster, clusterConfig.getClustersize().min, clusterConfig.getClustersize().max)) {
 
-                for (int i = 0; i < cluster.length - 1; i++) {
+                        for (int i = 0; i < cluster.length - 1; i++) {
 
-                    w.write('<');
-                    w.write(dict[cluster[i]]);
-                    w.write('>');
-                    w.write(NEWLINE);
+                            w.write('<');
+                            w.write(dict[cluster[i]]);
+                            w.write('>');
+                            w.write(NEWLINE);
 
-                    for(int j = i + 1; j < cluster.length; j++) {
+                            for(int j = i + 1; j < cluster.length; j++) {
 
-                        w.write(SAME_AS);
-                        w.write('<');
-                        w.write(dict[cluster[j]]);
-                        w.write('>');
-                        w.write(j == (cluster.length-1) ? FINISHED_RECORD : NEXT);
+                                w.write(SAME_AS);
+                                w.write('<');
+                                w.write(dict[cluster[j]]);
+                                w.write('>');
+                                w.write(j == (cluster.length-1) ? FINISHED_RECORD : NEXT);
+                            }
+                        }
+                        w.write(NEWLINE);
+                        pb.step();
                     }
                 }
-                w.write(NEWLINE);
-                pb.step();
             }
         }
     }

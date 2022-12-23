@@ -3,6 +3,9 @@ package org.uu.nl.disembed.clustering;
 import com.carrotsearch.hppc.IntArrayList;
 import org.uu.nl.disembed.clustering.rules.RuleChecker;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class VoteClustering extends ClusterAlgorithm {
 
     public VoteClustering(int index, int[] component, RuleChecker ruleChecker, float[][] vectors, float theta, float epsilon, int threads) {
@@ -55,6 +58,6 @@ public class VoteClustering extends ClusterAlgorithm {
             }
         }
 
-        return new ClusterResult(index, clusters);
+        return new ClusterResult(index, toClusterArrays(clusters));
     }
 }

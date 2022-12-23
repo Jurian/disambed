@@ -1,5 +1,6 @@
 package org.uu.nl.disembed.clustering;
 
+import com.carrotsearch.hppc.IntArrayList;
 import org.ojalgo.concurrent.Parallelism;
 import org.ojalgo.optimisation.ExpressionsBasedModel;
 import org.ojalgo.optimisation.Optimisation;
@@ -8,6 +9,8 @@ import org.ojalgo.optimisation.integer.IntegerStrategy;
 import org.uu.nl.disembed.clustering.rules.RuleChecker;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 public class CorrelationClustering extends ClusterAlgorithm {
 
@@ -105,6 +108,6 @@ public class CorrelationClustering extends ClusterAlgorithm {
             }
         }
 
-        return new ClusterResult(index, clustering);
+        return new ClusterResult(index, toClusterArrays(clustering));
     }
 }

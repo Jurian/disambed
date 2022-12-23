@@ -141,11 +141,11 @@ public class Main {
             System.gc();
 
             if(outputConfig.getClusters() != null) {
-                new ClusterWriter(config, embedding.getKeys(), result.components(), result.clusters()).write();
+                new ClusterWriter(config, embedding.getKeys(), result.clusters()).write();
             }
 
             if(outputConfig.getLinkset() != null) {
-                new LinksetWriter(config, embedding.getKeys(), result.components(), result.clusters()).write();
+                new LinksetWriter(config, embedding.getKeys(), result.clusters()).write();
             }
         }
     }

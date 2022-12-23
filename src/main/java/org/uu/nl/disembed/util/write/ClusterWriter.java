@@ -18,8 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-public record ClusterWriter(Configuration config,
-                            String[] dict, int[][] components, int[][] clusters) implements Writer {
+public record ClusterWriter(Configuration config, String[] dict, int[][][] clusters) implements Writer {
 
     public final static Logger logger = Logger.getLogger(ClusterWriter.class);
     public static final String DELIMITER = "\t";
@@ -40,9 +39,9 @@ public record ClusterWriter(Configuration config,
         Path outputFolder = Paths.get("").toAbsolutePath().resolve(OUTPUT_DIRECTORY);
         Files.createDirectories(outputFolder);
 
-        List<IntArrayList> validClusters = Util.getClusters(components, clusters, clusterConfig.getClustersize().min, clusterConfig.getClustersize().max);
+        final int validClusterCount = Util.countValidClusters(clusters, clusterConfig.getClustersize().min, clusterConfig.getClustersize().max);
 
-        try (ProgressBar pb = Progress.progressBar("Writing to file", validClusters.size(), "clusters");
+        try (ProgressBar pb = Progress.progressBar("Writing to file", validClusterCount, "clusters");
              java.io.Writer w = new BufferedWriter(new FileWriter(outputFolder.resolve(fileName).toFile()))) {
 
             // Write configuration
@@ -56,23 +55,26 @@ public record ClusterWriter(Configuration config,
 
             // Write clusters
             int id = 1;
-            for (IntArrayList cluster : validClusters) {
 
-                //int i = 1;
-                for (IntCursor c : cluster) {
+            for(int[][] clusterGroup : clusters) {
+                for (int[] cluster : clusterGroup) {
 
-                    w.write(Integer.toString(id));
-                    w.write(DELIMITER);
-                    w.write(dict[c.value]);
+                    for (int c : cluster) {
 
-                    //w.write(DELIMITER);
-                    //w.write(Integer.toString(i));
+                        w.write(Integer.toString(id));
+                        w.write(DELIMITER);
+                        w.write(dict[c]);
+
+                        //w.write(DELIMITER);
+                        //w.write(Integer.toString(i));
+                        w.write(NEWLINE);
+                        //i++;
+                    }
                     w.write(NEWLINE);
-                    //i++;
+                    id++;
+                    pb.step();
+
                 }
-                w.write(NEWLINE);
-                id++;
-                pb.step();
             }
         }
     }
