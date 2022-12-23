@@ -46,8 +46,8 @@ public abstract  class ClusterAlgorithm implements Callable<ClusterAlgorithm.Clu
         if(n == 2) {
             float penalty = penalties == null ? 0f : penalties[0];
             if(Util.weight(component[0], component[1], vectors, theta, epsilon, penalty) > 0)
-                return new ClusterResult(index, new int[][] {{component[0],component[0]}});
-            else return new ClusterResult(index, new int[][] {component});
+                return new ClusterResult(index, new int[][] {{component[0],component[1]}});
+            else return new ClusterResult(index, new int[][] {{component[0]},{component[1]}});
         }
         throw new IllegalArgumentException("n >= 3");
     }
